@@ -20,5 +20,11 @@ This project references and builds on ideas from [yumayanagisawa/Unity-Point-Clo
 - `Assets/Scripts/` - general scene scripts, including background music volume control.
 - `Assets/Audio/` - audio assets.
 - `Assets/Editor/Tests/` - editor tests for custom scripts.
+- `Assets/XR/` and `Assets/XRI/` - XR/OpenXR and XR Interaction Toolkit project settings.
+- `Assets/Samples/XR Interaction Toolkit/` - imported XRI Starter Assets and XR Device Simulator assets used for editor-side XR simulation.
 - `Packages/` - Unity package manifest and lock file.
 - `ProjectSettings/` - Unity project settings.
+
+## XR Development Without a Quest
+
+The project includes Unity XR Interaction Toolkit Starter Assets and the XR Device Simulator sample, so basic headset/controller movement can be tested in the Editor with keyboard and mouse. Meta Quest-specific features still require a Quest or Quest Link runtime for final validation.

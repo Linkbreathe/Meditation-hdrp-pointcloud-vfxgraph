@@ -65,3 +65,6 @@ Desktop.ini
 
 # Crash reports
 crashlytics-build.properties
+
+# Local backup / migration folders
+[Dd]isabled[Aa]ssets[Bb]ackup/
