@@ -73,7 +73,7 @@ public static class GazeVfxDisturbanceSetup
 
         Debug.Log(
             "[GazeVfxDisturbanceSetup] Configured pearl_lady with GazeVfxDisturbanceDriver. " +
-            "Adjust Region Center Local and Region Radius Local in the inspector to choose the exact painting area.",
+            "Adjust Region Radius Local for the full painting hit area and Brush Radius Local for the local disturbance size.",
             pearlLady);
     }
 
@@ -121,8 +121,9 @@ public static class GazeVfxDisturbanceSetup
         SetString(serializedObject, "_fallbackGazeObjectName", LeftEyeGazeName);
         SetString(serializedObject, "_cameraFallbackName", "CenterEyeAnchor");
         SetVector3(serializedObject, "_regionCenterLocal", Vector3.zero);
-        SetFloat(serializedObject, "_regionRadiusLocal", 0.75f);
-        SetFloat(serializedObject, "_softEdgeLocal", 0.35f);
+        SetFloat(serializedObject, "_regionRadiusLocal", 5f);
+        SetFloat(serializedObject, "_softEdgeLocal", 0.5f);
+        SetFloat(serializedObject, "_brushRadiusLocal", 1f);
         SetBool(serializedObject, "_driveExistingGlobalControls", true);
 
         serializedObject.ApplyModifiedPropertiesWithoutUndo();

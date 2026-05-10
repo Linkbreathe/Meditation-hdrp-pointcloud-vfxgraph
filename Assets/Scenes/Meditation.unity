@@ -6075,9 +6075,10 @@ MonoBehaviour:
   _cameraFallbackName: CenterEyeAnchor
   _paintingPlaneNormal: 2
   _regionCenterLocal: {x: 0, y: 0, z: 0}
-  _regionRadiusLocal: 1
-  _softEdgeLocal: 1
-  _maxRayDistance: 100
+  _regionRadiusLocal: 5
+  _softEdgeLocal: 0.5
+  _brushRadiusLocal: 1
+  _maxRayDistance: 200
   _attackSpeed: 8
   _releaseSpeed: 4
   _useUnscaledTime: 0
@@ -6185,13 +6186,13 @@ VisualEffect:
       - m_Value: 5000000
         m_Name: System Spawn - rate
         m_Overridden: 1
-      - m_Value: 0.01
+      - m_Value: 0.16
         m_Name: System update particle - intensity
         m_Overridden: 1
-      - m_Value: 1
+      - m_Value: 0.25
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0.01
+      - m_Value: 0.2
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0
@@ -6203,14 +6204,14 @@ VisualEffect:
       - m_Value: 1
         m_Name: Gaze Radius
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 1
         m_Name: Gaze Strength
         m_Overridden: 1
     m_Vector2f:
       m_Array: []
     m_Vector3f:
       m_Array:
-      - m_Value: {x: -0.36820224, y: -0.019000053, z: -0.000000029802322}
+      - m_Value: {x: -0.2664185, y: -0.92300034, z: -0.000000029802322}
         m_Name: Gaze Hit Local Position
         m_Overridden: 1
     m_Vector4f:
@@ -6229,7 +6230,7 @@ VisualEffect:
       m_Array: []
     m_Bool:
       m_Array:
-      - m_Value: 0
+      - m_Value: 1
         m_Name: Gaze Active
         m_Overridden: 1
 --- !u!4 &1672909525
@@ -6241,7 +6242,7 @@ Transform:
   m_GameObject: {fileID: 1672909520}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
-  m_LocalPosition: {x: 43.63, y: 11.455, z: 39.57}
+  m_LocalPosition: {x: 47.79, y: 11.06, z: 39.57}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []

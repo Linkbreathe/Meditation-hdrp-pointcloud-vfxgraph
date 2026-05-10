@@ -38,8 +38,12 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
     [Header("Target Region")]
     [SerializeField] LocalPlaneNormal _paintingPlaneNormal = LocalPlaneNormal.Z;
     [SerializeField] Vector3 _regionCenterLocal = Vector3.zero;
-    [SerializeField, Min(MinimumRadius)] float _regionRadiusLocal = 0.75f;
-    [SerializeField, Min(0f)] float _softEdgeLocal = 0.35f;
+    [Tooltip("Large hit area on the painting plane. Make this cover the whole artwork.")]
+    [SerializeField, Min(MinimumRadius)] float _regionRadiusLocal = 5f;
+    [Tooltip("Soft fade only near the outer edge of the hit area.")]
+    [SerializeField, Min(0f)] float _softEdgeLocal = 0.5f;
+    [Tooltip("Small VFX mask radius around the gaze hit. This is sent to the VFX Graph as Gaze Radius.")]
+    [SerializeField, Min(MinimumRadius)] float _brushRadiusLocal = 1f;
     [SerializeField, Min(0.01f)] float _maxRayDistance = 80f;
 
     [Header("Response")]
@@ -95,6 +99,7 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
     {
         _regionRadiusLocal = Mathf.Max(MinimumRadius, _regionRadiusLocal);
         _softEdgeLocal = Mathf.Max(0f, _softEdgeLocal);
+        _brushRadiusLocal = Mathf.Max(MinimumRadius, _brushRadiusLocal);
         _maxRayDistance = Mathf.Max(0.01f, _maxRayDistance);
         _attackSpeed = Mathf.Max(0.01f, _attackSpeed);
         _releaseSpeed = Mathf.Max(0.01f, _releaseSpeed);
@@ -215,7 +220,7 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
             TrySetVector3(_gazeLocalHitProperty, _lastLocalHit);
         }
 
-        TrySetFloat(_gazeRadiusProperty, _regionRadiusLocal);
+        TrySetFloat(_gazeRadiusProperty, _brushRadiusLocal);
         TrySetFloat(_gazeStrengthProperty, strength);
         TrySetBool(_gazeActiveProperty, active);
 
@@ -338,7 +343,7 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
         if (_targetTransform != null)
         {
             Gizmos.color = new Color(0.1f, 0.85f, 1f, 0.35f);
-            DrawLocalRegionGizmo();
+            DrawLocalCircleGizmo(_regionCenterLocal, _regionRadiusLocal);
         }
 
         if (_gazeTransform != null)
@@ -351,22 +356,28 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
         {
             Gizmos.color = Color.cyan;
             Gizmos.DrawSphere(_lastWorldHit, 0.05f);
+
+            if (_targetTransform != null)
+            {
+                Gizmos.color = new Color(1f, 0.85f, 0.1f, 0.8f);
+                DrawLocalCircleGizmo(_lastLocalHit, _brushRadiusLocal);
+            }
         }
     }
 
-    void DrawLocalRegionGizmo()
+    void DrawLocalCircleGizmo(Vector3 localCenter, float radius)
     {
         const int segmentCount = 48;
-        var previous = TransformLocalCirclePoint(segmentCount - 1);
+        var previous = TransformLocalCirclePoint(localCenter, radius, segmentCount - 1);
         for (var i = 0; i < segmentCount; i++)
         {
-            var current = TransformLocalCirclePoint(i);
+            var current = TransformLocalCirclePoint(localCenter, radius, i);
             Gizmos.DrawLine(previous, current);
             previous = current;
         }
     }
 
-    Vector3 TransformLocalCirclePoint(int index)
+    Vector3 TransformLocalCirclePoint(Vector3 localCenter, float radius, int index)
     {
         const int segmentCount = 48;
         var angle = index / (float)segmentCount * Mathf.PI * 2f;
@@ -375,19 +386,19 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
         switch (_paintingPlaneNormal)
         {
             case LocalPlaneNormal.X:
-                localOffset.y = Mathf.Cos(angle) * _regionRadiusLocal;
-                localOffset.z = Mathf.Sin(angle) * _regionRadiusLocal;
+                localOffset.y = Mathf.Cos(angle) * radius;
+                localOffset.z = Mathf.Sin(angle) * radius;
                 break;
             case LocalPlaneNormal.Y:
-                localOffset.x = Mathf.Cos(angle) * _regionRadiusLocal;
-                localOffset.z = Mathf.Sin(angle) * _regionRadiusLocal;
+                localOffset.x = Mathf.Cos(angle) * radius;
+                localOffset.z = Mathf.Sin(angle) * radius;
                 break;
             default:
-                localOffset.x = Mathf.Cos(angle) * _regionRadiusLocal;
-                localOffset.y = Mathf.Sin(angle) * _regionRadiusLocal;
+                localOffset.x = Mathf.Cos(angle) * radius;
+                localOffset.y = Mathf.Sin(angle) * radius;
                 break;
         }
 
-        return _targetTransform.TransformPoint(_regionCenterLocal + localOffset);
+        return _targetTransform.TransformPoint(localCenter + localOffset);
     }
 }
