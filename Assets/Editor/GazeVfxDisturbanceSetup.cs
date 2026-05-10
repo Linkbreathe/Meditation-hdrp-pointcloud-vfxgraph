@@ -8,6 +8,7 @@ public static class GazeVfxDisturbanceSetup
     const string PearlLadyName = "pearl_lady";
     const string RightEyeGazeName = "[BuildingBlock] Eye Gaze Right";
     const string LeftEyeGazeName = "[BuildingBlock] Eye Gaze Left";
+    const string CenterEyeName = "CenterEyeAnchor";
     const string ExperimentVfxPath = "Assets/Point Cloud/pearl_lady_gaze_experiment.vfx";
 
     [MenuItem("Tools/Point Cloud/Gaze Disturbance/Setup Pearl Lady Driver")]
@@ -73,7 +74,7 @@ public static class GazeVfxDisturbanceSetup
 
         Debug.Log(
             "[GazeVfxDisturbanceSetup] Configured pearl_lady with GazeVfxDisturbanceDriver. " +
-            "Adjust Region Radius Local for the full painting hit area and Brush Radius Local for the local disturbance size.",
+            "Average Eyes mode uses CenterEyeAnchor as the ray origin and the left/right eye gaze directions.",
             pearlLady);
     }
 
@@ -115,36 +116,45 @@ public static class GazeVfxDisturbanceSetup
 
         SetObject(serializedObject, "_visualEffect", visualEffect);
         SetObject(serializedObject, "_targetTransform", targetTransform);
-        SetObject(serializedObject, "_gazeTransform", ResolveGazeTransform());
+        SetEnum(serializedObject, "_gazeSourceMode", (int)GazeVfxDisturbanceDriver.GazeSourceMode.AverageEyes);
+        SetObject(serializedObject, "_gazeTransform", ResolveTransform(RightEyeGazeName));
+        SetObject(serializedObject, "_leftGazeTransform", ResolveTransform(LeftEyeGazeName));
+        SetObject(serializedObject, "_rightGazeTransform", ResolveTransform(RightEyeGazeName));
+        SetObject(serializedObject, "_rayOriginTransform", ResolveTransform(CenterEyeName));
         SetBool(serializedObject, "_autoFindGazeTransform", true);
         SetString(serializedObject, "_preferredGazeObjectName", RightEyeGazeName);
         SetString(serializedObject, "_fallbackGazeObjectName", LeftEyeGazeName);
-        SetString(serializedObject, "_cameraFallbackName", "CenterEyeAnchor");
+        SetString(serializedObject, "_leftGazeObjectName", LeftEyeGazeName);
+        SetString(serializedObject, "_rightGazeObjectName", RightEyeGazeName);
+        SetString(serializedObject, "_rayOriginObjectName", CenterEyeName);
+        SetString(serializedObject, "_cameraFallbackName", CenterEyeName);
         SetVector3(serializedObject, "_regionCenterLocal", Vector3.zero);
         SetFloat(serializedObject, "_regionRadiusLocal", 5f);
         SetFloat(serializedObject, "_softEdgeLocal", 0.5f);
         SetFloat(serializedObject, "_brushRadiusLocal", 1f);
+        SetEnum(serializedObject, "_regionStrengthMode", (int)GazeVfxDisturbanceDriver.RegionStrengthMode.ConstantInsideRegion);
+        SetFloat(serializedObject, "_attackSpeed", 22f);
+        SetFloat(serializedObject, "_releaseSpeed", 10f);
+        SetFloat(serializedObject, "_hitPositionSmoothingSpeed", 30f);
         SetBool(serializedObject, "_driveExistingGlobalControls", true);
 
         serializedObject.ApplyModifiedPropertiesWithoutUndo();
         EditorUtility.SetDirty(driver);
     }
 
-    static Transform ResolveGazeTransform()
+    static Transform ResolveTransform(string objectName)
     {
-        var rightEye = GameObject.Find(RightEyeGazeName);
-        if (rightEye != null)
-        {
-            return rightEye.transform;
-        }
+        var gameObject = GameObject.Find(objectName);
+        return gameObject != null ? gameObject.transform : null;
+    }
 
-        var leftEye = GameObject.Find(LeftEyeGazeName);
-        if (leftEye != null)
+    static void SetEnum(SerializedObject serializedObject, string propertyName, int value)
+    {
+        var property = serializedObject.FindProperty(propertyName);
+        if (property != null)
         {
-            return leftEye.transform;
+            property.enumValueIndex = value;
         }
-
-        return Camera.main != null ? Camera.main.transform : null;
     }
 
     static void SetObject(SerializedObject serializedObject, string propertyName, Object value)

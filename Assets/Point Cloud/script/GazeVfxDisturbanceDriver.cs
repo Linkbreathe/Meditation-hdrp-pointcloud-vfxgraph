@@ -18,6 +18,13 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
     const string DefaultLeftEyeGazeName = "[BuildingBlock] Eye Gaze Left";
     const string DefaultCenterEyeName = "CenterEyeAnchor";
     const float MinimumRadius = 0.001f;
+    const float RayDirectionEpsilon = 0.0001f;
+
+    public enum GazeSourceMode
+    {
+        SingleTransform,
+        AverageEyes
+    }
 
     public enum LocalPlaneNormal
     {
@@ -26,13 +33,30 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
         Z
     }
 
+    public enum RegionStrengthMode
+    {
+        ConstantInsideRegion,
+        FadeAtOuterEdge
+    }
+
     [Header("References")]
     [SerializeField] VisualEffect _visualEffect;
-    [SerializeField] Transform _gazeTransform;
     [SerializeField] Transform _targetTransform;
+
+    [Header("Gaze Source")]
+    [SerializeField] GazeSourceMode _gazeSourceMode = GazeSourceMode.AverageEyes;
+    [Tooltip("Used by Single Transform mode and as the fallback gaze transform.")]
+    [SerializeField] Transform _gazeTransform;
+    [SerializeField] Transform _leftGazeTransform;
+    [SerializeField] Transform _rightGazeTransform;
+    [Tooltip("Origin for Average Eyes mode. Use CenterEyeAnchor for Meta eye gaze.")]
+    [SerializeField] Transform _rayOriginTransform;
     [SerializeField] bool _autoFindGazeTransform = true;
     [SerializeField] string _preferredGazeObjectName = DefaultRightEyeGazeName;
     [SerializeField] string _fallbackGazeObjectName = DefaultLeftEyeGazeName;
+    [SerializeField] string _leftGazeObjectName = DefaultLeftEyeGazeName;
+    [SerializeField] string _rightGazeObjectName = DefaultRightEyeGazeName;
+    [SerializeField] string _rayOriginObjectName = DefaultCenterEyeName;
     [SerializeField] string _cameraFallbackName = DefaultCenterEyeName;
 
     [Header("Target Region")]
@@ -45,10 +69,13 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
     [Tooltip("Small VFX mask radius around the gaze hit. This is sent to the VFX Graph as Gaze Radius.")]
     [SerializeField, Min(MinimumRadius)] float _brushRadiusLocal = 1f;
     [SerializeField, Min(0.01f)] float _maxRayDistance = 80f;
+    [SerializeField] RegionStrengthMode _regionStrengthMode = RegionStrengthMode.ConstantInsideRegion;
 
     [Header("Response")]
-    [SerializeField, Min(0.01f)] float _attackSpeed = 8f;
-    [SerializeField, Min(0.01f)] float _releaseSpeed = 4f;
+    [SerializeField, Min(0.01f)] float _attackSpeed = 22f;
+    [SerializeField, Min(0.01f)] float _releaseSpeed = 10f;
+    [Tooltip("Higher values follow gaze faster. Set to 0 to disable hit-position smoothing.")]
+    [SerializeField, Min(0f)] float _hitPositionSmoothingSpeed = 30f;
     [SerializeField] bool _useUnscaledTime;
 
     [Header("Local VFX Properties")]
@@ -77,17 +104,21 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
     Vector3 _lastWorldHit;
     Vector3 _lastLocalHit;
     bool _hasLastHit;
+    Ray _lastGazeRay;
+    bool _hasLastGazeRay;
 
     public float currentStrength => _currentStrength;
     public bool hasLastHit => _hasLastHit;
     public Vector3 lastWorldHit => _lastWorldHit;
     public Vector3 lastLocalHit => _lastLocalHit;
+    public bool hasLastGazeRay => _hasLastGazeRay;
+    public Ray lastGazeRay => _lastGazeRay;
 
     void Reset()
     {
         _visualEffect = GetComponent<VisualEffect>();
         _targetTransform = transform;
-        FindGazeTransform();
+        FindGazeReferences();
     }
 
     void OnEnable()
@@ -103,6 +134,7 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
         _maxRayDistance = Mathf.Max(0.01f, _maxRayDistance);
         _attackSpeed = Mathf.Max(0.01f, _attackSpeed);
         _releaseSpeed = Mathf.Max(0.01f, _releaseSpeed);
+        _hitPositionSmoothingSpeed = Mathf.Max(0f, _hitPositionSmoothingSpeed);
         _baseParticleIntensity = Mathf.Max(0f, _baseParticleIntensity);
         _disturbedParticleIntensity = Mathf.Max(0f, _disturbedParticleIntensity);
         _baseParticleFrequency = Mathf.Max(0f, _baseParticleFrequency);
@@ -120,16 +152,14 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
             return;
         }
 
+        var deltaTime = GetDeltaTime();
         var targetStrength = 0f;
         if (TryEvaluateGazeHit(out var worldHit, out var localHit, out var hitStrength))
         {
-            _lastWorldHit = worldHit;
-            _lastLocalHit = localHit;
-            _hasLastHit = true;
+            StoreHit(worldHit, localHit, deltaTime);
             targetStrength = hitStrength;
         }
 
-        var deltaTime = GetDeltaTime();
         var speed = targetStrength > _currentStrength ? _attackSpeed : _releaseSpeed;
         _currentStrength = Mathf.MoveTowards(_currentStrength, targetStrength, speed * deltaTime);
 
@@ -142,12 +172,14 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
         localHit = default;
         strength = 0f;
 
-        if (_gazeTransform == null || _targetTransform == null)
+        if (_targetTransform == null || !TryGetGazeRay(out var ray))
         {
             return false;
         }
 
-        var ray = new Ray(_gazeTransform.position, _gazeTransform.forward);
+        _lastGazeRay = ray;
+        _hasLastGazeRay = true;
+
         var planePoint = _targetTransform.TransformPoint(_regionCenterLocal);
         var planeNormal = GetWorldPlaneNormal();
         var plane = new Plane(planeNormal, planePoint);
@@ -166,12 +198,41 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
             return false;
         }
 
+        strength = CalculateRegionStrength(localDistance);
+        return strength > 0f;
+    }
+
+    void StoreHit(Vector3 worldHit, Vector3 localHit, float deltaTime)
+    {
+        if (!_hasLastHit || _hitPositionSmoothingSpeed <= 0f)
+        {
+            _lastLocalHit = localHit;
+            _lastWorldHit = worldHit;
+        }
+        else
+        {
+            var t = 1f - Mathf.Exp(-_hitPositionSmoothingSpeed * deltaTime);
+            _lastLocalHit = Vector3.Lerp(_lastLocalHit, localHit, t);
+            _lastWorldHit = _targetTransform != null
+                ? _targetTransform.TransformPoint(_lastLocalHit)
+                : Vector3.Lerp(_lastWorldHit, worldHit, t);
+        }
+
+        _hasLastHit = true;
+    }
+
+    float CalculateRegionStrength(float localDistance)
+    {
+        if (_regionStrengthMode == RegionStrengthMode.ConstantInsideRegion)
+        {
+            return 1f;
+        }
+
         var innerRadius = Mathf.Max(0f, _regionRadiusLocal - _softEdgeLocal);
-        strength = localDistance <= innerRadius
+        var strength = localDistance <= innerRadius
             ? 1f
             : 1f - Mathf.InverseLerp(innerRadius, _regionRadiusLocal, localDistance);
-        strength = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(strength));
-        return strength > 0f;
+        return Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(strength));
     }
 
     void EnsureReferences()
@@ -186,29 +247,113 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
             _targetTransform = transform;
         }
 
-        if (_autoFindGazeTransform && _gazeTransform == null)
+        if (_autoFindGazeTransform)
         {
-            FindGazeTransform();
+            FindGazeReferences();
         }
     }
 
-    void FindGazeTransform()
+    void FindGazeReferences()
     {
-        _gazeTransform = FindTransformByName(_preferredGazeObjectName);
+        if (_gazeSourceMode == GazeSourceMode.AverageEyes)
+        {
+            if (_leftGazeTransform == null)
+            {
+                _leftGazeTransform = FindTransformByName(_leftGazeObjectName);
+            }
+
+            if (_rightGazeTransform == null)
+            {
+                _rightGazeTransform = FindTransformByName(_rightGazeObjectName);
+            }
+
+            if (_rayOriginTransform == null)
+            {
+                _rayOriginTransform = FindTransformByName(_rayOriginObjectName);
+            }
+        }
+
+        if (_gazeTransform == null)
+        {
+            _gazeTransform = FindTransformByName(_preferredGazeObjectName);
+        }
+
         if (_gazeTransform == null)
         {
             _gazeTransform = FindTransformByName(_fallbackGazeObjectName);
         }
 
-        if (_gazeTransform == null)
+        if (_rayOriginTransform == null)
         {
-            _gazeTransform = FindTransformByName(_cameraFallbackName);
+            _rayOriginTransform = FindTransformByName(_cameraFallbackName);
         }
 
         if (_gazeTransform == null && Camera.main != null)
         {
             _gazeTransform = Camera.main.transform;
         }
+    }
+
+    bool TryGetGazeRay(out Ray ray)
+    {
+        if (_gazeSourceMode == GazeSourceMode.AverageEyes
+            && TryGetAverageEyesRay(out ray))
+        {
+            return true;
+        }
+
+        if (_gazeTransform == null)
+        {
+            ray = default;
+            return false;
+        }
+
+        ray = new Ray(_gazeTransform.position, _gazeTransform.forward);
+        return ray.direction.sqrMagnitude > RayDirectionEpsilon;
+    }
+
+    bool TryGetAverageEyesRay(out Ray ray)
+    {
+        var directionSum = Vector3.zero;
+        var positionSum = Vector3.zero;
+        var eyeCount = 0;
+
+        AddEyeSample(_leftGazeTransform, ref directionSum, ref positionSum, ref eyeCount);
+        AddEyeSample(_rightGazeTransform, ref directionSum, ref positionSum, ref eyeCount);
+
+        if (eyeCount == 0 || directionSum.sqrMagnitude <= RayDirectionEpsilon)
+        {
+            ray = default;
+            return false;
+        }
+
+        var origin = _rayOriginTransform != null
+            ? _rayOriginTransform.position
+            : positionSum / eyeCount;
+        ray = new Ray(origin, directionSum.normalized);
+        return true;
+    }
+
+    static void AddEyeSample(
+        Transform eyeTransform,
+        ref Vector3 directionSum,
+        ref Vector3 positionSum,
+        ref int eyeCount)
+    {
+        if (eyeTransform == null)
+        {
+            return;
+        }
+
+        var direction = eyeTransform.forward;
+        if (direction.sqrMagnitude <= RayDirectionEpsilon)
+        {
+            return;
+        }
+
+        directionSum += direction.normalized;
+        positionSum += eyeTransform.position;
+        eyeCount++;
     }
 
     void ApplyToVisualEffect(float strength)
@@ -346,10 +491,10 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
             DrawLocalCircleGizmo(_regionCenterLocal, _regionRadiusLocal);
         }
 
-        if (_gazeTransform != null)
+        if (TryGetGazeRay(out var ray))
         {
             Gizmos.color = _currentStrength > 0.001f ? Color.cyan : new Color(1f, 1f, 1f, 0.35f);
-            Gizmos.DrawRay(_gazeTransform.position, _gazeTransform.forward * Mathf.Min(_maxRayDistance, 12f));
+            Gizmos.DrawRay(ray.origin, ray.direction * Mathf.Min(_maxRayDistance, 12f));
         }
 
         if (_hasLastHit)

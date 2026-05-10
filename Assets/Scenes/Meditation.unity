@@ -6067,11 +6067,18 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   _visualEffect: {fileID: 1672909524}
-  _gazeTransform: {fileID: 582375830}
   _targetTransform: {fileID: 1672909525}
+  _gazeSourceMode: 1
+  _gazeTransform: {fileID: 582375830}
+  _leftGazeTransform: {fileID: 587417169}
+  _rightGazeTransform: {fileID: 582375830}
+  _rayOriginTransform: {fileID: 2012041957}
   _autoFindGazeTransform: 1
   _preferredGazeObjectName: '[BuildingBlock] Eye Gaze Right'
   _fallbackGazeObjectName: '[BuildingBlock] Eye Gaze Left'
+  _leftGazeObjectName: '[BuildingBlock] Eye Gaze Left'
+  _rightGazeObjectName: '[BuildingBlock] Eye Gaze Right'
+  _rayOriginObjectName: CenterEyeAnchor
   _cameraFallbackName: CenterEyeAnchor
   _paintingPlaneNormal: 2
   _regionCenterLocal: {x: 0, y: 0, z: 0}
@@ -6079,8 +6086,10 @@ MonoBehaviour:
   _softEdgeLocal: 0.5
   _brushRadiusLocal: 1
   _maxRayDistance: 200
-  _attackSpeed: 8
-  _releaseSpeed: 4
+  _regionStrengthMode: 0
+  _attackSpeed: 22
+  _releaseSpeed: 10
+  _hitPositionSmoothingSpeed: 30
   _useUnscaledTime: 0
   _gazeWorldHitProperty: Gaze Hit Position
   _gazeLocalHitProperty: Gaze Hit Local Position
