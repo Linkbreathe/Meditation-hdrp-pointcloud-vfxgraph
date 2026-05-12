@@ -33,6 +33,12 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
         Z
     }
 
+    public enum RegionShape
+    {
+        Circle,
+        Rectangle
+    }
+
     public enum RegionStrengthMode
     {
         ConstantInsideRegion,
@@ -62,10 +68,16 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
     [Header("Target Region")]
     [SerializeField] LocalPlaneNormal _paintingPlaneNormal = LocalPlaneNormal.Z;
     [SerializeField] Vector3 _regionCenterLocal = Vector3.zero;
+    [SerializeField] RegionShape _regionShape = RegionShape.Circle;
     [Tooltip("Large hit area on the painting plane. Make this cover the whole artwork.")]
     [SerializeField, Min(MinimumRadius)] float _regionRadiusLocal = 5f;
+    [Tooltip("Half width and half height of the artwork on the selected local painting plane.")]
+    [SerializeField] Vector2 _regionHalfSizeLocal = new Vector2(5f, 5f);
     [Tooltip("Soft fade only near the outer edge of the hit area.")]
     [SerializeField, Min(0f)] float _softEdgeLocal = 0.5f;
+    [Tooltip("For rectangular regions, clamp near misses onto the artwork edge instead of dropping the hit.")]
+    [SerializeField] bool _clampRectangularHitsToRegion;
+    [SerializeField, Min(0f)] float _rectangularHitGraceLocal = 0.15f;
     [Tooltip("Small VFX mask radius around the gaze hit. This is sent to the VFX Graph as Gaze Radius.")]
     [SerializeField, Min(MinimumRadius)] float _brushRadiusLocal = 1f;
     [SerializeField, Min(0.01f)] float _maxRayDistance = 80f;
@@ -129,7 +141,10 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
     void OnValidate()
     {
         _regionRadiusLocal = Mathf.Max(MinimumRadius, _regionRadiusLocal);
+        _regionHalfSizeLocal.x = Mathf.Max(MinimumRadius, _regionHalfSizeLocal.x);
+        _regionHalfSizeLocal.y = Mathf.Max(MinimumRadius, _regionHalfSizeLocal.y);
         _softEdgeLocal = Mathf.Max(0f, _softEdgeLocal);
+        _rectangularHitGraceLocal = Mathf.Max(0f, _rectangularHitGraceLocal);
         _brushRadiusLocal = Mathf.Max(MinimumRadius, _brushRadiusLocal);
         _maxRayDistance = Mathf.Max(0.01f, _maxRayDistance);
         _attackSpeed = Mathf.Max(0.01f, _attackSpeed);
@@ -172,14 +187,58 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
         localHit = default;
         strength = 0f;
 
-        if (_targetTransform == null || !TryGetGazeRay(out var ray))
+        if (_targetTransform == null)
         {
             return false;
         }
 
+        if (_gazeSourceMode == GazeSourceMode.AverageEyes)
+        {
+            var attemptedEyeHits = false;
+            if (TryEvaluateAverageEyeHits(
+                    out worldHit,
+                    out localHit,
+                    out strength,
+                    out attemptedEyeHits))
+            {
+                return true;
+            }
+
+            if (attemptedEyeHits)
+            {
+                return false;
+            }
+        }
+
+        if (!TryGetGazeRay(out var ray))
+        {
+            return false;
+        }
+
+        return TryEvaluateRayHit(ray, out worldHit, out localHit, out strength);
+    }
+
+    bool TryEvaluateRayHit(Ray ray, out Vector3 worldHit, out Vector3 localHit, out float strength)
+    {
+        worldHit = default;
+        localHit = default;
+        strength = 0f;
+
         _lastGazeRay = ray;
         _hasLastGazeRay = true;
 
+        if (!TryGetSurfaceHit(ray, out worldHit, out localHit))
+        {
+            return false;
+        }
+
+        return TryApplyRegion(ref worldHit, ref localHit, out strength);
+    }
+
+    bool TryGetSurfaceHit(Ray ray, out Vector3 worldHit, out Vector3 localHit)
+    {
+        worldHit = default;
+        localHit = default;
         var planePoint = _targetTransform.TransformPoint(_regionCenterLocal);
         var planeNormal = GetWorldPlaneNormal();
         var plane = new Plane(planeNormal, planePoint);
@@ -191,15 +250,112 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
 
         worldHit = ray.GetPoint(distance);
         localHit = _targetTransform.InverseTransformPoint(worldHit);
+        return true;
+    }
 
-        var localDistance = GetPlanarDistance(localHit, _regionCenterLocal, _paintingPlaneNormal);
-        if (localDistance > _regionRadiusLocal)
+    bool TryEvaluateAverageEyeHits(
+        out Vector3 worldHit,
+        out Vector3 localHit,
+        out float strength,
+        out bool attemptedEyeHits)
+    {
+        worldHit = default;
+        localHit = default;
+        strength = 0f;
+        attemptedEyeHits = false;
+
+        var localHitSum = Vector3.zero;
+        var originSum = Vector3.zero;
+        var hitCount = 0;
+
+        AddEyeSurfaceHit(
+            _leftGazeTransform,
+            ref localHitSum,
+            ref originSum,
+            ref hitCount,
+            ref attemptedEyeHits);
+        AddEyeSurfaceHit(
+            _rightGazeTransform,
+            ref localHitSum,
+            ref originSum,
+            ref hitCount,
+            ref attemptedEyeHits);
+
+        if (hitCount == 0)
         {
             return false;
         }
 
-        strength = CalculateRegionStrength(localDistance);
-        return strength > 0f;
+        localHit = localHitSum / hitCount;
+        worldHit = _targetTransform.TransformPoint(localHit);
+
+        if (!TryApplyRegion(ref worldHit, ref localHit, out strength))
+        {
+            return false;
+        }
+
+        var origin = _rayOriginTransform != null
+            ? _rayOriginTransform.position
+            : originSum / hitCount;
+        var direction = worldHit - origin;
+        if (direction.sqrMagnitude > RayDirectionEpsilon)
+        {
+            _lastGazeRay = new Ray(origin, direction.normalized);
+            _hasLastGazeRay = true;
+        }
+
+        return true;
+    }
+
+    void AddEyeSurfaceHit(
+        Transform eyeTransform,
+        ref Vector3 localHitSum,
+        ref Vector3 originSum,
+        ref int hitCount,
+        ref bool attemptedEyeHits)
+    {
+        if (eyeTransform == null)
+        {
+            return;
+        }
+
+        var direction = eyeTransform.forward;
+        if (direction.sqrMagnitude <= RayDirectionEpsilon)
+        {
+            return;
+        }
+
+        attemptedEyeHits = true;
+        var ray = new Ray(eyeTransform.position, direction);
+        if (!TryGetSurfaceHit(ray, out _, out var eyeLocalHit))
+        {
+            return;
+        }
+
+        localHitSum += eyeLocalHit;
+        originSum += eyeTransform.position;
+        hitCount++;
+    }
+
+    bool TryApplyRegion(ref Vector3 worldHit, ref Vector3 localHit, out float strength)
+    {
+        if (_regionShape == RegionShape.Rectangle && _clampRectangularHitsToRegion)
+        {
+            var overshoot = GetRectangularOvershoot(localHit);
+            if (overshoot > _rectangularHitGraceLocal)
+            {
+                strength = 0f;
+                return false;
+            }
+
+            if (overshoot > 0f)
+            {
+                localHit = ClampLocalPointToRectangle(localHit);
+                worldHit = _targetTransform.TransformPoint(localHit);
+            }
+        }
+
+        return TryCalculateRegionStrength(localHit, out strength) && strength > 0f;
     }
 
     void StoreHit(Vector3 worldHit, Vector3 localHit, float deltaTime)
@@ -221,7 +377,25 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
         _hasLastHit = true;
     }
 
-    float CalculateRegionStrength(float localDistance)
+    bool TryCalculateRegionStrength(Vector3 localHit, out float strength)
+    {
+        if (_regionShape == RegionShape.Rectangle)
+        {
+            return TryCalculateRectangularRegionStrength(localHit, out strength);
+        }
+
+        var localDistance = GetPlanarDistance(localHit, _regionCenterLocal, _paintingPlaneNormal);
+        if (localDistance > _regionRadiusLocal)
+        {
+            strength = 0f;
+            return false;
+        }
+
+        strength = CalculateCircularRegionStrength(localDistance);
+        return true;
+    }
+
+    float CalculateCircularRegionStrength(float localDistance)
     {
         if (_regionStrengthMode == RegionStrengthMode.ConstantInsideRegion)
         {
@@ -233,6 +407,30 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
             ? 1f
             : 1f - Mathf.InverseLerp(innerRadius, _regionRadiusLocal, localDistance);
         return Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(strength));
+    }
+
+    bool TryCalculateRectangularRegionStrength(Vector3 localHit, out float strength)
+    {
+        var delta = GetPlanarDelta(localHit, _regionCenterLocal, _paintingPlaneNormal);
+        var halfSize = GetClampedRegionHalfSize();
+        var edgeDistance = Mathf.Min(
+            halfSize.x - Mathf.Abs(delta.x),
+            halfSize.y - Mathf.Abs(delta.y));
+
+        if (edgeDistance < 0f)
+        {
+            strength = 0f;
+            return false;
+        }
+
+        if (_regionStrengthMode == RegionStrengthMode.ConstantInsideRegion || _softEdgeLocal <= 0f)
+        {
+            strength = 1f;
+            return true;
+        }
+
+        strength = Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(edgeDistance / _softEdgeLocal));
+        return true;
     }
 
     void EnsureReferences()
@@ -476,6 +674,62 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
         }
     }
 
+    static Vector2 GetPlanarDelta(Vector3 localPoint, Vector3 localCenter, LocalPlaneNormal normal)
+    {
+        switch (normal)
+        {
+            case LocalPlaneNormal.X:
+                return new Vector2(localPoint.y - localCenter.y, localPoint.z - localCenter.z);
+            case LocalPlaneNormal.Y:
+                return new Vector2(localPoint.x - localCenter.x, localPoint.z - localCenter.z);
+            default:
+                return new Vector2(localPoint.x - localCenter.x, localPoint.y - localCenter.y);
+        }
+    }
+
+    Vector2 GetClampedRegionHalfSize()
+    {
+        return new Vector2(
+            Mathf.Max(MinimumRadius, _regionHalfSizeLocal.x),
+            Mathf.Max(MinimumRadius, _regionHalfSizeLocal.y));
+    }
+
+    float GetRectangularOvershoot(Vector3 localPoint)
+    {
+        var delta = GetPlanarDelta(localPoint, _regionCenterLocal, _paintingPlaneNormal);
+        var halfSize = GetClampedRegionHalfSize();
+        var outside = new Vector2(
+            Mathf.Max(0f, Mathf.Abs(delta.x) - halfSize.x),
+            Mathf.Max(0f, Mathf.Abs(delta.y) - halfSize.y));
+        return outside.magnitude;
+    }
+
+    Vector3 ClampLocalPointToRectangle(Vector3 localPoint)
+    {
+        var delta = GetPlanarDelta(localPoint, _regionCenterLocal, _paintingPlaneNormal);
+        var halfSize = GetClampedRegionHalfSize();
+        delta.x = Mathf.Clamp(delta.x, -halfSize.x, halfSize.x);
+        delta.y = Mathf.Clamp(delta.y, -halfSize.y, halfSize.y);
+
+        switch (_paintingPlaneNormal)
+        {
+            case LocalPlaneNormal.X:
+                localPoint.y = _regionCenterLocal.y + delta.x;
+                localPoint.z = _regionCenterLocal.z + delta.y;
+                break;
+            case LocalPlaneNormal.Y:
+                localPoint.x = _regionCenterLocal.x + delta.x;
+                localPoint.z = _regionCenterLocal.z + delta.y;
+                break;
+            default:
+                localPoint.x = _regionCenterLocal.x + delta.x;
+                localPoint.y = _regionCenterLocal.y + delta.y;
+                break;
+        }
+
+        return localPoint;
+    }
+
     void OnDrawGizmosSelected()
     {
         if (!_drawGizmos)
@@ -488,7 +742,14 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
         if (_targetTransform != null)
         {
             Gizmos.color = new Color(0.1f, 0.85f, 1f, 0.35f);
-            DrawLocalCircleGizmo(_regionCenterLocal, _regionRadiusLocal);
+            if (_regionShape == RegionShape.Rectangle)
+            {
+                DrawLocalRectangleGizmo(_regionCenterLocal, GetClampedRegionHalfSize());
+            }
+            else
+            {
+                DrawLocalCircleGizmo(_regionCenterLocal, _regionRadiusLocal);
+            }
         }
 
         if (TryGetGazeRay(out var ray))
@@ -508,6 +769,41 @@ public sealed class GazeVfxDisturbanceDriver : MonoBehaviour
                 DrawLocalCircleGizmo(_lastLocalHit, _brushRadiusLocal);
             }
         }
+    }
+
+    void DrawLocalRectangleGizmo(Vector3 localCenter, Vector2 halfSize)
+    {
+        var bottomLeft = TransformLocalPlanarPoint(localCenter, -halfSize.x, -halfSize.y);
+        var bottomRight = TransformLocalPlanarPoint(localCenter, halfSize.x, -halfSize.y);
+        var topRight = TransformLocalPlanarPoint(localCenter, halfSize.x, halfSize.y);
+        var topLeft = TransformLocalPlanarPoint(localCenter, -halfSize.x, halfSize.y);
+
+        Gizmos.DrawLine(bottomLeft, bottomRight);
+        Gizmos.DrawLine(bottomRight, topRight);
+        Gizmos.DrawLine(topRight, topLeft);
+        Gizmos.DrawLine(topLeft, bottomLeft);
+    }
+
+    Vector3 TransformLocalPlanarPoint(Vector3 localCenter, float axisA, float axisB)
+    {
+        var localPoint = localCenter;
+        switch (_paintingPlaneNormal)
+        {
+            case LocalPlaneNormal.X:
+                localPoint.y += axisA;
+                localPoint.z += axisB;
+                break;
+            case LocalPlaneNormal.Y:
+                localPoint.x += axisA;
+                localPoint.z += axisB;
+                break;
+            default:
+                localPoint.x += axisA;
+                localPoint.y += axisB;
+                break;
+        }
+
+        return _targetTransform.TransformPoint(localPoint);
     }
 
     void DrawLocalCircleGizmo(Vector3 localCenter, float radius)

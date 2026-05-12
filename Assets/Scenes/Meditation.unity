@@ -1563,7 +1563,7 @@ MonoBehaviour:
   ConfidenceThreshold: 0.5
   ApplyPosition: 0
   ApplyRotation: 1
-  ReferenceFrame: {fileID: 0}
+  ReferenceFrame: {fileID: 2012041957}
   TrackingMode: 0
 --- !u!114 &582375832
 MonoBehaviour:
@@ -1632,7 +1632,7 @@ MonoBehaviour:
   ConfidenceThreshold: 0.5
   ApplyPosition: 0
   ApplyRotation: 1
-  ReferenceFrame: {fileID: 0}
+  ReferenceFrame: {fileID: 2012041957}
   TrackingMode: 0
 --- !u!114 &587417171
 MonoBehaviour:
@@ -6068,7 +6068,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   _visualEffect: {fileID: 1672909524}
   _targetTransform: {fileID: 1672909525}
-  _gazeSourceMode: 1
+  _gazeSourceMode: 0
   _gazeTransform: {fileID: 582375830}
   _leftGazeTransform: {fileID: 587417169}
   _rightGazeTransform: {fileID: 582375830}
@@ -6082,10 +6082,14 @@ MonoBehaviour:
   _cameraFallbackName: CenterEyeAnchor
   _paintingPlaneNormal: 2
   _regionCenterLocal: {x: 0, y: 0, z: 0}
+  _regionShape: 1
   _regionRadiusLocal: 5
+  _regionHalfSizeLocal: {x: 5, y: 5}
   _softEdgeLocal: 0.5
+  _clampRectangularHitsToRegion: 1
+  _rectangularHitGraceLocal: 0.25
   _brushRadiusLocal: 1
-  _maxRayDistance: 200
+  _maxRayDistance: 300
   _regionStrengthMode: 0
   _attackSpeed: 22
   _releaseSpeed: 10
@@ -7106,8 +7110,8 @@ MonoBehaviour:
   _autoFindReferences: 1
   _leftEyeGaze: {fileID: 587417170}
   _rightEyeGaze: {fileID: 582375831}
-  _leftGazeTransform: {fileID: 862574933}
-  _rightGazeTransform: {fileID: 1671193034}
+  _leftGazeTransform: {fileID: 587417169}
+  _rightGazeTransform: {fileID: 582375830}
   _centerEyeTransform: {fileID: 2012041957}
   _requestEyeTrackingPermission: 1
   _startEyeTrackingIfNeeded: 1
