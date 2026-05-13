@@ -9,7 +9,7 @@ public static class GazeVfxDisturbanceSetup
     const string RightEyeGazeName = "[BuildingBlock] Eye Gaze Right";
     const string LeftEyeGazeName = "[BuildingBlock] Eye Gaze Left";
     const string CenterEyeName = "CenterEyeAnchor";
-    const string ExperimentVfxPath = "Assets/Point Cloud/pearl_lady_gaze_experiment.vfx";
+    const string ExperimentVfxPath = "Assets/Point Cloud Experiment/pearl_lady_gaze_experiment.vfx";
 
     [MenuItem("Tools/Point Cloud/Gaze Disturbance/Setup Pearl Lady Driver")]
     public static void SetupPearlLadyDriver()

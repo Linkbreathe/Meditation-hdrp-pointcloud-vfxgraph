@@ -4,7 +4,7 @@ This setup keeps one Visual Effect in place and morphs its particle maps on the 
 
 ## Assets
 
-- `Assets/Point Cloud/Flower2_To_Flower3_Morph.vfx` is the render graph. It is a copy of `Flower2.vfx` with exposed `MorphPositionMap` and `MorphColorMap` texture inputs.
+- `Assets/Point Cloud Experiment/Flower2_To_Flower3_Morph.vfx` is the render graph. It is a copy of `Flower2.vfx` with exposed `MorphPositionMap` and `MorphColorMap` texture inputs.
 - `PointCloudMorphSequence` binds `.vfx` assets such as `Flower2.vfx` and `Flower 3.vfx`, resolves their embedded Pcx baked point clouds, and generates the morph maps every frame.
 - `PointCloudMorphMap.compute` performs the per-particle dance, swirl, stagger, color blend, and final breathing motion.
 

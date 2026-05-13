@@ -456,23 +456,23 @@ namespace PointCloudMorphing
             if (_morphVisualEffectAsset == null)
             {
                 _morphVisualEffectAsset = AssetDatabase.LoadAssetAtPath<VisualEffectAsset>(
-                    "Assets/Point Cloud/Flower2_To_Flower3_Morph.vfx");
+                    "Assets/Point Cloud Experiment/Flower2_To_Flower3_Morph.vfx");
             }
 
             if (_morphCompute == null)
             {
                 _morphCompute = AssetDatabase.LoadAssetAtPath<ComputeShader>(
-                    "Assets/Point Cloud/Morph/Shaders/PointCloudMorphMap.compute");
+                    "Assets/Point Cloud Experiment/Morph/Shaders/PointCloudMorphMap.compute");
                 _kernel = -1;
             }
 
             if (_vfxTargets == null || _vfxTargets.Length == 0)
             {
-                var flower2 = AssetDatabase.LoadAssetAtPath<VisualEffectAsset>("Assets/Point Cloud/Flower2.vfx");
-                var flower3 = AssetDatabase.LoadAssetAtPath<VisualEffectAsset>("Assets/Point Cloud/Flower 3.vfx");
+                var flower2 = AssetDatabase.LoadAssetAtPath<VisualEffectAsset>("Assets/Point Cloud Experiment/Flower2.vfx");
+                var flower3 = AssetDatabase.LoadAssetAtPath<VisualEffectAsset>("Assets/Point Cloud Experiment/Flower 3.vfx");
                 if (flower3 == null)
                 {
-                    flower3 = AssetDatabase.LoadAssetAtPath<VisualEffectAsset>("Assets/Point Cloud/Flower3.vfx");
+                    flower3 = AssetDatabase.LoadAssetAtPath<VisualEffectAsset>("Assets/Point Cloud Experiment/Flower3.vfx");
                 }
 
                 if (flower2 != null && flower3 != null)
