@@ -57,8 +57,17 @@ public sealed class StarryNightRhoneVfxAutoAnimator : MonoBehaviour
     float _lastPlayStartedAt;
     float _lastCompletedDuration;
     bool _hasPlayStart;
+    float _lastParticleIntensity;
+    float _lastParticleFrequency;
+    string _lastStageOrderCsv = string.Empty;
 
     public event Action<StarryNightRhoneVfxAutoAnimator> AnimationCompleted;
+    public event Action<StageEvent> StageStarted;
+    public event Action<StageEvent> StageValueApplied;
+    public event Action<StageEvent> StageCompleted;
+    public event StageChoicePromptHandler StageChoicePromptRequested;
+
+    public delegate IEnumerator StageChoicePromptHandler(StageEvent stageEvent);
 
     public static string[] DrivenPropertyNames => (string[])DrivenPropertyNamesBacking.Clone();
 
@@ -67,6 +76,8 @@ public sealed class StarryNightRhoneVfxAutoAnimator : MonoBehaviour
         get => _playOnStart;
         set => _playOnStart = value;
     }
+
+    public string lastStageOrderCsv => _lastStageOrderCsv;
 
     public bool isPlaying => _animationRoutine != null;
     public float currentOrLastPlayDuration
@@ -215,10 +226,15 @@ public sealed class StarryNightRhoneVfxAutoAnimator : MonoBehaviour
         ApplyInitialState();
         yield return WaitForDuration(_initialStateDuration);
 
-        // 2-4. 三个增强阶段：每个阶段使用自己的随机范围，每隔 updateInterval 直接设置一组新值。
-        for (var i = 0; i < _randomRanges.Length; i++)
+        // 2-4. 三个增强阶段：每次播放时打乱预设阶段顺序，每个阶段仍使用自己的随机范围。
+        var stageOrder = CreateShuffledStageOrder(_randomRanges.Length);
+        _lastStageOrderCsv = FormatStageOrder(stageOrder);
+        for (var i = 0; i < stageOrder.Length; i++)
         {
-            yield return PlayRandomStage(_randomRanges[i]);
+            var presetIndex = stageOrder[i];
+            var stageEvent = default(StageEvent);
+            yield return PlayRandomStage(i, presetIndex, _randomRanges[presetIndex], stage => stageEvent = stage);
+            yield return RequestStageChoicePrompt(stageEvent);
         }
 
         // 5. 回到初始状态：恢复低强度和 0 频率，并在动画结束后保持这个状态。
@@ -232,11 +248,21 @@ public sealed class StarryNightRhoneVfxAutoAnimator : MonoBehaviour
         AnimationCompleted?.Invoke(this);
     }
 
-    IEnumerator PlayRandomStage(RandomRange randomRange)
+    IEnumerator PlayRandomStage(int stageIndex, int stagePresetIndex, RandomRange randomRange, Action<StageEvent> completed)
     {
         randomRange.Normalize();
-
+        var stageCount = _randomRanges != null ? _randomRanges.Length : 0;
         var updateCount = GetUpdateCount(_stageDuration, _updateInterval);
+        var stageStartedRealtime = Time.realtimeSinceStartup;
+        StageStarted?.Invoke(CreateStageEvent(
+            stageIndex,
+            stagePresetIndex,
+            stageCount,
+            -1,
+            updateCount,
+            stageStartedRealtime,
+            randomRange));
+
         for (var i = 0; i < updateCount; i++)
         {
             var randomIntensity = randomRange.RandomValue();
@@ -244,11 +270,109 @@ public sealed class StarryNightRhoneVfxAutoAnimator : MonoBehaviour
 
             // intensity 和 frequency 分别独立生成随机数；particle drag 不在这里设置。
             SetParticleControls(randomIntensity, randomFrequency);
+            StageValueApplied?.Invoke(CreateStageEvent(
+                stageIndex,
+                stagePresetIndex,
+                stageCount,
+                i,
+                updateCount,
+                stageStartedRealtime,
+                randomRange));
             yield return WaitForDuration(_updateInterval);
         }
 
         var remainder = _stageDuration - updateCount * _updateInterval;
         yield return WaitForDuration(remainder);
+
+        var stageEvent = CreateStageEvent(
+            stageIndex,
+            stagePresetIndex,
+            stageCount,
+            -1,
+            updateCount,
+            stageStartedRealtime,
+            randomRange);
+        StageCompleted?.Invoke(stageEvent);
+        completed?.Invoke(stageEvent);
+    }
+
+    static int[] CreateShuffledStageOrder(int stageCount)
+    {
+        var order = new int[Mathf.Max(0, stageCount)];
+        for (var i = 0; i < order.Length; i++)
+        {
+            order[i] = i;
+        }
+
+        for (var i = order.Length - 1; i > 0; i--)
+        {
+            var swapIndex = UnityEngine.Random.Range(0, i + 1);
+            var swap = order[i];
+            order[i] = order[swapIndex];
+            order[swapIndex] = swap;
+        }
+
+        if (IsIdentityOrder(order) && order.Length > 1)
+        {
+            var swap = order[0];
+            order[0] = order[1];
+            order[1] = swap;
+        }
+
+        return order;
+    }
+
+    static bool IsIdentityOrder(int[] order)
+    {
+        if (order == null)
+        {
+            return true;
+        }
+
+        for (var i = 0; i < order.Length; i++)
+        {
+            if (order[i] != i)
+            {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    static string FormatStageOrder(int[] order)
+    {
+        if (order == null || order.Length == 0)
+        {
+            return string.Empty;
+        }
+
+        var builder = new System.Text.StringBuilder();
+        for (var i = 0; i < order.Length; i++)
+        {
+            if (i > 0)
+            {
+                builder.Append(',');
+            }
+
+            builder.Append(order[i] + 1);
+        }
+
+        return builder.ToString();
+    }
+
+    IEnumerator RequestStageChoicePrompt(StageEvent stageEvent)
+    {
+        var handler = StageChoicePromptRequested;
+        if (handler == null)
+        {
+            yield break;
+        }
+
+        foreach (StageChoicePromptHandler promptHandler in handler.GetInvocationList())
+        {
+            yield return promptHandler(stageEvent);
+        }
     }
 
     IEnumerator WaitForDuration(float seconds)
@@ -267,6 +391,8 @@ public sealed class StarryNightRhoneVfxAutoAnimator : MonoBehaviour
 
         var clampedParticleIntensity = Mathf.Clamp01(particleIntensity);
         var clampedParticleFrequency = Mathf.Clamp01(particleFrequency);
+        _lastParticleIntensity = clampedParticleIntensity;
+        _lastParticleFrequency = clampedParticleFrequency;
 
         if (_vfxController != null)
         {
@@ -283,6 +409,31 @@ public sealed class StarryNightRhoneVfxAutoAnimator : MonoBehaviour
         TrySetFloat(_particleIntensityProperty, clampedParticleIntensity);
         TrySetFloat(_particleFrequencyProperty, clampedParticleFrequency);
         LogParticleControlChange(clampedParticleIntensity, clampedParticleFrequency);
+    }
+
+    StageEvent CreateStageEvent(
+        int stageIndex,
+        int stagePresetIndex,
+        int stageCount,
+        int stageValueIndex,
+        int stageValueCount,
+        float stageStartedRealtime,
+        RandomRange randomRange)
+    {
+        return new StageEvent(
+            this,
+            Mathf.Max(0, stageIndex),
+            Mathf.Max(0, stagePresetIndex),
+            Mathf.Max(0, stageCount),
+            stageValueIndex,
+            Mathf.Max(0, stageValueCount),
+            randomRange.minimum,
+            randomRange.maximum,
+            _lastParticleIntensity,
+            _lastParticleFrequency,
+            _stageDuration,
+            _updateInterval,
+            stageStartedRealtime);
     }
 
     void LogParticleControlChange(float particleIntensity, float particleFrequency)
@@ -440,5 +591,56 @@ public sealed class StarryNightRhoneVfxAutoAnimator : MonoBehaviour
         public float updateInterval;
         public float returnToInitialDuration;
         public RandomRange[] randomRanges;
+    }
+
+    public sealed class StageEvent
+    {
+        public readonly StarryNightRhoneVfxAutoAnimator animator;
+        public readonly int stageIndex;
+        public readonly int stagePresetIndex;
+        public readonly int stageCount;
+        public readonly int stageValueIndex;
+        public readonly int stageValueCount;
+        public readonly float rangeMinimum;
+        public readonly float rangeMaximum;
+        public readonly float particleIntensity;
+        public readonly float particleFrequency;
+        public readonly float stageDuration;
+        public readonly float updateInterval;
+        public readonly float stageStartedRealtime;
+        public readonly float realtimeSinceStartup;
+        public readonly int frame;
+
+        public StageEvent(
+            StarryNightRhoneVfxAutoAnimator animator,
+            int stageIndex,
+            int stagePresetIndex,
+            int stageCount,
+            int stageValueIndex,
+            int stageValueCount,
+            float rangeMinimum,
+            float rangeMaximum,
+            float particleIntensity,
+            float particleFrequency,
+            float stageDuration,
+            float updateInterval,
+            float stageStartedRealtime)
+        {
+            this.animator = animator;
+            this.stageIndex = stageIndex;
+            this.stagePresetIndex = stagePresetIndex;
+            this.stageCount = stageCount;
+            this.stageValueIndex = stageValueIndex;
+            this.stageValueCount = stageValueCount;
+            this.rangeMinimum = rangeMinimum;
+            this.rangeMaximum = rangeMaximum;
+            this.particleIntensity = particleIntensity;
+            this.particleFrequency = particleFrequency;
+            this.stageDuration = stageDuration;
+            this.updateInterval = updateInterval;
+            this.stageStartedRealtime = stageStartedRealtime;
+            realtimeSinceStartup = Time.realtimeSinceStartup;
+            frame = Time.frameCount;
+        }
     }
 }

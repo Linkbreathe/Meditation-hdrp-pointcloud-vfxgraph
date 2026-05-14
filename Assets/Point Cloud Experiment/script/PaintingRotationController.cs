@@ -30,6 +30,17 @@ public sealed class PaintingRotationController : MonoBehaviour
     [SerializeField, Min(0f)] float _feedbackDelay = DefaultFeedbackDelay;
     [SerializeField, Range(0.05f, 1f)] float _feedbackTimeoutRatio = DefaultFeedbackTimeoutRatio;
 
+    [Header("Meditation Choice Stage Gate")]
+    [SerializeField] bool _promptMeditationChoiceAfterStages = true;
+    [SerializeField] MeditationChoiceEyeGazeFeedback _meditationChoiceFeedback;
+    [SerializeField] MeditationExperimentCsvLogger _experimentCsvLogger;
+    [SerializeField] float _choiceNormalColorIntensity = 0f;
+    [SerializeField] float _choicePromptColorIntensity = 3.5f;
+    [SerializeField, Min(0.1f)] float _choicePromptBreathInSeconds = 1.1f;
+    [SerializeField, Min(0.1f)] float _choicePromptBreathOutSeconds = 1.55f;
+    [SerializeField, Range(0f, 1f)] float _choicePromptBreathMinimumAmount;
+    [SerializeField, Min(0f)] float _choicePromptTimeoutSeconds;
+
     [Header("Runtime")]
     [SerializeField] bool _playOnStart = true;
     [SerializeField] bool _waitForRightControllerAButtonBeforeStart;
@@ -46,9 +57,14 @@ public sealed class PaintingRotationController : MonoBehaviour
     StarryNightRhoneVfxAutoAnimator _subscribedAnimator;
     bool _currentAnimationCompleted;
     bool _hasReceivedStartInput;
+    bool _hasStartedExperimentSession;
+    bool _choiceCompleted;
     bool _wasUnityXrRightControllerAButtonPressed;
     bool _wasOvrRightControllerAButtonPressed;
     int _currentIndex = -1;
+    int _paintingRunIndex;
+    float _choicePromptStartedAt;
+    MeditationChoiceEyeGazeFeedback.SelectionResult _lastChoiceResult;
 
     public int paintingCount => _paintings.Count;
     public int currentIndex => _currentIndex;
@@ -267,6 +283,8 @@ public sealed class PaintingRotationController : MonoBehaviour
             return;
         }
 
+        BeginExperimentSessionIfNeeded("AutoStart");
+        ConfigureMeditationChoiceForIdle();
         _rotationRoutine = StartCoroutine(RunRotationRoutine());
     }
 
@@ -281,6 +299,7 @@ public sealed class PaintingRotationController : MonoBehaviour
         StopCoroutine(_rotationRoutine);
         _rotationRoutine = null;
         UnsubscribeFromCurrentAnimator();
+        ConfigureMeditationChoiceForIdle();
     }
 
     void Reset()
@@ -347,6 +366,7 @@ public sealed class PaintingRotationController : MonoBehaviour
             return;
         }
 
+        BeginExperimentSessionIfNeeded(inputSource);
         LogStartButtonInput(string.Format(
             CultureInfo.InvariantCulture,
             "Start button pressed source={0} frame={1} currentIndex={2} paintingCount={3}",
@@ -369,6 +389,7 @@ public sealed class PaintingRotationController : MonoBehaviour
 
         StopChildAnimatorsForStartGate();
         DeactivateAllPaintings();
+        ConfigureMeditationChoiceForIdle();
         LogStartButtonInput(string.Format(
             CultureInfo.InvariantCulture,
             "Waiting for Meta Quest Pro right-controller A button. currentIndex={0} paintingCount={1} paintingsHidden=True",
@@ -397,6 +418,7 @@ public sealed class PaintingRotationController : MonoBehaviour
 
     IEnumerator PlayAndWaitForCompletion(PaintingEntry painting)
     {
+        BeginPaintingRun(painting);
         SetPaintingVisibility(painting.gameObject, true);
         SubscribeToAnimator(painting.animator);
         painting.animator.Play();
@@ -407,6 +429,7 @@ public sealed class PaintingRotationController : MonoBehaviour
         }
 
         UnsubscribeFromCurrentAnimator();
+        CompletePaintingRun(painting);
     }
 
     IEnumerator TransitionToNextPainting(int nextIndex)
@@ -632,6 +655,10 @@ public sealed class PaintingRotationController : MonoBehaviour
         if (_subscribedAnimator != null)
         {
             _subscribedAnimator.AnimationCompleted += HandleAnimationCompleted;
+            _subscribedAnimator.StageStarted += HandleStageStarted;
+            _subscribedAnimator.StageValueApplied += HandleStageValueApplied;
+            _subscribedAnimator.StageCompleted += HandleStageCompleted;
+            _subscribedAnimator.StageChoicePromptRequested += HandleStageChoicePromptRequested;
         }
     }
 
@@ -640,6 +667,10 @@ public sealed class PaintingRotationController : MonoBehaviour
         if (_subscribedAnimator != null)
         {
             _subscribedAnimator.AnimationCompleted -= HandleAnimationCompleted;
+            _subscribedAnimator.StageStarted -= HandleStageStarted;
+            _subscribedAnimator.StageValueApplied -= HandleStageValueApplied;
+            _subscribedAnimator.StageCompleted -= HandleStageCompleted;
+            _subscribedAnimator.StageChoicePromptRequested -= HandleStageChoicePromptRequested;
             _subscribedAnimator = null;
         }
 
@@ -654,6 +685,85 @@ public sealed class PaintingRotationController : MonoBehaviour
         }
     }
 
+    void HandleStageStarted(StarryNightRhoneVfxAutoAnimator.StageEvent stageEvent)
+    {
+        LogStageCsv("stage_started", stageEvent, string.Empty);
+    }
+
+    void HandleStageValueApplied(StarryNightRhoneVfxAutoAnimator.StageEvent stageEvent)
+    {
+        LogStageCsv("stage_value_applied", stageEvent, string.Empty);
+    }
+
+    void HandleStageCompleted(StarryNightRhoneVfxAutoAnimator.StageEvent stageEvent)
+    {
+        LogStageCsv("stage_completed", stageEvent, "Painting holds this stage's final intensity/frequency while waiting for choice.");
+    }
+
+    IEnumerator HandleStageChoicePromptRequested(StarryNightRhoneVfxAutoAnimator.StageEvent stageEvent)
+    {
+        if (!_promptMeditationChoiceAfterStages)
+        {
+            yield break;
+        }
+
+        var choiceFeedback = ResolveMeditationChoiceFeedback();
+        if (choiceFeedback == null)
+        {
+            LogChoiceCsv(
+                "choice_prompt_skipped",
+                stageEvent,
+                null,
+                0f,
+                "MeditationChoiceEyeGazeFeedback was not found.");
+            yield break;
+        }
+
+        _choiceCompleted = false;
+        _lastChoiceResult = null;
+        _choicePromptStartedAt = Time.realtimeSinceStartup;
+        choiceFeedback.SelectionCompleted += HandleMeditationChoiceCompleted;
+
+        LogStageCsv("choice_prompt_started", stageEvent, "Orb prompt breathing light starts; choices remain enabled during the breathing cue.");
+        choiceFeedback.BeginChoicePrompt(
+            _choicePromptColorIntensity,
+            _choicePromptBreathInSeconds,
+            _choicePromptBreathOutSeconds,
+            _choicePromptBreathMinimumAmount);
+
+        var elapsed = 0f;
+        while (!_choiceCompleted && (_choicePromptTimeoutSeconds <= 0f || elapsed < _choicePromptTimeoutSeconds))
+        {
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        choiceFeedback.SelectionCompleted -= HandleMeditationChoiceCompleted;
+
+        if (_choiceCompleted && _lastChoiceResult != null)
+        {
+            var waitSeconds = Mathf.Max(0f, _lastChoiceResult.triggeredRealtime - _choicePromptStartedAt);
+            choiceFeedback.CancelChoicePrompt(_choiceNormalColorIntensity);
+            LogChoiceCsv(
+                "choice_completed",
+                stageEvent,
+                _lastChoiceResult,
+                waitSeconds,
+                "Selection logged after orb burst completed.");
+        }
+        else
+        {
+            choiceFeedback.CancelChoicePrompt(_choiceNormalColorIntensity);
+            LogChoiceCsv("choice_timeout", stageEvent, null, elapsed, "Choice prompt timed out.");
+        }
+    }
+
+    void HandleMeditationChoiceCompleted(MeditationChoiceEyeGazeFeedback.SelectionResult result)
+    {
+        _lastChoiceResult = result;
+        _choiceCompleted = true;
+    }
+
     void OnValidate()
     {
         _fadeOutDuration = Mathf.Max(0.01f, _fadeOutDuration);
@@ -662,6 +772,10 @@ public sealed class PaintingRotationController : MonoBehaviour
         _progressLogInterval = Mathf.Max(0.05f, _progressLogInterval);
         _feedbackDelay = Mathf.Max(0f, _feedbackDelay);
         _feedbackTimeoutRatio = Mathf.Clamp(_feedbackTimeoutRatio, 0.05f, 1f);
+        _choicePromptBreathInSeconds = Mathf.Max(0.1f, _choicePromptBreathInSeconds);
+        _choicePromptBreathOutSeconds = Mathf.Max(0.1f, _choicePromptBreathOutSeconds);
+        _choicePromptBreathMinimumAmount = Mathf.Clamp01(_choicePromptBreathMinimumAmount);
+        _choicePromptTimeoutSeconds = Mathf.Max(0f, _choicePromptTimeoutSeconds);
     }
 
     bool WasStartButtonPressedThisFrame(out string inputSource)
@@ -755,6 +869,221 @@ public sealed class PaintingRotationController : MonoBehaviour
         Debug.Log("[PaintingRotationController] " + message, this);
     }
 
+    void BeginExperimentSessionIfNeeded(string inputSource)
+    {
+        if (_hasStartedExperimentSession)
+        {
+            return;
+        }
+
+        _hasStartedExperimentSession = true;
+        _paintingRunIndex = 0;
+        ResolveExperimentCsvLogger().StartSession(inputSource);
+    }
+
+    MeditationExperimentCsvLogger ResolveExperimentCsvLogger()
+    {
+        if (_experimentCsvLogger == null)
+        {
+            _experimentCsvLogger = MeditationExperimentCsvLogger.Instance;
+        }
+
+        return _experimentCsvLogger;
+    }
+
+    MeditationChoiceEyeGazeFeedback ResolveMeditationChoiceFeedback()
+    {
+        if (_meditationChoiceFeedback == null)
+        {
+            _meditationChoiceFeedback = FindObjectOfType<MeditationChoiceEyeGazeFeedback>();
+        }
+
+        return _meditationChoiceFeedback;
+    }
+
+    void ConfigureMeditationChoiceForIdle()
+    {
+        if (!_promptMeditationChoiceAfterStages)
+        {
+            return;
+        }
+
+        var choiceFeedback = ResolveMeditationChoiceFeedback();
+        if (choiceFeedback == null)
+        {
+            return;
+        }
+
+        choiceFeedback.CancelChoicePrompt(_choiceNormalColorIntensity);
+    }
+
+    void BeginPaintingRun(PaintingEntry painting)
+    {
+        if (painting == null)
+        {
+            return;
+        }
+
+        painting.currentRunIndex = ++_paintingRunIndex;
+        painting.runStartedRealtime = Time.realtimeSinceStartupAsDouble;
+        ResolveExperimentCsvLogger().LogPaintingStarted(CreatePaintingRow(
+            "painting_started",
+            painting,
+            "Painting run started."));
+    }
+
+    void CompletePaintingRun(PaintingEntry painting)
+    {
+        if (painting == null)
+        {
+            return;
+        }
+
+        painting.runEndedRealtime = Time.realtimeSinceStartupAsDouble;
+        ResolveExperimentCsvLogger().LogPaintingCompleted(CreatePaintingRow(
+            "painting_completed",
+            painting,
+            "Painting run completed."));
+    }
+
+    void LogStageCsv(
+        string eventType,
+        StarryNightRhoneVfxAutoAnimator.StageEvent stageEvent,
+        string notes)
+    {
+        var painting = FindPainting(stageEvent != null ? stageEvent.animator : null);
+        var logger = ResolveExperimentCsvLogger();
+        var row = CreateStageRow(eventType, painting, stageEvent, notes);
+        if (string.Equals(eventType, "stage_value_applied"))
+        {
+            logger.LogStageValue(row);
+        }
+        else
+        {
+            logger.LogEvent(row);
+        }
+    }
+
+    void LogChoiceCsv(
+        string eventType,
+        StarryNightRhoneVfxAutoAnimator.StageEvent stageEvent,
+        MeditationChoiceEyeGazeFeedback.SelectionResult selection,
+        float choiceWaitSeconds,
+        string notes)
+    {
+        var painting = FindPainting(stageEvent != null ? stageEvent.animator : null);
+        var row = CreateStageRow(eventType, painting, stageEvent, notes);
+        if (selection != null)
+        {
+            row.orbIndex = selection.orbIndex + 1;
+            row.orbLabel = selection.label;
+            row.selectionDwellSeconds = selection.dwellSeconds;
+            row.selectionEffectSeconds = selection.effectSeconds;
+            row.selectionTriggeredRealtime = selection.triggeredRealtime;
+            row.selectionTriggeredFrame = selection.triggeredFrame;
+            row.eventRealtime = selection.completedRealtime;
+        }
+
+        row.promptStartedRealtime =
+            (string.Equals(eventType, "choice_completed") || string.Equals(eventType, "choice_timeout")) &&
+            _choicePromptStartedAt > 0f
+                ? _choicePromptStartedAt
+                : double.NaN;
+        row.choiceWaitSeconds = choiceWaitSeconds;
+        row.orbColorIntensity = _choiceNormalColorIntensity;
+        ResolveExperimentCsvLogger().LogChoice(row);
+    }
+
+    MeditationExperimentCsvLogger.Row CreatePaintingRow(
+        string eventType,
+        PaintingEntry painting,
+        string notes)
+    {
+        return new MeditationExperimentCsvLogger.Row
+        {
+            eventType = eventType,
+            paintingRunIndex = painting != null ? painting.currentRunIndex : -1,
+            paintingIndex = painting != null ? _paintings.IndexOf(painting) + 1 : -1,
+            paintingId = painting != null ? painting.paintingId : string.Empty,
+            paintingName = painting != null ? painting.gameObject.name : string.Empty,
+            paintingStartedRealtime = painting != null ? painting.runStartedRealtime : double.NaN,
+            paintingEndedRealtime = painting != null ? painting.runEndedRealtime : double.NaN,
+            eventRealtime = string.Equals(eventType, "painting_completed") && painting != null
+                ? painting.runEndedRealtime
+                : painting != null ? painting.runStartedRealtime : double.NaN,
+            stageOrder = painting != null && painting.animator != null ? painting.animator.lastStageOrderCsv : string.Empty,
+            notes = notes
+        };
+    }
+
+    MeditationExperimentCsvLogger.Row CreateStageRow(
+        string eventType,
+        PaintingEntry painting,
+        StarryNightRhoneVfxAutoAnimator.StageEvent stageEvent,
+        string notes)
+    {
+        var row = new MeditationExperimentCsvLogger.Row
+        {
+            eventType = eventType,
+            paintingRunIndex = painting != null ? painting.currentRunIndex : -1,
+            paintingIndex = painting != null ? _paintings.IndexOf(painting) + 1 : -1,
+            paintingId = painting != null ? painting.paintingId : string.Empty,
+            paintingName = painting != null ? painting.gameObject.name : string.Empty,
+            notes = notes
+        };
+
+        if (stageEvent != null)
+        {
+            row.stageIndex = stageEvent.stageIndex + 1;
+            row.stagePresetIndex = stageEvent.stagePresetIndex + 1;
+            row.stageCount = stageEvent.stageCount;
+            row.stageValueIndex = stageEvent.stageValueIndex >= 0 ? stageEvent.stageValueIndex + 1 : -1;
+            row.stageValueCount = stageEvent.stageValueCount;
+            row.stageRangeMinimum = stageEvent.rangeMinimum;
+            row.stageRangeMaximum = stageEvent.rangeMaximum;
+            row.particleIntensity = stageEvent.particleIntensity;
+            row.particleFrequency = stageEvent.particleFrequency;
+            row.eventRealtime = stageEvent.realtimeSinceStartup;
+            row.stageStartedRealtime = stageEvent.stageStartedRealtime;
+        }
+
+        if (string.Equals(eventType, "choice_prompt_started"))
+        {
+            row.orbColorIntensity = _choicePromptColorIntensity;
+        }
+        else if (string.Equals(eventType, "choice_timeout"))
+        {
+            row.orbColorIntensity = _choiceNormalColorIntensity;
+        }
+
+        return row;
+    }
+
+    PaintingEntry FindPainting(StarryNightRhoneVfxAutoAnimator animator)
+    {
+        if (animator == null)
+        {
+            return null;
+        }
+
+        if (_currentIndex >= 0 &&
+            _currentIndex < _paintings.Count &&
+            _paintings[_currentIndex].animator == animator)
+        {
+            return _paintings[_currentIndex];
+        }
+
+        for (var i = 0; i < _paintings.Count; i++)
+        {
+            if (_paintings[i].animator == animator)
+            {
+                return _paintings[i];
+            }
+        }
+
+        return null;
+    }
+
     void TryStartCalmnessFeedback(PaintingEntry painting, float timeoutSeconds, float totalViewDurationSec)
     {
         if (!_collectCalmnessFeedback || timeoutSeconds <= 0f)
@@ -829,6 +1158,9 @@ public sealed class PaintingRotationController : MonoBehaviour
         public readonly StarryNightRhoneVfxAutoAnimator animator;
         public readonly VfxControlSnapshot visibleControls;
         public float activatedAtSeconds;
+        public int currentRunIndex = -1;
+        public double runStartedRealtime = double.NaN;
+        public double runEndedRealtime = double.NaN;
 
         public PaintingEntry(
             GameObject gameObject,
