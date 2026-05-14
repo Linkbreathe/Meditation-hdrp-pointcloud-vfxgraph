@@ -54,12 +54,33 @@ public sealed class StarryNightRhoneVfxAutoAnimator : MonoBehaviour
 
     Coroutine _animationRoutine;
     bool _missingPropertyWarningIssued;
+    float _lastPlayStartedAt;
+    float _lastCompletedDuration;
+    bool _hasPlayStart;
 
     public event Action<StarryNightRhoneVfxAutoAnimator> AnimationCompleted;
 
     public static string[] DrivenPropertyNames => (string[])DrivenPropertyNamesBacking.Clone();
 
+    public bool playOnStart
+    {
+        get => _playOnStart;
+        set => _playOnStart = value;
+    }
+
     public bool isPlaying => _animationRoutine != null;
+    public float currentOrLastPlayDuration
+    {
+        get
+        {
+            if (isPlaying && _hasPlayStart)
+            {
+                return Mathf.Max(0f, Time.time - _lastPlayStartedAt);
+            }
+
+            return _lastCompletedDuration;
+        }
+    }
 
     public static AnimationSettings CreateDefaultSettings()
     {
@@ -160,6 +181,9 @@ public sealed class StarryNightRhoneVfxAutoAnimator : MonoBehaviour
         }
 
         StopAnimationRoutine();
+        _lastPlayStartedAt = Time.time;
+        _lastCompletedDuration = 0f;
+        _hasPlayStart = true;
         _animationRoutine = StartCoroutine(PlayAnimationRoutine());
     }
 
@@ -201,6 +225,9 @@ public sealed class StarryNightRhoneVfxAutoAnimator : MonoBehaviour
         ApplyInitialState();
         yield return WaitForDuration(_returnToInitialDuration);
         ApplyInitialState();
+        _lastCompletedDuration = _hasPlayStart
+            ? Mathf.Max(0f, Time.time - _lastPlayStartedAt)
+            : CalculateTotalDuration(CreateAnimationSettingsSnapshot());
         _animationRoutine = null;
         AnimationCompleted?.Invoke(this);
     }
@@ -352,6 +379,21 @@ public sealed class StarryNightRhoneVfxAutoAnimator : MonoBehaviour
 
         StopCoroutine(_animationRoutine);
         _animationRoutine = null;
+    }
+
+    AnimationSettings CreateAnimationSettingsSnapshot()
+    {
+        return new AnimationSettings
+        {
+            vfxEntityName = _vfxEntityName,
+            initialParticleIntensity = _initialParticleIntensity,
+            initialParticleFrequency = _initialParticleFrequency,
+            initialStateDuration = _initialStateDuration,
+            stageDuration = _stageDuration,
+            updateInterval = _updateInterval,
+            returnToInitialDuration = _returnToInitialDuration,
+            randomRanges = _randomRanges
+        };
     }
 
     [Serializable]

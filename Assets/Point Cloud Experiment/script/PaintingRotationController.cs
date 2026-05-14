@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
+using UnityEngine.XR;
 
 [DisallowMultipleComponent]
 [AddComponentMenu("Point Cloud/Painting Rotation Controller")]
@@ -10,6 +11,8 @@ public sealed class PaintingRotationController : MonoBehaviour
     public const float DefaultFadeOutDuration = 12f;
     public const float DefaultFadeInDuration = 12f;
     public const float DefaultDissolveHoldDuration = 8f;
+    public const float DefaultFeedbackDelay = 0.3f;
+    public const float DefaultFeedbackTimeoutRatio = 0.85f;
 
     [Header("Paintings")]
     [SerializeField] Transform _paintingsRoot;
@@ -21,19 +24,36 @@ public sealed class PaintingRotationController : MonoBehaviour
     [SerializeField, Min(0f)] float _dissolveHoldDuration = DefaultDissolveHoldDuration;
     [SerializeField, Min(0.01f)] float _fadeInDuration = DefaultFadeInDuration;
 
+    [Header("Calmness Feedback")]
+    [SerializeField] bool _collectCalmnessFeedback = true;
+    [SerializeField] CalmnessFeedbackCollector _feedbackCollector;
+    [SerializeField, Min(0f)] float _feedbackDelay = DefaultFeedbackDelay;
+    [SerializeField, Range(0.05f, 1f)] float _feedbackTimeoutRatio = DefaultFeedbackTimeoutRatio;
+
     [Header("Runtime")]
     [SerializeField] bool _playOnStart = true;
+    [SerializeField] bool _waitForRightControllerAButtonBeforeStart;
+    [SerializeField] bool _disableChildPlayOnStartWhileWaiting = true;
+    [SerializeField] bool _allowKeyboardStartInEditor = true;
+    [SerializeField] bool _logStartButtonInput = true;
     [SerializeField] bool _logTransitions = true;
     [SerializeField, Min(0.05f)] float _progressLogInterval = 1f;
+
+    static readonly List<InputDevice> InputDevicesBuffer = new List<InputDevice>();
 
     readonly List<PaintingEntry> _paintings = new List<PaintingEntry>();
     Coroutine _rotationRoutine;
     StarryNightRhoneVfxAutoAnimator _subscribedAnimator;
     bool _currentAnimationCompleted;
+    bool _hasReceivedStartInput;
+    bool _wasUnityXrRightControllerAButtonPressed;
+    bool _wasOvrRightControllerAButtonPressed;
     int _currentIndex = -1;
 
     public int paintingCount => _paintings.Count;
     public int currentIndex => _currentIndex;
+    public bool isWaitingForStartInput => _waitForRightControllerAButtonBeforeStart && !_hasReceivedStartInput;
+    public bool isRotating => _rotationRoutine != null;
 
     public static int GetNextIndex(int currentIndex, int count)
     {
@@ -49,6 +69,11 @@ public sealed class PaintingRotationController : MonoBehaviour
     {
         var t = Mathf.Clamp01(progress);
         return t * t * (3f - 2f * t);
+    }
+
+    public static bool IsPressedThisFrame(bool isPressed, bool wasPressed)
+    {
+        return isPressed && !wasPressed;
     }
 
     public static string FormatTransitionLogMessage(
@@ -70,6 +95,46 @@ public sealed class PaintingRotationController : MonoBehaviour
             SecondsToMilliseconds(durationSeconds),
             Mathf.Clamp01(progress) * 100f,
             spawnRate);
+    }
+
+    public static float CalculateFeedbackTimeout(float fadeOutDuration, float feedbackDelay, float timeoutRatio)
+    {
+        var fadeDuration = Mathf.Max(0f, fadeOutDuration);
+        var delay = Mathf.Max(0f, feedbackDelay);
+        var ratio = Mathf.Clamp01(timeoutRatio);
+        return Mathf.Max(0f, fadeDuration * ratio - delay);
+    }
+
+    public static string CreatePaintingId(string paintingName, int paintingIndex)
+    {
+        var builder = new System.Text.StringBuilder();
+        if (!string.IsNullOrWhiteSpace(paintingName))
+        {
+            for (var i = 0; i < paintingName.Length; i++)
+            {
+                var character = char.ToLowerInvariant(paintingName[i]);
+                if (char.IsLetterOrDigit(character))
+                {
+                    builder.Append(character);
+                }
+                else if (builder.Length > 0 && builder[builder.Length - 1] != '_')
+                {
+                    builder.Append('_');
+                }
+            }
+        }
+
+        while (builder.Length > 0 && builder[builder.Length - 1] == '_')
+        {
+            builder.Length--;
+        }
+
+        if (builder.Length == 0)
+        {
+            builder.AppendFormat(CultureInfo.InvariantCulture, "painting_{0:00}", Mathf.Max(0, paintingIndex + 1));
+        }
+
+        return builder.ToString();
     }
 
     public static VfxControlSnapshot CreateSnapshot(MonaLisaVfxController controller)
@@ -161,8 +226,10 @@ public sealed class PaintingRotationController : MonoBehaviour
                 continue;
             }
 
+            ConfigureChildAnimatorForStartGate(animator);
             _paintings.Add(new PaintingEntry(
                 child.gameObject,
+                CreatePaintingId(child.gameObject.name, _paintings.Count),
                 controller,
                 animator,
                 CreateSnapshot(controller)));
@@ -179,6 +246,17 @@ public sealed class PaintingRotationController : MonoBehaviour
             return;
         }
 
+        if (isWaitingForStartInput)
+        {
+            PrepareStartGate();
+            return;
+        }
+
+        StartRotation();
+    }
+
+    void StartRotation()
+    {
         StopRotation();
         RefreshPaintings();
         if (_paintings.Count == 0)
@@ -225,12 +303,77 @@ public sealed class PaintingRotationController : MonoBehaviour
         if (_playOnStart)
         {
             Play();
+            return;
         }
+
+        if (isWaitingForStartInput)
+        {
+            PrepareStartGate();
+        }
+    }
+
+    void Update()
+    {
+        if (!WasStartButtonPressedThisFrame(out var inputSource))
+        {
+            return;
+        }
+
+        if (!isWaitingForStartInput)
+        {
+            LogStartButtonInput(string.Format(
+                CultureInfo.InvariantCulture,
+                "Start button observed but ignored source={0} frame={1} waiting={2} receivedStart={3} isRotating={4}",
+                inputSource,
+                Time.frameCount,
+                isWaitingForStartInput,
+                _hasReceivedStartInput,
+                isRotating));
+            return;
+        }
+
+        BeginFromStartInput(inputSource);
     }
 
     void OnDisable()
     {
         StopRotation();
+    }
+
+    void BeginFromStartInput(string inputSource)
+    {
+        if (_hasReceivedStartInput)
+        {
+            return;
+        }
+
+        LogStartButtonInput(string.Format(
+            CultureInfo.InvariantCulture,
+            "Start button pressed source={0} frame={1} currentIndex={2} paintingCount={3}",
+            inputSource,
+            Time.frameCount,
+            _currentIndex,
+            _paintings.Count));
+        _hasReceivedStartInput = true;
+        StartRotation();
+    }
+
+    void PrepareStartGate()
+    {
+        StopRotation();
+        RefreshPaintings();
+        if (_paintings.Count == 0)
+        {
+            return;
+        }
+
+        StopChildAnimatorsForStartGate();
+        DeactivateAllPaintings();
+        LogStartButtonInput(string.Format(
+            CultureInfo.InvariantCulture,
+            "Waiting for Meta Quest Pro right-controller A button. currentIndex={0} paintingCount={1} paintingsHidden=True",
+            _currentIndex,
+            _paintings.Count));
     }
 
     IEnumerator RunRotationRoutine()
@@ -272,10 +415,16 @@ public sealed class PaintingRotationController : MonoBehaviour
         var incoming = _paintings[nextIndex];
         var outgoingStart = CreateSnapshot(outgoing.controller);
         var incomingTarget = incoming.visibleControls;
+        var outgoingViewDuration = GetPaintingViewDuration(outgoing);
         var elapsed = 0f;
         var fadeOutDuration = Mathf.Max(0.01f, _fadeOutDuration);
         var dissolveHoldDuration = Mathf.Max(0f, _dissolveHoldDuration);
         var fadeInDuration = Mathf.Max(0.01f, _fadeInDuration);
+        var feedbackTriggered = false;
+        var feedbackTimeout = CalculateFeedbackTimeout(
+            fadeOutDuration,
+            _feedbackDelay,
+            _feedbackTimeoutRatio);
 
         LogTransition("FadeOutStart", outgoing, incoming, 0f, fadeOutDuration, 0f, outgoingStart.spawnRate);
 
@@ -285,6 +434,12 @@ public sealed class PaintingRotationController : MonoBehaviour
             elapsed += Time.deltaTime;
             var progress = elapsed / fadeOutDuration;
             ApplyOutgoingSpawnFade(outgoing.controller, outgoingStart, progress);
+            if (!feedbackTriggered && elapsed >= _feedbackDelay)
+            {
+                feedbackTriggered = true;
+                TryStartCalmnessFeedback(outgoing, feedbackTimeout, outgoingViewDuration);
+            }
+
             if (elapsed >= nextProgressLogTime && elapsed < fadeOutDuration)
             {
                 LogTransition(
@@ -343,6 +498,7 @@ public sealed class PaintingRotationController : MonoBehaviour
         SetPaintingVisibility(outgoing.gameObject, false);
 
         SetPaintingVisibility(incoming.gameObject, true);
+        incoming.activatedAtSeconds = Time.time;
         PrepareIncomingSpawnFade(incoming.controller, incomingTarget);
         LogTransition("FadeInStart", outgoing, incoming, 0f, fadeInDuration, 0f, incoming.controller.spawnRate);
 
@@ -378,7 +534,20 @@ public sealed class PaintingRotationController : MonoBehaviour
     {
         for (var i = 0; i < _paintings.Count; i++)
         {
-            SetPaintingVisibility(_paintings[i].gameObject, i == activeIndex);
+            var isActive = i == activeIndex;
+            SetPaintingVisibility(_paintings[i].gameObject, isActive);
+            if (isActive)
+            {
+                _paintings[i].activatedAtSeconds = Time.time;
+            }
+        }
+    }
+
+    void DeactivateAllPaintings()
+    {
+        for (var i = 0; i < _paintings.Count; i++)
+        {
+            SetPaintingVisibility(_paintings[i].gameObject, false);
         }
     }
 
@@ -401,6 +570,41 @@ public sealed class PaintingRotationController : MonoBehaviour
         }
 
         return Mathf.Clamp(_startIndex, 0, _paintings.Count - 1);
+    }
+
+    void ConfigureChildAnimatorForStartGate(StarryNightRhoneVfxAutoAnimator animator)
+    {
+        if (!ShouldHoldChildAnimatorsForStartGate() || animator == null)
+        {
+            return;
+        }
+
+        animator.playOnStart = false;
+    }
+
+    void StopChildAnimatorsForStartGate()
+    {
+        if (!ShouldHoldChildAnimatorsForStartGate())
+        {
+            return;
+        }
+
+        for (var i = 0; i < _paintings.Count; i++)
+        {
+            var animator = _paintings[i].animator;
+            if (animator == null)
+            {
+                continue;
+            }
+
+            animator.playOnStart = false;
+            animator.StopAndResetToInitialState();
+        }
+    }
+
+    bool ShouldHoldChildAnimatorsForStartGate()
+    {
+        return isWaitingForStartInput && _disableChildPlayOnStartWhileWaiting;
     }
 
     static void ApplySnapshot(MonaLisaVfxController controller, VfxControlSnapshot snapshot)
@@ -456,6 +660,130 @@ public sealed class PaintingRotationController : MonoBehaviour
         _dissolveHoldDuration = Mathf.Max(0f, _dissolveHoldDuration);
         _fadeInDuration = Mathf.Max(0.01f, _fadeInDuration);
         _progressLogInterval = Mathf.Max(0.05f, _progressLogInterval);
+        _feedbackDelay = Mathf.Max(0f, _feedbackDelay);
+        _feedbackTimeoutRatio = Mathf.Clamp(_feedbackTimeoutRatio, 0.05f, 1f);
+    }
+
+    bool WasStartButtonPressedThisFrame(out string inputSource)
+    {
+        inputSource = string.Empty;
+
+#if UNITY_EDITOR
+        if (_allowKeyboardStartInEditor &&
+            (Input.GetKeyDown(KeyCode.A) || Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Return)))
+        {
+            inputSource = "Keyboard(A/Space/Return)";
+            return true;
+        }
+#endif
+
+        var unityXrPressed = IsUnityXrRightControllerAButtonPressed(out var unityXrSource);
+        var unityXrPressedThisFrame = IsPressedThisFrame(
+            unityXrPressed,
+            _wasUnityXrRightControllerAButtonPressed);
+        _wasUnityXrRightControllerAButtonPressed = unityXrPressed;
+        if (unityXrPressedThisFrame)
+        {
+            inputSource = unityXrSource;
+            return true;
+        }
+
+        var ovrPressed = IsOvrRightControllerAButtonPressed(out var ovrSource);
+        var ovrPressedThisFrame = IsPressedThisFrame(
+            ovrPressed,
+            _wasOvrRightControllerAButtonPressed);
+        _wasOvrRightControllerAButtonPressed = ovrPressed;
+        if (ovrPressedThisFrame)
+        {
+            inputSource = ovrSource;
+            return true;
+        }
+
+        return false;
+    }
+
+    static bool IsUnityXrRightControllerAButtonPressed(out string inputSource)
+    {
+        inputSource = "UnityEngine.XR CommonUsages.primaryButton";
+        InputDevicesBuffer.Clear();
+        InputDevices.GetDevicesWithCharacteristics(
+            InputDeviceCharacteristics.Right | InputDeviceCharacteristics.Controller,
+            InputDevicesBuffer);
+
+        for (var i = 0; i < InputDevicesBuffer.Count; i++)
+        {
+            if (InputDevicesBuffer[i].TryGetFeatureValue(CommonUsages.primaryButton, out var primaryButton) &&
+                primaryButton)
+            {
+                inputSource = string.Format(
+                    CultureInfo.InvariantCulture,
+                    "UnityEngine.XR primaryButton device=\"{0}\"",
+                    InputDevicesBuffer[i].name);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    static bool IsOvrRightControllerAButtonPressed(out string inputSource)
+    {
+        var buttonOnePressed = OVRInput.Get(OVRInput.Button.One, OVRInput.Controller.RTouch);
+        var rawAOnRightTouchPressed = OVRInput.Get(OVRInput.RawButton.A, OVRInput.Controller.RTouch);
+        var rawAOnActivePressed = OVRInput.Get(OVRInput.RawButton.A, OVRInput.Controller.Active);
+        var pressed = buttonOnePressed || rawAOnRightTouchPressed || rawAOnActivePressed;
+
+        inputSource = string.Format(
+            CultureInfo.InvariantCulture,
+            "OVRInput Button.One/RawButton.A buttonOne={0} rawA(RTouch)={1} rawA(Active)={2} active={3} connected={4}",
+            buttonOnePressed,
+            rawAOnRightTouchPressed,
+            rawAOnActivePressed,
+            OVRInput.GetActiveController(),
+            OVRInput.GetConnectedControllers());
+
+        return pressed;
+    }
+
+    void LogStartButtonInput(string message)
+    {
+        if (!_logStartButtonInput)
+        {
+            return;
+        }
+
+        Debug.Log("[PaintingRotationController] " + message, this);
+    }
+
+    void TryStartCalmnessFeedback(PaintingEntry painting, float timeoutSeconds, float totalViewDurationSec)
+    {
+        if (!_collectCalmnessFeedback || timeoutSeconds <= 0f)
+        {
+            return;
+        }
+
+        var collector = _feedbackCollector != null ? _feedbackCollector : CalmnessFeedbackCollector.Instance;
+        if (collector == null)
+        {
+            return;
+        }
+
+        collector.ShowAndCollect(
+            painting.paintingId,
+            _currentIndex,
+            totalViewDurationSec,
+            timeoutSeconds,
+            CalmnessFeedbackLogger.Log);
+    }
+
+    float GetPaintingViewDuration(PaintingEntry painting)
+    {
+        if (painting.animator != null && painting.animator.currentOrLastPlayDuration > 0f)
+        {
+            return painting.animator.currentOrLastPlayDuration;
+        }
+
+        return Mathf.Max(0f, Time.time - painting.activatedAtSeconds);
     }
 
     void LogTransition(
@@ -496,17 +824,21 @@ public sealed class PaintingRotationController : MonoBehaviour
     sealed class PaintingEntry
     {
         public readonly GameObject gameObject;
+        public readonly string paintingId;
         public readonly MonaLisaVfxController controller;
         public readonly StarryNightRhoneVfxAutoAnimator animator;
         public readonly VfxControlSnapshot visibleControls;
+        public float activatedAtSeconds;
 
         public PaintingEntry(
             GameObject gameObject,
+            string paintingId,
             MonaLisaVfxController controller,
             StarryNightRhoneVfxAutoAnimator animator,
             VfxControlSnapshot visibleControls)
         {
             this.gameObject = gameObject;
+            this.paintingId = paintingId;
             this.controller = controller;
             this.animator = animator;
             this.visibleControls = visibleControls;

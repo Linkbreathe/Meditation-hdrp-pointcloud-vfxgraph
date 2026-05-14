@@ -1,4 +1,5 @@
 using NUnit.Framework;
+using System.Reflection;
 using UnityEngine;
 using UnityEngine.VFX;
 
@@ -21,6 +22,15 @@ public sealed class PaintingRotationControllerTests
     }
 
     [Test]
+    public void StartButtonPressOnlyFiresOnRisingEdge()
+    {
+        Assert.IsTrue(PaintingRotationController.IsPressedThisFrame(true, false));
+        Assert.IsFalse(PaintingRotationController.IsPressedThisFrame(true, true));
+        Assert.IsFalse(PaintingRotationController.IsPressedThisFrame(false, true));
+        Assert.IsFalse(PaintingRotationController.IsPressedThisFrame(false, false));
+    }
+
+    [Test]
     public void DefaultFadeDurationsAreSlowerThanPreviousSplitTransition()
     {
         Assert.Greater(PaintingRotationController.DefaultFadeOutDuration, 4f);
@@ -31,6 +41,25 @@ public sealed class PaintingRotationControllerTests
     public void DefaultDissolveHoldDurationLeavesOutgoingVisibleAfterSpawnStops()
     {
         Assert.Greater(PaintingRotationController.DefaultDissolveHoldDuration, 0f);
+    }
+
+    [Test]
+    public void FeedbackTimeoutStaysInsideFadeOutWindowAfterDelay()
+    {
+        Assert.AreEqual(
+            4.8f,
+            PaintingRotationController.CalculateFeedbackTimeout(6f, 0.3f, 0.85f),
+            0.0001f);
+        Assert.AreEqual(0f, PaintingRotationController.CalculateFeedbackTimeout(0.2f, 0.3f, 0.85f));
+    }
+
+    [Test]
+    public void CreatePaintingIdNormalizesSceneObjectNames()
+    {
+        Assert.AreEqual(
+            "01_bright_to_dark_claude_monet_044",
+            PaintingRotationController.CreatePaintingId("01_bright_to_dark_Claude_Monet_044", 0));
+        Assert.AreEqual("painting_03", PaintingRotationController.CreatePaintingId("   ", 2));
     }
 
     [Test]
@@ -48,6 +77,52 @@ public sealed class PaintingRotationControllerTests
             rotationController.RefreshPaintings();
 
             Assert.AreEqual(2, rotationController.paintingCount);
+        }
+        finally
+        {
+            Object.DestroyImmediate(root);
+        }
+    }
+
+    [Test]
+    public void RefreshPaintingsDisablesChildAutoPlayWhileWaitingForStartButton()
+    {
+        var root = new GameObject("paintings");
+
+        try
+        {
+            var animator = CreatePainting("first", root.transform);
+            var rotationController = root.AddComponent<PaintingRotationController>();
+            SetPrivateField(rotationController, "_waitForRightControllerAButtonBeforeStart", true);
+
+            rotationController.RefreshPaintings();
+
+            Assert.IsFalse(animator.playOnStart);
+            Assert.IsTrue(rotationController.isWaitingForStartInput);
+        }
+        finally
+        {
+            Object.DestroyImmediate(root);
+        }
+    }
+
+    [Test]
+    public void StartGateHidesAllPaintingsUntilStartButton()
+    {
+        var root = new GameObject("paintings");
+
+        try
+        {
+            var first = CreatePainting("first", root.transform).gameObject;
+            var second = CreatePainting("second", root.transform).gameObject;
+            var rotationController = root.AddComponent<PaintingRotationController>();
+            SetPrivateField(rotationController, "_waitForRightControllerAButtonBeforeStart", true);
+
+            InvokePrivateMethod(rotationController, "PrepareStartGate");
+
+            Assert.IsFalse(first.activeSelf);
+            Assert.IsFalse(second.activeSelf);
+            Assert.IsTrue(rotationController.isWaitingForStartInput);
         }
         finally
         {
@@ -156,17 +231,31 @@ public sealed class PaintingRotationControllerTests
         StringAssert.Contains("spawnRate=12345.678", message);
     }
 
-    static void CreatePainting(string name, Transform parent)
+    static StarryNightRhoneVfxAutoAnimator CreatePainting(string name, Transform parent)
     {
         var gameObject = new GameObject(name);
         gameObject.transform.SetParent(parent);
         AddVfxController(gameObject);
-        gameObject.AddComponent<StarryNightRhoneVfxAutoAnimator>();
+        return gameObject.AddComponent<StarryNightRhoneVfxAutoAnimator>();
     }
 
     static MonaLisaVfxController AddVfxController(GameObject gameObject)
     {
         gameObject.AddComponent<VisualEffect>();
         return gameObject.AddComponent<MonaLisaVfxController>();
+    }
+
+    static void SetPrivateField<T>(object target, string fieldName, T value)
+    {
+        var field = target.GetType().GetField(fieldName, BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.IsNotNull(field, fieldName);
+        field.SetValue(target, value);
+    }
+
+    static void InvokePrivateMethod(object target, string methodName)
+    {
+        var method = target.GetType().GetMethod(methodName, BindingFlags.Instance | BindingFlags.NonPublic);
+        Assert.IsNotNull(method, methodName);
+        method.Invoke(target, null);
     }
 }
