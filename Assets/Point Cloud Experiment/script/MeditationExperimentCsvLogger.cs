@@ -8,11 +8,13 @@ using UnityEngine;
 [AddComponentMenu("Point Cloud/Meditation Experiment CSV Logger")]
 public sealed class MeditationExperimentCsvLogger : MonoBehaviour
 {
-    const string CsvVersion = "2";
+    const string CsvVersion = "3";
+    const string CsvSeparatorDirective = "sep=,";
 
     [SerializeField] string _sessionFolderPrefix = "meditation_experiment";
     [SerializeField] string _dataCollectionFolderName = "data_collection";
     [SerializeField] bool _logSessionPath = true;
+    [SerializeField] bool _writeExcelSeparatorDirective = true;
 
     static MeditationExperimentCsvLogger _instance;
 
@@ -22,6 +24,7 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
     StreamWriter _choicesWriter;
     StreamWriter _eventsWriter;
     StreamWriter _summaryWriter;
+    StreamWriter _eyeTrackingWriter;
     string _sessionId;
     string _sessionFolderPath;
     DateTimeOffset _sessionStartedAt;
@@ -71,8 +74,17 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
         CloseCsv();
     }
 
-    public void StartSession(string inputSource)
+    public bool StartSession(string inputSource, bool forceRestart = false)
     {
+        if (_sessionActive && !forceRestart)
+        {
+            Debug.LogWarning(
+                "[MeditationExperimentCsvLogger] Ignoring StartSession because a CSV session is already active: " +
+                _sessionId,
+                this);
+            return false;
+        }
+
         CloseCsv();
 
         _sessionStartedAt = DateTimeOffset.Now;
@@ -97,6 +109,8 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
             eventRealtime = _sessionStartedRealtime,
             notes = "CSV session created"
         });
+
+        return true;
     }
 
     public void Log(Row row)
@@ -146,6 +160,21 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
         LogEvent(row);
     }
 
+    public bool TryLogEyeTrackingSample(EyeTrackingRow row)
+    {
+        if (!_sessionActive)
+        {
+            return false;
+        }
+
+        row = row ?? new EyeTrackingRow();
+        var sampleRealtime = !double.IsNaN(row.sampleRealtime)
+            ? row.sampleRealtime
+            : Time.realtimeSinceStartupAsDouble;
+        WriteLine(_eyeTrackingWriter, ToEyeTrackingCsv(row, sampleRealtime));
+        return true;
+    }
+
     public void CloseCsv()
     {
         CloseWriter(ref _sessionWriter);
@@ -154,6 +183,7 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
         CloseWriter(ref _choicesWriter);
         CloseWriter(ref _eventsWriter);
         CloseWriter(ref _summaryWriter);
+        CloseWriter(ref _eyeTrackingWriter);
         _sessionActive = false;
     }
 
@@ -179,6 +209,7 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
         _choicesWriter = OpenWriter("choices.csv", GetChoicesHeader());
         _eventsWriter = OpenWriter("events.csv", GetEventsHeader());
         _summaryWriter = OpenWriter("summary.csv", GetSummaryHeader());
+        _eyeTrackingWriter = OpenWriter("eye_tracking.csv", GetEyeTrackingHeader());
 
         if (_logSessionPath)
         {
@@ -191,6 +222,12 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
         var path = Path.Combine(_sessionFolderPath, fileName);
         var stream = new FileStream(path, FileMode.Create, FileAccess.Write, FileShare.Read);
         var writer = new StreamWriter(stream, Encoding.UTF8);
+        if (_writeExcelSeparatorDirective)
+        {
+            // Lets Excel split comma CSV correctly on systems whose list separator is semicolon.
+            writer.WriteLine(CsvSeparatorDirective);
+        }
+
         writer.WriteLine(header);
         writer.Flush();
         return writer;
@@ -370,6 +407,25 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
             CsvEscape(row.notes));
     }
 
+    string ToEyeTrackingCsv(EyeTrackingRow row, double sampleRealtime)
+    {
+        return string.Join(",",
+            CsvEscape(_sessionId),
+            UnixMs(sampleRealtime),
+            ElapsedMs(sampleRealtime),
+            row.frame.ToString(CultureInfo.InvariantCulture),
+            B(row.leftValid),
+            F(row.leftConfidence),
+            VectorCsv(row.leftOrigin),
+            VectorCsv(row.leftForward),
+            B(row.rightValid),
+            F(row.rightConfidence),
+            VectorCsv(row.rightOrigin),
+            VectorCsv(row.rightForward),
+            VectorCsv(row.centerEyePosition),
+            VectorCsv(row.centerEyeForward));
+    }
+
     static string GetSessionHeader()
     {
         return string.Join(",",
@@ -527,6 +583,25 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
             "notes");
     }
 
+    static string GetEyeTrackingHeader()
+    {
+        return string.Join(",",
+            "sessionId",
+            "sampleUnixMs",
+            "elapsedMs",
+            "frame",
+            "leftValid",
+            "leftConfidence",
+            VectorHeader("leftOrigin"),
+            VectorHeader("leftForward"),
+            "rightValid",
+            "rightConfidence",
+            VectorHeader("rightOrigin"),
+            VectorHeader("rightForward"),
+            VectorHeader("centerEye"),
+            VectorHeader("centerForward"));
+    }
+
     string CreateSessionId(DateTimeOffset startedAt)
     {
         var safePrefix = SafeFolderName(_sessionFolderPrefix, "meditation_experiment");
@@ -622,6 +697,21 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
         return value.ToString("0.######", CultureInfo.InvariantCulture);
     }
 
+    static string B(bool value)
+    {
+        return value ? "1" : "0";
+    }
+
+    static string VectorHeader(string prefix)
+    {
+        return prefix + "X," + prefix + "Y," + prefix + "Z";
+    }
+
+    static string VectorCsv(Vector3 value)
+    {
+        return string.Join(",", F(value.x), F(value.y), F(value.z));
+    }
+
     static string SecondsMs(float seconds)
     {
         if (float.IsNaN(seconds))
@@ -688,5 +778,21 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
         public double stageStartedRealtime = double.NaN;
         public double promptStartedRealtime = double.NaN;
         public string notes;
+    }
+
+    public sealed class EyeTrackingRow
+    {
+        public double sampleRealtime = double.NaN;
+        public int frame;
+        public bool leftValid;
+        public float leftConfidence = float.NaN;
+        public Vector3 leftOrigin;
+        public Vector3 leftForward;
+        public bool rightValid;
+        public float rightConfidence = float.NaN;
+        public Vector3 rightOrigin;
+        public Vector3 rightForward;
+        public Vector3 centerEyePosition;
+        public Vector3 centerEyeForward;
     }
 }

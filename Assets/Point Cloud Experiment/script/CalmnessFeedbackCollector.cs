@@ -16,7 +16,7 @@ public sealed class CalmnessFeedbackCollector : MonoBehaviour
     const int OptionCount = 4;
 
     [Header("Preview")]
-    [SerializeField] bool _showPreviewOnStart = true;
+    [SerializeField] bool _showPreviewOnStart;
     [SerializeField, Min(1f)] float _previewTimeoutSeconds = 120f;
     [SerializeField] string _previewPaintingId = "calmness_feedback_preview";
     [SerializeField] CalmnessFeedbackOptionView[] _optionViews;
@@ -115,7 +115,10 @@ public sealed class CalmnessFeedbackCollector : MonoBehaviour
         }
 
         _instance = this;
-        EnsureUi();
+        if (_showPreviewOnStart)
+        {
+            EnsureUi();
+        }
     }
 
     void Start()

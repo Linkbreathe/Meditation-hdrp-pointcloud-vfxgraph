@@ -13,6 +13,7 @@ public sealed class EyeTrackingDataLogger : MonoBehaviour
     const string RightEyeGazeName = "[BuildingBlock] Eye Gaze Right";
     const string LeftEyeGazeName = "[BuildingBlock] Eye Gaze Left";
     const string CenterEyeAnchorName = "CenterEyeAnchor";
+    const string CsvSeparatorDirective = "sep=,";
 
     [Header("References")]
     [SerializeField] bool _autoFindReferences = true;
@@ -25,12 +26,16 @@ public sealed class EyeTrackingDataLogger : MonoBehaviour
     [Header("Startup")]
     [SerializeField] bool _requestEyeTrackingPermission = true;
     [SerializeField] bool _startEyeTrackingIfNeeded = true;
+    [SerializeField, Min(0.25f)] float _startRetryInterval = 2f;
 
     [Header("Logging")]
     [SerializeField, Min(0.02f)] float _sampleInterval = 0.1f;
     [SerializeField, Min(0.1f)] float _consoleInterval = 1f;
     [SerializeField] bool _logToConsole = true;
     [SerializeField] bool _writeCsv = true;
+    [SerializeField] bool _writeToExperimentSession = true;
+    [SerializeField] bool _writeStandaloneCsv;
+    [SerializeField] bool _writeExcelSeparatorDirective = true;
     [SerializeField] bool _logInvalidSamplesToConsole = true;
     [SerializeField] string _csvFilePrefix = "eye_tracking_log";
 
@@ -45,8 +50,9 @@ public sealed class EyeTrackingDataLogger : MonoBehaviour
     string _csvPath;
     float _nextSampleTime;
     float _nextConsoleTime;
-    bool _startAttempted;
+    float _nextStartAttemptTime;
     Action<string> _permissionGrantedCallback;
+    MeditationExperimentCsvLogger _experimentCsvLogger;
 
     public string csvPath => _csvPath;
 
@@ -70,8 +76,9 @@ public sealed class EyeTrackingDataLogger : MonoBehaviour
         }
 
         RequestPermissionIfNeeded();
+        _nextStartAttemptTime = 0f;
         StartEyeTrackingIfNeeded();
-        OpenCsvIfNeeded();
+        OpenStandaloneCsvIfNeeded();
 
         _nextSampleTime = 0f;
         _nextConsoleTime = 0f;
@@ -83,6 +90,14 @@ public sealed class EyeTrackingDataLogger : MonoBehaviour
         CloseCsv();
     }
 
+    void OnValidate()
+    {
+        _sampleInterval = Mathf.Max(0.02f, _sampleInterval);
+        _consoleInterval = Mathf.Max(0.1f, _consoleInterval);
+        _startRetryInterval = Mathf.Max(0.25f, _startRetryInterval);
+        _debugRayLength = Mathf.Max(0.01f, _debugRayLength);
+    }
+
     void Update()
     {
         if (_autoFindReferences && HasMissingReferences())
@@ -90,6 +105,7 @@ public sealed class EyeTrackingDataLogger : MonoBehaviour
             AutoFindReferences();
         }
 
+        StartEyeTrackingIfNeeded();
         DrawDebugRays();
 
         var now = Time.unscaledTime;
@@ -142,7 +158,7 @@ public sealed class EyeTrackingDataLogger : MonoBehaviour
 
     void StartEyeTrackingIfNeeded()
     {
-        if (!_startEyeTrackingIfNeeded || _startAttempted)
+        if (!_startEyeTrackingIfNeeded)
         {
             return;
         }
@@ -152,17 +168,21 @@ public sealed class EyeTrackingDataLogger : MonoBehaviour
             return;
         }
 
-        _startAttempted = true;
-
-        if (!OVRPlugin.eyeTrackingSupported)
+        if (OVRPlugin.eyeTrackingEnabled)
         {
-            Debug.LogWarning("[EyeTrackingDataLogger] OVRPlugin reports eye tracking is not supported on this runtime/device.", this);
             return;
         }
 
-        if (OVRPlugin.eyeTrackingEnabled)
+        var now = Time.unscaledTime;
+        if (now < _nextStartAttemptTime)
         {
-            Debug.Log("[EyeTrackingDataLogger] Eye tracking is already enabled.", this);
+            return;
+        }
+
+        _nextStartAttemptTime = now + _startRetryInterval;
+        if (!OVRPlugin.eyeTrackingSupported)
+        {
+            Debug.LogWarning("[EyeTrackingDataLogger] OVRPlugin reports eye tracking is not supported on this runtime/device.", this);
             return;
         }
 
@@ -178,6 +198,7 @@ public sealed class EyeTrackingDataLogger : MonoBehaviour
         }
 
         Debug.Log("[EyeTrackingDataLogger] Eye tracking permission granted.", this);
+        _nextStartAttemptTime = 0f;
         StartEyeTrackingIfNeeded();
     }
 
@@ -193,7 +214,7 @@ public sealed class EyeTrackingDataLogger : MonoBehaviour
 
         var sample = new Sample
         {
-            realtime = now,
+            realtime = Time.realtimeSinceStartupAsDouble,
             time = Time.time,
             frame = Time.frameCount,
             permissionGranted = permissionGranted,
@@ -362,9 +383,9 @@ public sealed class EyeTrackingDataLogger : MonoBehaviour
         }
     }
 
-    void OpenCsvIfNeeded()
+    void OpenStandaloneCsvIfNeeded()
     {
-        if (!_writeCsv || _csvWriter != null)
+        if (!_writeCsv || !_writeStandaloneCsv || _csvWriter != null)
         {
             return;
         }
@@ -381,6 +402,12 @@ public sealed class EyeTrackingDataLogger : MonoBehaviour
 
         var stream = new FileStream(_csvPath, FileMode.Create, FileAccess.Write, FileShare.Read);
         _csvWriter = new StreamWriter(stream, Encoding.UTF8);
+        if (_writeExcelSeparatorDirective)
+        {
+            // Lets Excel split comma CSV correctly on systems whose list separator is semicolon.
+            _csvWriter.WriteLine(CsvSeparatorDirective);
+        }
+
         _csvWriter.WriteLine(GetCsvHeader());
         _csvWriter.Flush();
 
@@ -401,9 +428,103 @@ public sealed class EyeTrackingDataLogger : MonoBehaviour
 
     void WriteCsv(Sample sample)
     {
+        var wroteExperimentSample = false;
+        if (_writeToExperimentSession)
+        {
+            wroteExperimentSample = WriteExperimentCsv(sample);
+        }
+
+        if (_writeStandaloneCsv)
+        {
+            WriteStandaloneCsv(sample);
+        }
+        else if (!wroteExperimentSample && !_writeToExperimentSession)
+        {
+            WriteStandaloneCsv(sample);
+        }
+    }
+
+    bool WriteExperimentCsv(Sample sample)
+    {
+        var logger = ResolveExperimentCsvLogger();
+        if (logger == null || !logger.sessionActive)
+        {
+            return false;
+        }
+
+        return logger.TryLogEyeTrackingSample(CreateExperimentEyeTrackingRow(sample));
+    }
+
+    MeditationExperimentCsvLogger ResolveExperimentCsvLogger()
+    {
+        if (_experimentCsvLogger != null)
+        {
+            return _experimentCsvLogger;
+        }
+
+        _experimentCsvLogger = FindObjectOfType<MeditationExperimentCsvLogger>();
+        return _experimentCsvLogger;
+    }
+
+    MeditationExperimentCsvLogger.EyeTrackingRow CreateExperimentEyeTrackingRow(Sample sample)
+    {
+        return new MeditationExperimentCsvLogger.EyeTrackingRow
+        {
+            sampleRealtime = sample.realtime,
+            frame = sample.frame,
+            leftValid = IsEyeSampleValid(sample.leftRaw, sample.leftComponent),
+            leftConfidence = ResolveEyeConfidence(sample.leftRaw, sample.leftComponent),
+            leftOrigin = ResolveEyeOrigin(sample.leftRaw, sample.leftComponent.transform),
+            leftForward = ResolveEyeForward(sample.leftRaw, sample.leftComponent.transform),
+            rightValid = IsEyeSampleValid(sample.rightRaw, sample.rightComponent),
+            rightConfidence = ResolveEyeConfidence(sample.rightRaw, sample.rightComponent),
+            rightOrigin = ResolveEyeOrigin(sample.rightRaw, sample.rightComponent.transform),
+            rightForward = ResolveEyeForward(sample.rightRaw, sample.rightComponent.transform),
+            centerEyePosition = sample.centerTransform.position,
+            centerEyeForward = sample.centerTransform.forward
+        };
+    }
+
+    static bool IsEyeSampleValid(EyeRawSample rawSample, ComponentSample componentSample)
+    {
+        return rawSample.valid || componentSample.confidence > 0f;
+    }
+
+    static float ResolveEyeConfidence(EyeRawSample rawSample, ComponentSample componentSample)
+    {
+        if (componentSample.confidence >= 0f)
+        {
+            return componentSample.confidence;
+        }
+
+        return rawSample.present ? rawSample.confidence : float.NaN;
+    }
+
+    static Vector3 ResolveEyeOrigin(EyeRawSample rawSample, TransformSample componentTransform)
+    {
+        if (componentTransform.found)
+        {
+            return componentTransform.position;
+        }
+
+        return rawSample.present ? rawSample.position : Vector3.zero;
+    }
+
+    static Vector3 ResolveEyeForward(EyeRawSample rawSample, TransformSample componentTransform)
+    {
+        if (componentTransform.found)
+        {
+            return componentTransform.forward;
+        }
+
+        return rawSample.present ? rawSample.forward : Vector3.zero;
+    }
+
+    void WriteStandaloneCsv(Sample sample)
+    {
         if (_csvWriter == null)
         {
-            OpenCsvIfNeeded();
+            OpenStandaloneCsvIfNeeded();
         }
 
         if (_csvWriter == null)
@@ -462,7 +583,7 @@ public sealed class EyeTrackingDataLogger : MonoBehaviour
     static string ToCsv(Sample sample)
     {
         return string.Join(",",
-            F(sample.realtime),
+            D(sample.realtime),
             F(sample.time),
             sample.frame.ToString(CultureInfo.InvariantCulture),
             B(sample.permissionGranted),
@@ -594,7 +715,7 @@ public sealed class EyeTrackingDataLogger : MonoBehaviour
 
     struct Sample
     {
-        public float realtime;
+        public double realtime;
         public float time;
         public int frame;
         public bool permissionGranted;

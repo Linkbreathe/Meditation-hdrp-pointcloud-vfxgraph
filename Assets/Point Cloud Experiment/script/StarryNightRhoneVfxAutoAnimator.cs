@@ -113,6 +113,69 @@ public sealed class StarryNightRhoneVfxAutoAnimator : MonoBehaviour
         };
     }
 
+    public static SharedSettings CreateDefaultSharedSettings()
+    {
+        var settings = CreateDefaultSettings();
+        return new SharedSettings
+        {
+            initialParticleIntensity = settings.initialParticleIntensity,
+            initialParticleFrequency = settings.initialParticleFrequency,
+            initialStateDuration = settings.initialStateDuration,
+            stageDuration = settings.stageDuration,
+            updateInterval = settings.updateInterval,
+            returnToInitialDuration = settings.returnToInitialDuration,
+            randomRanges = CloneRandomRanges(settings.randomRanges),
+            playOnStart = true,
+            logValueChanges = true,
+            logMissingProperties = true
+        };
+    }
+
+    public SharedSettings CreateSharedSettingsSnapshot()
+    {
+        return new SharedSettings
+        {
+            initialParticleIntensity = _initialParticleIntensity,
+            initialParticleFrequency = _initialParticleFrequency,
+            initialStateDuration = _initialStateDuration,
+            stageDuration = _stageDuration,
+            updateInterval = _updateInterval,
+            returnToInitialDuration = _returnToInitialDuration,
+            randomRanges = CloneRandomRanges(_randomRanges),
+            playOnStart = _playOnStart,
+            logValueChanges = _logValueChanges,
+            logMissingProperties = _logMissingProperties
+        };
+    }
+
+    public void ApplySharedSettings(SharedSettings settings, bool restartIfPlaying = false)
+    {
+        var wasPlaying = isPlaying;
+        if (restartIfPlaying && wasPlaying)
+        {
+            StopAnimationRoutine();
+        }
+
+        _initialParticleIntensity = settings.initialParticleIntensity;
+        _initialParticleFrequency = settings.initialParticleFrequency;
+        _initialStateDuration = settings.initialStateDuration;
+        _stageDuration = settings.stageDuration;
+        _updateInterval = settings.updateInterval;
+        _returnToInitialDuration = settings.returnToInitialDuration;
+        _randomRanges = CloneRandomRanges(settings.randomRanges);
+        _playOnStart = settings.playOnStart;
+        _logValueChanges = settings.logValueChanges;
+        _logMissingProperties = settings.logMissingProperties;
+        _missingPropertyWarningIssued = false;
+
+        NormalizeSerializedValues();
+
+        if (restartIfPlaying && wasPlaying && isActiveAndEnabled)
+        {
+            Play();
+        }
+    }
+
     public static int GetUpdateCount(float stageDuration, float updateInterval)
     {
         if (stageDuration <= 0f || updateInterval <= 0f)
@@ -165,6 +228,11 @@ public sealed class StarryNightRhoneVfxAutoAnimator : MonoBehaviour
 
     void OnValidate()
     {
+        NormalizeSerializedValues();
+    }
+
+    void NormalizeSerializedValues()
+    {
         _initialParticleIntensity = Mathf.Clamp01(_initialParticleIntensity);
         _initialParticleFrequency = Mathf.Clamp01(_initialParticleFrequency);
         _initialStateDuration = Mathf.Max(0f, _initialStateDuration);
@@ -181,6 +249,18 @@ public sealed class StarryNightRhoneVfxAutoAnimator : MonoBehaviour
         {
             _randomRanges[i].Normalize();
         }
+    }
+
+    static RandomRange[] CloneRandomRanges(RandomRange[] randomRanges)
+    {
+        if (randomRanges == null || randomRanges.Length == 0)
+        {
+            return Array.Empty<RandomRange>();
+        }
+
+        var clone = new RandomRange[randomRanges.Length];
+        Array.Copy(randomRanges, clone, randomRanges.Length);
+        return clone;
     }
 
     [ContextMenu("Play VFX Animation")]
@@ -591,6 +671,21 @@ public sealed class StarryNightRhoneVfxAutoAnimator : MonoBehaviour
         public float updateInterval;
         public float returnToInitialDuration;
         public RandomRange[] randomRanges;
+    }
+
+    [Serializable]
+    public struct SharedSettings
+    {
+        [Range(0f, 1f)] public float initialParticleIntensity;
+        [Range(0f, 1f)] public float initialParticleFrequency;
+        [Min(0f)] public float initialStateDuration;
+        [Min(0f)] public float stageDuration;
+        [Min(0.01f)] public float updateInterval;
+        [Min(0f)] public float returnToInitialDuration;
+        public RandomRange[] randomRanges;
+        public bool playOnStart;
+        public bool logValueChanges;
+        public bool logMissingProperties;
     }
 
     public sealed class StageEvent

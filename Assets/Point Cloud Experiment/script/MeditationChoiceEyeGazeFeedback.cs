@@ -194,6 +194,43 @@ public sealed class MeditationChoiceEyeGazeFeedback : MonoBehaviour
 
     public event Action<SelectionResult> SelectionCompleted;
 
+    public bool TryEnsureEyeTrackingReady(out string reason)
+    {
+        EnsureSetup();
+        RequestPermissionIfNeeded();
+        StartEyeTrackingIfNeeded();
+        return IsEyeTrackingReady(out reason);
+    }
+
+    public bool IsEyeTrackingReady(out string reason)
+    {
+        if (_autoFindReferences && HasMissingGazeReferences())
+        {
+            AutoFindGazeReferences();
+        }
+
+        if (_requireEyeTrackingEnabled && !IsEyeTrackingRuntimeUsable(out reason))
+        {
+            return false;
+        }
+
+        if (TryCreateEyeRaySample(_leftEyeGaze, _leftGazeTransform, out _) ||
+            TryCreateEyeRaySample(_rightEyeGaze, _rightGazeTransform, out _))
+        {
+            reason = null;
+            return true;
+        }
+
+        if (!_requireEyeTrackingEnabled && _allowHeadFallbackWhenEyeTrackingInvalid && TryGetViewerRay(out _))
+        {
+            reason = null;
+            return true;
+        }
+
+        reason = BuildNoConfidentEyeSampleReason();
+        return false;
+    }
+
     void Awake()
     {
         _permissionGrantedCallback = HandlePermissionGranted;

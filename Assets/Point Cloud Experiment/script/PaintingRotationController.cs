@@ -13,6 +13,7 @@ public sealed class PaintingRotationController : MonoBehaviour
     public const float DefaultDissolveHoldDuration = 8f;
     public const float DefaultFeedbackDelay = 0.3f;
     public const float DefaultFeedbackTimeoutRatio = 0.85f;
+    public const float DefaultChoicePromptTimeoutSeconds = 45f;
 
     [Header("Paintings")]
     [SerializeField] Transform _paintingsRoot;
@@ -25,7 +26,7 @@ public sealed class PaintingRotationController : MonoBehaviour
     [SerializeField, Min(0.01f)] float _fadeInDuration = DefaultFadeInDuration;
 
     [Header("Calmness Feedback")]
-    [SerializeField] bool _collectCalmnessFeedback = true;
+    [SerializeField] bool _collectCalmnessFeedback;
     [SerializeField] CalmnessFeedbackCollector _feedbackCollector;
     [SerializeField, Min(0f)] float _feedbackDelay = DefaultFeedbackDelay;
     [SerializeField, Range(0.05f, 1f)] float _feedbackTimeoutRatio = DefaultFeedbackTimeoutRatio;
@@ -39,7 +40,10 @@ public sealed class PaintingRotationController : MonoBehaviour
     [SerializeField, Min(0.1f)] float _choicePromptBreathInSeconds = 1.1f;
     [SerializeField, Min(0.1f)] float _choicePromptBreathOutSeconds = 1.55f;
     [SerializeField, Range(0f, 1f)] float _choicePromptBreathMinimumAmount;
-    [SerializeField, Min(0f)] float _choicePromptTimeoutSeconds;
+    [SerializeField, Min(0f)] float _choicePromptTimeoutSeconds = DefaultChoicePromptTimeoutSeconds;
+    [SerializeField] bool _requireEyeTrackingReadyBeforeStart = true;
+    [SerializeField, Min(0f)] float _eyeTrackingStartGateTimeoutSeconds = 8f;
+    [SerializeField, Min(0.05f)] float _eyeTrackingStartGatePollSeconds = 0.25f;
 
     [Header("Runtime")]
     [SerializeField] bool _playOnStart = true;
@@ -51,9 +55,11 @@ public sealed class PaintingRotationController : MonoBehaviour
     [SerializeField, Min(0.05f)] float _progressLogInterval = 1f;
 
     static readonly List<InputDevice> InputDevicesBuffer = new List<InputDevice>();
+    static PaintingRotationController _activeExperimentController;
 
     readonly List<PaintingEntry> _paintings = new List<PaintingEntry>();
     Coroutine _rotationRoutine;
+    Coroutine _startWhenEyeTrackingReadyRoutine;
     StarryNightRhoneVfxAutoAnimator _subscribedAnimator;
     bool _currentAnimationCompleted;
     bool _hasReceivedStartInput;
@@ -242,7 +248,7 @@ public sealed class PaintingRotationController : MonoBehaviour
                 continue;
             }
 
-            ConfigureChildAnimatorForStartGate(animator);
+            ConfigureManagedChildAnimator(animator);
             _paintings.Add(new PaintingEntry(
                 child.gameObject,
                 CreatePaintingId(child.gameObject.name, _paintings.Count),
@@ -268,31 +274,72 @@ public sealed class PaintingRotationController : MonoBehaviour
             return;
         }
 
-        StartRotation();
+        StartRotation("AutoStart");
     }
 
-    void StartRotation()
+    bool StartRotation(string inputSource)
     {
-        StopRotation();
+        if (!TryClaimExperimentControl(inputSource))
+        {
+            return false;
+        }
+
+        if (!TryValidateRequiredEyeTrackingReadyForStart(inputSource, out var eyeTrackingReason))
+        {
+            Debug.LogWarning(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "[PaintingRotationController] Experiment start blocked because eye tracking is not ready. source={0} reason={1}",
+                    inputSource,
+                    eyeTrackingReason),
+                this);
+            ReleaseExperimentControl();
+            return false;
+        }
+
+        StopRotation(false);
         RefreshPaintings();
         if (_paintings.Count == 0)
         {
             Debug.LogWarning(
                 "PaintingRotationController could not find child paintings with MonaLisaVfxController and StarryNightRhoneVfxAutoAnimator.",
                 this);
-            return;
+            ReleaseExperimentControl();
+            return false;
         }
 
-        BeginExperimentSessionIfNeeded("AutoStart");
+        BeginExperimentSessionIfNeeded(inputSource);
+        if (!_hasStartedExperimentSession)
+        {
+            ReleaseExperimentControl();
+            return false;
+        }
+
         ConfigureMeditationChoiceForIdle();
         _rotationRoutine = StartCoroutine(RunRotationRoutine());
+        return true;
     }
 
     [ContextMenu("Stop Painting Rotation")]
     public void StopRotation()
     {
+        StopRotation(true);
+    }
+
+    void StopRotation(bool releaseExperimentControl)
+    {
+        if (releaseExperimentControl)
+        {
+            StopWaitingForEyeTrackingStartGate();
+        }
+
         if (_rotationRoutine == null)
         {
+            if (releaseExperimentControl)
+            {
+                ReleaseExperimentControl();
+            }
+
             return;
         }
 
@@ -300,6 +347,10 @@ public sealed class PaintingRotationController : MonoBehaviour
         _rotationRoutine = null;
         UnsubscribeFromCurrentAnimator();
         ConfigureMeditationChoiceForIdle();
+        if (releaseExperimentControl)
+        {
+            ReleaseExperimentControl();
+        }
     }
 
     void Reset()
@@ -342,12 +393,13 @@ public sealed class PaintingRotationController : MonoBehaviour
         {
             LogStartButtonInput(string.Format(
                 CultureInfo.InvariantCulture,
-                "Start button observed but ignored source={0} frame={1} waiting={2} receivedStart={3} isRotating={4}",
+                "Start button observed but ignored source={0} frame={1} waiting={2} receivedStart={3} isRotating={4} pendingEyeTrackingStart={5}",
                 inputSource,
                 Time.frameCount,
                 isWaitingForStartInput,
                 _hasReceivedStartInput,
-                isRotating));
+                isRotating,
+                _startWhenEyeTrackingReadyRoutine != null));
             return;
         }
 
@@ -366,7 +418,11 @@ public sealed class PaintingRotationController : MonoBehaviour
             return;
         }
 
-        BeginExperimentSessionIfNeeded(inputSource);
+        if (!TryClaimExperimentControl(inputSource))
+        {
+            return;
+        }
+
         LogStartButtonInput(string.Format(
             CultureInfo.InvariantCulture,
             "Start button pressed source={0} frame={1} currentIndex={2} paintingCount={3}",
@@ -374,8 +430,91 @@ public sealed class PaintingRotationController : MonoBehaviour
             Time.frameCount,
             _currentIndex,
             _paintings.Count));
+
+        if (RequiresEyeTrackingReadyBeforeStart(out var choiceFeedback) &&
+            !choiceFeedback.TryEnsureEyeTrackingReady(out var eyeTrackingReason))
+        {
+            _hasReceivedStartInput = true;
+            if (_eyeTrackingStartGateTimeoutSeconds > 0f)
+            {
+                LogStartButtonInput(string.Format(
+                    CultureInfo.InvariantCulture,
+                    "Start button accepted; waiting up to {0:0.##}s for eye tracking before starting. reason={1}",
+                    _eyeTrackingStartGateTimeoutSeconds,
+                    eyeTrackingReason));
+                _startWhenEyeTrackingReadyRoutine = StartCoroutine(WaitForEyeTrackingThenStart(inputSource, choiceFeedback));
+                return;
+            }
+
+            Debug.LogWarning(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "[PaintingRotationController] Start button accepted but experiment was not started because eye tracking is not ready. source={0} reason={1}",
+                    inputSource,
+                    eyeTrackingReason),
+                this);
+            _hasReceivedStartInput = false;
+            ReleaseExperimentControl();
+            return;
+        }
+
         _hasReceivedStartInput = true;
-        StartRotation();
+        if (!StartRotation(inputSource))
+        {
+            _hasReceivedStartInput = false;
+        }
+    }
+
+    IEnumerator WaitForEyeTrackingThenStart(
+        string inputSource,
+        MeditationChoiceEyeGazeFeedback choiceFeedback)
+    {
+        var startedWaitingAt = Time.unscaledTime;
+        var timeoutSeconds = Mathf.Max(0f, _eyeTrackingStartGateTimeoutSeconds);
+        var pollSeconds = Mathf.Max(0.05f, _eyeTrackingStartGatePollSeconds);
+        var lastReason = "eye tracking readiness was not checked";
+
+        while (choiceFeedback != null && Time.unscaledTime - startedWaitingAt < timeoutSeconds)
+        {
+            if (choiceFeedback.TryEnsureEyeTrackingReady(out lastReason))
+            {
+                _startWhenEyeTrackingReadyRoutine = null;
+                LogStartButtonInput(string.Format(
+                    CultureInfo.InvariantCulture,
+                    "Eye tracking became ready after {0:0.##}s; starting experiment. source={1}",
+                    Time.unscaledTime - startedWaitingAt,
+                    inputSource));
+                if (!StartRotation(inputSource))
+                {
+                    _hasReceivedStartInput = false;
+                }
+
+                yield break;
+            }
+
+            yield return new WaitForSecondsRealtime(pollSeconds);
+        }
+
+        if (choiceFeedback != null)
+        {
+            choiceFeedback.TryEnsureEyeTrackingReady(out lastReason);
+        }
+        else
+        {
+            lastReason = "MeditationChoiceEyeGazeFeedback was destroyed or disabled";
+        }
+
+        _startWhenEyeTrackingReadyRoutine = null;
+        _hasReceivedStartInput = false;
+        ReleaseExperimentControl();
+        Debug.LogWarning(
+            string.Format(
+                CultureInfo.InvariantCulture,
+                "[PaintingRotationController] Experiment start timed out while waiting for eye tracking. waited={0:0.##}s source={1} reason={2}",
+                Time.unscaledTime - startedWaitingAt,
+                inputSource,
+                lastReason),
+            this);
     }
 
     void PrepareStartGate()
@@ -595,9 +734,9 @@ public sealed class PaintingRotationController : MonoBehaviour
         return Mathf.Clamp(_startIndex, 0, _paintings.Count - 1);
     }
 
-    void ConfigureChildAnimatorForStartGate(StarryNightRhoneVfxAutoAnimator animator)
+    void ConfigureManagedChildAnimator(StarryNightRhoneVfxAutoAnimator animator)
     {
-        if (!ShouldHoldChildAnimatorsForStartGate() || animator == null)
+        if (animator == null)
         {
             return;
         }
@@ -628,6 +767,99 @@ public sealed class PaintingRotationController : MonoBehaviour
     bool ShouldHoldChildAnimatorsForStartGate()
     {
         return isWaitingForStartInput && _disableChildPlayOnStartWhileWaiting;
+    }
+
+    bool RequiresEyeTrackingReadyBeforeStart(out MeditationChoiceEyeGazeFeedback choiceFeedback)
+    {
+        choiceFeedback = null;
+        if (!_promptMeditationChoiceAfterStages || !_requireEyeTrackingReadyBeforeStart)
+        {
+            return false;
+        }
+
+        choiceFeedback = ResolveMeditationChoiceFeedback();
+        return choiceFeedback != null;
+    }
+
+    bool TryValidateRequiredEyeTrackingReadyForStart(string inputSource, out string reason)
+    {
+        reason = null;
+        if (!RequiresEyeTrackingReadyBeforeStart(out var choiceFeedback))
+        {
+            return true;
+        }
+
+        if (choiceFeedback.TryEnsureEyeTrackingReady(out reason))
+        {
+            return true;
+        }
+
+        if (string.IsNullOrEmpty(reason))
+        {
+            reason = "eye tracking readiness check returned false";
+        }
+
+        LogStartButtonInput(string.Format(
+            CultureInfo.InvariantCulture,
+            "Eye tracking is not ready for start source={0} reason={1}",
+            inputSource,
+            reason));
+        return false;
+    }
+
+    void StopWaitingForEyeTrackingStartGate()
+    {
+        if (_startWhenEyeTrackingReadyRoutine == null)
+        {
+            return;
+        }
+
+        StopCoroutine(_startWhenEyeTrackingReadyRoutine);
+        _startWhenEyeTrackingReadyRoutine = null;
+        _hasReceivedStartInput = false;
+    }
+
+    bool TryClaimExperimentControl(string inputSource)
+    {
+        if (_activeExperimentController == null || !_activeExperimentController.isActiveAndEnabled)
+        {
+            _activeExperimentController = this;
+            return true;
+        }
+
+        if (_activeExperimentController == this)
+        {
+            return true;
+        }
+
+        Debug.LogWarning(
+            string.Format(
+                CultureInfo.InvariantCulture,
+                "[PaintingRotationController] Ignoring start request from {0}; active experiment controller is {1}. source={2}",
+                DescribeController(this),
+                DescribeController(_activeExperimentController),
+                inputSource),
+            this);
+        return false;
+    }
+
+    void ReleaseExperimentControl()
+    {
+        if (_activeExperimentController == this)
+        {
+            _activeExperimentController = null;
+        }
+    }
+
+    static string DescribeController(PaintingRotationController controller)
+    {
+        return controller == null
+            ? "(none)"
+            : string.Format(
+                CultureInfo.InvariantCulture,
+                "{0}#{1}",
+                controller.name,
+                controller.GetInstanceID());
     }
 
     static void ApplySnapshot(MonaLisaVfxController controller, VfxControlSnapshot snapshot)
@@ -753,9 +985,21 @@ public sealed class PaintingRotationController : MonoBehaviour
         }
         else
         {
+            var timeoutNotes = BuildChoiceTimeoutNotes(choiceFeedback);
+            Debug.LogWarning("[PaintingRotationController] " + timeoutNotes, this);
             choiceFeedback.CancelChoicePrompt(_choiceNormalColorIntensity);
-            LogChoiceCsv("choice_timeout", stageEvent, null, elapsed, "Choice prompt timed out.");
+            LogChoiceCsv("choice_timeout", stageEvent, null, elapsed, timeoutNotes);
         }
+    }
+
+    static string BuildChoiceTimeoutNotes(MeditationChoiceEyeGazeFeedback choiceFeedback)
+    {
+        if (choiceFeedback == null || string.IsNullOrEmpty(choiceFeedback.lastInvalidGazeReason))
+        {
+            return "Choice prompt timed out.";
+        }
+
+        return "Choice prompt timed out. Last invalid gaze reason: " + choiceFeedback.lastInvalidGazeReason;
     }
 
     void HandleMeditationChoiceCompleted(MeditationChoiceEyeGazeFeedback.SelectionResult result)
@@ -776,6 +1020,8 @@ public sealed class PaintingRotationController : MonoBehaviour
         _choicePromptBreathOutSeconds = Mathf.Max(0.1f, _choicePromptBreathOutSeconds);
         _choicePromptBreathMinimumAmount = Mathf.Clamp01(_choicePromptBreathMinimumAmount);
         _choicePromptTimeoutSeconds = Mathf.Max(0f, _choicePromptTimeoutSeconds);
+        _eyeTrackingStartGateTimeoutSeconds = Mathf.Max(0f, _eyeTrackingStartGateTimeoutSeconds);
+        _eyeTrackingStartGatePollSeconds = Mathf.Max(0.05f, _eyeTrackingStartGatePollSeconds);
     }
 
     bool WasStartButtonPressedThisFrame(out string inputSource)
@@ -876,9 +1122,28 @@ public sealed class PaintingRotationController : MonoBehaviour
             return;
         }
 
-        _hasStartedExperimentSession = true;
         _paintingRunIndex = 0;
-        ResolveExperimentCsvLogger().StartSession(inputSource);
+        _hasStartedExperimentSession = ResolveExperimentCsvLogger().StartSession(
+            FormatSessionInputSource(inputSource));
+        if (!_hasStartedExperimentSession)
+        {
+            Debug.LogWarning(
+                string.Format(
+                    CultureInfo.InvariantCulture,
+                    "[PaintingRotationController] CSV session was not started for {0}. source={1}",
+                    DescribeController(this),
+                    inputSource),
+                this);
+        }
+    }
+
+    string FormatSessionInputSource(string inputSource)
+    {
+        return string.Format(
+            CultureInfo.InvariantCulture,
+            "{0} controller={1}",
+            inputSource,
+            DescribeController(this));
     }
 
     MeditationExperimentCsvLogger ResolveExperimentCsvLogger()

@@ -127,6 +127,70 @@ public sealed class StarryNightRhoneVfxAutoAnimatorTests
         }
     }
 
+    [Test]
+    public void ApplySharedSettingsUpdatesClampedAnimationFields()
+    {
+        var gameObject = new GameObject("Animator");
+
+        try
+        {
+            var animator = gameObject.AddComponent<StarryNightRhoneVfxAutoAnimator>();
+            animator.ApplySharedSettings(new StarryNightRhoneVfxAutoAnimator.SharedSettings
+            {
+                initialParticleIntensity = -1f,
+                initialParticleFrequency = 2f,
+                initialStateDuration = -3f,
+                stageDuration = -4f,
+                updateInterval = 0f,
+                returnToInitialDuration = -5f,
+                randomRanges = new[]
+                {
+                    new StarryNightRhoneVfxAutoAnimator.RandomRange(0.8f, 0.2f)
+                },
+                playOnStart = false,
+                logValueChanges = false,
+                logMissingProperties = false
+            });
+
+            var snapshot = animator.CreateSharedSettingsSnapshot();
+
+            Assert.AreEqual(0f, snapshot.initialParticleIntensity);
+            Assert.AreEqual(1f, snapshot.initialParticleFrequency);
+            Assert.AreEqual(0f, snapshot.initialStateDuration);
+            Assert.AreEqual(0f, snapshot.stageDuration);
+            Assert.AreEqual(0.01f, snapshot.updateInterval);
+            Assert.AreEqual(0f, snapshot.returnToInitialDuration);
+            AssertRange(snapshot.randomRanges[0], 0.2f, 0.8f);
+            Assert.IsFalse(snapshot.playOnStart);
+            Assert.IsFalse(snapshot.logValueChanges);
+            Assert.IsFalse(snapshot.logMissingProperties);
+        }
+        finally
+        {
+            Object.DestroyImmediate(gameObject);
+        }
+    }
+
+    [Test]
+    public void SharedSettingsSnapshotCopiesRandomRanges()
+    {
+        var gameObject = new GameObject("Animator");
+
+        try
+        {
+            var animator = gameObject.AddComponent<StarryNightRhoneVfxAutoAnimator>();
+            var snapshot = animator.CreateSharedSettingsSnapshot();
+
+            snapshot.randomRanges[0].minimum = 0.99f;
+
+            AssertRange(animator.CreateSharedSettingsSnapshot().randomRanges[0], 0.01f, 0.33f);
+        }
+        finally
+        {
+            Object.DestroyImmediate(gameObject);
+        }
+    }
+
     static void AssertRange(StarryNightRhoneVfxAutoAnimator.RandomRange range, float minimum, float maximum)
     {
         Assert.AreEqual(minimum, range.minimum);
