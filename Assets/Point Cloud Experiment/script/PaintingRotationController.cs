@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.XR;
 
 [DisallowMultipleComponent]
@@ -14,6 +15,10 @@ public sealed class PaintingRotationController : MonoBehaviour
     public const float DefaultFeedbackDelay = 0.3f;
     public const float DefaultFeedbackTimeoutRatio = 0.85f;
     public const float DefaultChoicePromptTimeoutSeconds = 45f;
+    public const float DefaultEyeRestDuration = 30f;
+
+    const float DefaultAutoEyeRestOverlayDistanceMeters = 0.75f;
+    const float AutoEyeRestOverlayFovPadding = 1.6f;
 
     [Header("Paintings")]
     [SerializeField] Transform _paintingsRoot;
@@ -45,6 +50,19 @@ public sealed class PaintingRotationController : MonoBehaviour
     [SerializeField, Min(0f)] float _eyeTrackingStartGateTimeoutSeconds = 8f;
     [SerializeField, Min(0.05f)] float _eyeTrackingStartGatePollSeconds = 0.25f;
 
+    [Header("Eye Rest Gate")]
+    [SerializeField] bool _enableEyeRestGate = true;
+    [SerializeField, Min(1)] int _paintingsBetweenEyeRests = 2;
+    [SerializeField, Min(0f)] float _eyeRestDuration = DefaultEyeRestDuration;
+    [SerializeField] KeyCode _eyeRestContinueKey = KeyCode.B;
+    [SerializeField] Color _eyeRestOverlayColor = Color.black;
+    [SerializeField, Range(0f, 1f)] float _eyeRestOverlayAlpha = 1f;
+    [SerializeField] CanvasGroup _eyeRestOverlay;
+    [SerializeField] bool _autoCreateEyeRestOverlay = true;
+    [SerializeField, Min(0.1f)] float _autoEyeRestOverlayDistanceMeters = DefaultAutoEyeRestOverlayDistanceMeters;
+    [SerializeField] bool _allowRightControllerBButtonForEyeRest = true;
+    [SerializeField] bool _logEyeRestGate = true;
+
     [Header("Runtime")]
     [SerializeField] bool _playOnStart = true;
     [SerializeField] bool _waitForRightControllerAButtonBeforeStart;
@@ -67,10 +85,16 @@ public sealed class PaintingRotationController : MonoBehaviour
     bool _choiceCompleted;
     bool _wasUnityXrRightControllerAButtonPressed;
     bool _wasOvrRightControllerAButtonPressed;
+    bool _wasUnityXrRightControllerBButtonPressed;
+    bool _wasOvrRightControllerBButtonPressed;
+    bool _createdRuntimeEyeRestOverlay;
+    bool _missingEyeRestOverlayWarningIssued;
     int _currentIndex = -1;
     int _paintingRunIndex;
     float _choicePromptStartedAt;
     MeditationChoiceEyeGazeFeedback.SelectionResult _lastChoiceResult;
+    Canvas _runtimeEyeRestCanvas;
+    Image _runtimeEyeRestOverlayImage;
 
     public int paintingCount => _paintings.Count;
     public int currentIndex => _currentIndex;
@@ -98,6 +122,20 @@ public sealed class PaintingRotationController : MonoBehaviour
         return isPressed && !wasPressed;
     }
 
+    public static bool ShouldStartEyeRestGate(
+        bool enabled,
+        int paintingsBetweenEyeRests,
+        int completedPaintingCount)
+    {
+        if (!enabled || completedPaintingCount <= 0)
+        {
+            return false;
+        }
+
+        var interval = Mathf.Max(1, paintingsBetweenEyeRests);
+        return completedPaintingCount % interval == 0;
+    }
+
     public static string FormatTransitionLogMessage(
         string phase,
         string fromName,
@@ -117,6 +155,27 @@ public sealed class PaintingRotationController : MonoBehaviour
             SecondsToMilliseconds(durationSeconds),
             Mathf.Clamp01(progress) * 100f,
             spawnRate);
+    }
+
+    public static string FormatEyeRestLogMessage(
+        string phase,
+        string fromName,
+        string toName,
+        int completedPaintingCount,
+        float requiredRestSeconds,
+        float elapsedSeconds,
+        string inputSource)
+    {
+        return string.Format(
+            CultureInfo.InvariantCulture,
+            "[PaintingRotationController] eyeRest={0} from=\"{1}\" to=\"{2}\" completedPaintings={3} requiredRest={4}ms elapsed={5}ms input=\"{6}\"",
+            phase,
+            fromName,
+            toName,
+            Mathf.Max(0, completedPaintingCount),
+            SecondsToMilliseconds(requiredRestSeconds),
+            SecondsToMilliseconds(elapsedSeconds),
+            inputSource ?? string.Empty);
     }
 
     public static float CalculateFeedbackTimeout(float fadeOutDuration, float feedbackDelay, float timeoutRatio)
@@ -316,6 +375,8 @@ public sealed class PaintingRotationController : MonoBehaviour
         }
 
         ConfigureMeditationChoiceForIdle();
+        ResetEyeRestContinuePressedState();
+        SetEyeRestOverlayVisible(false);
         _rotationRoutine = StartCoroutine(RunRotationRoutine());
         return true;
     }
@@ -335,6 +396,7 @@ public sealed class PaintingRotationController : MonoBehaviour
 
         if (_rotationRoutine == null)
         {
+            SetEyeRestOverlayVisible(false);
             if (releaseExperimentControl)
             {
                 ReleaseExperimentControl();
@@ -347,6 +409,7 @@ public sealed class PaintingRotationController : MonoBehaviour
         _rotationRoutine = null;
         UnsubscribeFromCurrentAnimator();
         ConfigureMeditationChoiceForIdle();
+        SetEyeRestOverlayVisible(false);
         if (releaseExperimentControl)
         {
             ReleaseExperimentControl();
@@ -545,13 +608,18 @@ public sealed class PaintingRotationController : MonoBehaviour
             var current = _paintings[_currentIndex];
             yield return PlayAndWaitForCompletion(current);
 
+            var completedPaintingCount = _paintingRunIndex;
             var nextIndex = GetNextIndex(_currentIndex, _paintings.Count);
             if (nextIndex < 0 || nextIndex == _currentIndex)
             {
                 yield break;
             }
 
-            yield return TransitionToNextPainting(nextIndex);
+            var runEyeRestGate = ShouldStartEyeRestGate(
+                _enableEyeRestGate,
+                _paintingsBetweenEyeRests,
+                completedPaintingCount);
+            yield return TransitionToNextPainting(nextIndex, runEyeRestGate, completedPaintingCount);
         }
     }
 
@@ -571,7 +639,7 @@ public sealed class PaintingRotationController : MonoBehaviour
         CompletePaintingRun(painting);
     }
 
-    IEnumerator TransitionToNextPainting(int nextIndex)
+    IEnumerator TransitionToNextPainting(int nextIndex, bool runEyeRestGate, int completedPaintingCount)
     {
         var outgoing = _paintings[_currentIndex];
         var incoming = _paintings[nextIndex];
@@ -658,6 +726,11 @@ public sealed class PaintingRotationController : MonoBehaviour
         }
 
         SetPaintingVisibility(outgoing.gameObject, false);
+
+        if (runEyeRestGate)
+        {
+            yield return RunEyeRestGate(outgoing, incoming, completedPaintingCount);
+        }
 
         SetPaintingVisibility(incoming.gameObject, true);
         incoming.activatedAtSeconds = Time.time;
@@ -1008,6 +1081,248 @@ public sealed class PaintingRotationController : MonoBehaviour
         _choiceCompleted = true;
     }
 
+    IEnumerator RunEyeRestGate(PaintingEntry outgoing, PaintingEntry incoming, int completedPaintingCount)
+    {
+        var startedRealtime = Time.realtimeSinceStartupAsDouble;
+        var requiredRestSeconds = Mathf.Max(0f, _eyeRestDuration);
+
+        ResetEyeRestContinuePressedState();
+        SetEyeRestOverlayVisible(true);
+        LogEyeRestGate(
+            "eye_rest_started",
+            outgoing,
+            incoming,
+            completedPaintingCount,
+            requiredRestSeconds,
+            0f,
+            string.Empty);
+
+        var elapsed = 0f;
+        while (elapsed < requiredRestSeconds)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        elapsed = Mathf.Max(0f, (float)(Time.realtimeSinceStartupAsDouble - startedRealtime));
+        LogEyeRestGate(
+            "eye_rest_timer_completed",
+            outgoing,
+            incoming,
+            completedPaintingCount,
+            requiredRestSeconds,
+            elapsed,
+            string.Empty);
+        SetEyeRestOverlayVisible(false);
+
+        ResetEyeRestContinuePressedState();
+        var inputSource = string.Empty;
+        while (!WasEyeRestContinuePressedThisFrame(out inputSource))
+        {
+            yield return null;
+        }
+
+        elapsed = Mathf.Max(0f, (float)(Time.realtimeSinceStartupAsDouble - startedRealtime));
+        LogEyeRestGate(
+            "eye_rest_continue_pressed",
+            outgoing,
+            incoming,
+            completedPaintingCount,
+            requiredRestSeconds,
+            elapsed,
+            inputSource);
+    }
+
+    void SetEyeRestOverlayVisible(bool visible)
+    {
+        var overlay = visible ? ResolveEyeRestOverlay() : _eyeRestOverlay;
+        if (overlay == null)
+        {
+            if (visible && !_missingEyeRestOverlayWarningIssued)
+            {
+                Debug.LogWarning(
+                    "[PaintingRotationController] Eye rest gate is enabled, but no CanvasGroup overlay is assigned and the runtime overlay could not be created.",
+                    this);
+                _missingEyeRestOverlayWarningIssued = true;
+            }
+
+            return;
+        }
+
+        if (visible)
+        {
+            overlay.gameObject.SetActive(true);
+            UpdateRuntimeEyeRestOverlayGeometry();
+            if (_runtimeEyeRestOverlayImage != null)
+            {
+                _runtimeEyeRestOverlayImage.color = _eyeRestOverlayColor;
+            }
+
+            overlay.alpha = _eyeRestOverlayAlpha;
+            overlay.blocksRaycasts = true;
+            overlay.interactable = false;
+            return;
+        }
+
+        overlay.alpha = 0f;
+        overlay.blocksRaycasts = false;
+        overlay.interactable = false;
+        overlay.gameObject.SetActive(false);
+    }
+
+    CanvasGroup ResolveEyeRestOverlay()
+    {
+        if (_eyeRestOverlay != null)
+        {
+            return _eyeRestOverlay;
+        }
+
+        if (!_autoCreateEyeRestOverlay || !Application.isPlaying)
+        {
+            return null;
+        }
+
+        var overlayObject = new GameObject("Eye Rest Black Overlay", typeof(RectTransform));
+        var canvas = overlayObject.AddComponent<Canvas>();
+        canvas.sortingOrder = short.MaxValue;
+        var group = overlayObject.AddComponent<CanvasGroup>();
+        group.alpha = 0f;
+        group.blocksRaycasts = false;
+        group.interactable = false;
+
+        var imageObject = new GameObject("Black Panel", typeof(RectTransform));
+        imageObject.transform.SetParent(overlayObject.transform, false);
+        var image = imageObject.AddComponent<Image>();
+        image.color = _eyeRestOverlayColor;
+        image.raycastTarget = false;
+        StretchToFill(image.rectTransform);
+
+        _eyeRestOverlay = group;
+        _runtimeEyeRestCanvas = canvas;
+        _runtimeEyeRestOverlayImage = image;
+        _createdRuntimeEyeRestOverlay = true;
+        UpdateRuntimeEyeRestOverlayGeometry();
+        overlayObject.SetActive(false);
+        return _eyeRestOverlay;
+    }
+
+    void UpdateRuntimeEyeRestOverlayGeometry()
+    {
+        if (!_createdRuntimeEyeRestOverlay || _runtimeEyeRestCanvas == null)
+        {
+            return;
+        }
+
+        var camera = ResolveEyeRestCamera();
+        var rootRect = _runtimeEyeRestCanvas.GetComponent<RectTransform>();
+        if (camera != null)
+        {
+            _runtimeEyeRestCanvas.renderMode = RenderMode.WorldSpace;
+            _runtimeEyeRestCanvas.worldCamera = camera;
+            var overlayTransform = _runtimeEyeRestCanvas.transform;
+            if (overlayTransform.parent != camera.transform)
+            {
+                overlayTransform.SetParent(camera.transform, false);
+            }
+
+            var distance = Mathf.Max(
+                _autoEyeRestOverlayDistanceMeters,
+                camera.nearClipPlane + 0.05f);
+            overlayTransform.localPosition = new Vector3(0f, 0f, distance);
+            overlayTransform.localRotation = Quaternion.identity;
+            overlayTransform.localScale = Vector3.one;
+
+            if (rootRect != null)
+            {
+                var height = 2f *
+                             distance *
+                             Mathf.Tan(camera.fieldOfView * Mathf.Deg2Rad * 0.5f) *
+                             AutoEyeRestOverlayFovPadding;
+                var width = height * Mathf.Max(0.01f, camera.aspect);
+                rootRect.sizeDelta = new Vector2(width, height);
+            }
+        }
+        else
+        {
+            _runtimeEyeRestCanvas.renderMode = RenderMode.ScreenSpaceOverlay;
+            if (rootRect != null)
+            {
+                StretchToFill(rootRect);
+            }
+        }
+
+        if (_runtimeEyeRestOverlayImage != null)
+        {
+            StretchToFill(_runtimeEyeRestOverlayImage.rectTransform);
+        }
+    }
+
+    static void StretchToFill(RectTransform rectTransform)
+    {
+        if (rectTransform == null)
+        {
+            return;
+        }
+
+        rectTransform.anchorMin = Vector2.zero;
+        rectTransform.anchorMax = Vector2.one;
+        rectTransform.offsetMin = Vector2.zero;
+        rectTransform.offsetMax = Vector2.zero;
+        rectTransform.pivot = new Vector2(0.5f, 0.5f);
+    }
+
+    static Camera ResolveEyeRestCamera()
+    {
+        var mainCamera = Camera.main;
+        if (mainCamera != null)
+        {
+            return mainCamera;
+        }
+
+        return Object.FindObjectOfType<Camera>();
+    }
+
+    void LogEyeRestGate(
+        string phase,
+        PaintingEntry outgoing,
+        PaintingEntry incoming,
+        int completedPaintingCount,
+        float requiredRestSeconds,
+        float elapsedSeconds,
+        string inputSource)
+    {
+        var message = FormatEyeRestLogMessage(
+            phase,
+            outgoing != null ? outgoing.gameObject.name : string.Empty,
+            incoming != null ? incoming.gameObject.name : string.Empty,
+            completedPaintingCount,
+            requiredRestSeconds,
+            elapsedSeconds,
+            inputSource);
+
+        if (_logEyeRestGate)
+        {
+            Debug.Log(message, this);
+        }
+
+        ResolveExperimentCsvLogger().LogEvent(new MeditationExperimentCsvLogger.Row
+        {
+            eventType = phase,
+            paintingRunIndex = outgoing != null ? outgoing.currentRunIndex : -1,
+            paintingIndex = outgoing != null ? _paintings.IndexOf(outgoing) + 1 : -1,
+            paintingId = outgoing != null ? outgoing.paintingId : string.Empty,
+            paintingName = outgoing != null ? outgoing.gameObject.name : string.Empty,
+            eventRealtime = Time.realtimeSinceStartupAsDouble,
+            notes = message
+        });
+    }
+
+    void ResetEyeRestContinuePressedState()
+    {
+        _wasUnityXrRightControllerBButtonPressed = IsUnityXrRightControllerBButtonPressed(out _);
+        _wasOvrRightControllerBButtonPressed = IsOvrRightControllerBButtonPressed(out _);
+    }
+
     void OnValidate()
     {
         _fadeOutDuration = Mathf.Max(0.01f, _fadeOutDuration);
@@ -1022,6 +1337,10 @@ public sealed class PaintingRotationController : MonoBehaviour
         _choicePromptTimeoutSeconds = Mathf.Max(0f, _choicePromptTimeoutSeconds);
         _eyeTrackingStartGateTimeoutSeconds = Mathf.Max(0f, _eyeTrackingStartGateTimeoutSeconds);
         _eyeTrackingStartGatePollSeconds = Mathf.Max(0.05f, _eyeTrackingStartGatePollSeconds);
+        _paintingsBetweenEyeRests = Mathf.Max(1, _paintingsBetweenEyeRests);
+        _eyeRestDuration = Mathf.Max(0f, _eyeRestDuration);
+        _autoEyeRestOverlayDistanceMeters = Mathf.Max(0.1f, _autoEyeRestOverlayDistanceMeters);
+        _eyeRestOverlayAlpha = Mathf.Clamp01(_eyeRestOverlayAlpha);
     }
 
     bool WasStartButtonPressedThisFrame(out string inputSource)
@@ -1099,6 +1418,89 @@ public sealed class PaintingRotationController : MonoBehaviour
             buttonOnePressed,
             rawAOnRightTouchPressed,
             rawAOnActivePressed,
+            OVRInput.GetActiveController(),
+            OVRInput.GetConnectedControllers());
+
+        return pressed;
+    }
+
+    bool WasEyeRestContinuePressedThisFrame(out string inputSource)
+    {
+        inputSource = string.Empty;
+
+        if (_eyeRestContinueKey != KeyCode.None && Input.GetKeyDown(_eyeRestContinueKey))
+        {
+            inputSource = "Keyboard(" + _eyeRestContinueKey + ")";
+            return true;
+        }
+
+        if (!_allowRightControllerBButtonForEyeRest)
+        {
+            return false;
+        }
+
+        var unityXrPressed = IsUnityXrRightControllerBButtonPressed(out var unityXrSource);
+        var unityXrPressedThisFrame = IsPressedThisFrame(
+            unityXrPressed,
+            _wasUnityXrRightControllerBButtonPressed);
+        _wasUnityXrRightControllerBButtonPressed = unityXrPressed;
+        if (unityXrPressedThisFrame)
+        {
+            inputSource = unityXrSource;
+            return true;
+        }
+
+        var ovrPressed = IsOvrRightControllerBButtonPressed(out var ovrSource);
+        var ovrPressedThisFrame = IsPressedThisFrame(
+            ovrPressed,
+            _wasOvrRightControllerBButtonPressed);
+        _wasOvrRightControllerBButtonPressed = ovrPressed;
+        if (ovrPressedThisFrame)
+        {
+            inputSource = ovrSource;
+            return true;
+        }
+
+        return false;
+    }
+
+    static bool IsUnityXrRightControllerBButtonPressed(out string inputSource)
+    {
+        inputSource = "UnityEngine.XR CommonUsages.secondaryButton";
+        InputDevicesBuffer.Clear();
+        InputDevices.GetDevicesWithCharacteristics(
+            InputDeviceCharacteristics.Right | InputDeviceCharacteristics.Controller,
+            InputDevicesBuffer);
+
+        for (var i = 0; i < InputDevicesBuffer.Count; i++)
+        {
+            if (InputDevicesBuffer[i].TryGetFeatureValue(CommonUsages.secondaryButton, out var secondaryButton) &&
+                secondaryButton)
+            {
+                inputSource = string.Format(
+                    CultureInfo.InvariantCulture,
+                    "UnityEngine.XR secondaryButton device=\"{0}\"",
+                    InputDevicesBuffer[i].name);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    static bool IsOvrRightControllerBButtonPressed(out string inputSource)
+    {
+        var buttonTwoPressed = OVRInput.Get(OVRInput.Button.Two, OVRInput.Controller.RTouch);
+        var rawBOnRightTouchPressed = OVRInput.Get(OVRInput.RawButton.B, OVRInput.Controller.RTouch);
+        var rawBOnActivePressed = OVRInput.Get(OVRInput.RawButton.B, OVRInput.Controller.Active);
+        var pressed = buttonTwoPressed || rawBOnRightTouchPressed || rawBOnActivePressed;
+
+        inputSource = string.Format(
+            CultureInfo.InvariantCulture,
+            "OVRInput Button.Two/RawButton.B buttonTwo={0} rawB(RTouch)={1} rawB(Active)={2} active={3} connected={4}",
+            buttonTwoPressed,
+            rawBOnRightTouchPressed,
+            rawBOnActivePressed,
             OVRInput.GetActiveController(),
             OVRInput.GetConnectedControllers());
 

@@ -44,6 +44,23 @@ public sealed class PaintingRotationControllerTests
     }
 
     [Test]
+    public void DefaultEyeRestDurationMatchesRequestedBreakLength()
+    {
+        Assert.AreEqual(30f, PaintingRotationController.DefaultEyeRestDuration);
+    }
+
+    [Test]
+    public void EyeRestGateStartsAfterConfiguredPaintingInterval()
+    {
+        Assert.IsFalse(PaintingRotationController.ShouldStartEyeRestGate(true, 2, 1));
+        Assert.IsTrue(PaintingRotationController.ShouldStartEyeRestGate(true, 2, 2));
+        Assert.IsFalse(PaintingRotationController.ShouldStartEyeRestGate(true, 2, 3));
+        Assert.IsTrue(PaintingRotationController.ShouldStartEyeRestGate(true, 2, 4));
+        Assert.IsFalse(PaintingRotationController.ShouldStartEyeRestGate(false, 2, 2));
+        Assert.IsFalse(PaintingRotationController.ShouldStartEyeRestGate(true, 2, 0));
+    }
+
+    [Test]
     public void FeedbackTimeoutStaysInsideFadeOutWindowAfterDelay()
     {
         Assert.AreEqual(
@@ -229,6 +246,28 @@ public sealed class PaintingRotationControllerTests
         StringAssert.Contains("elapsed=1234ms/12000ms", message);
         StringAssert.Contains("progress=50.0%", message);
         StringAssert.Contains("spawnRate=12345.678", message);
+    }
+
+    [Test]
+    public void EyeRestLogMessageIncludesPhasePaintingsTimingAndInput()
+    {
+        var message = PaintingRotationController.FormatEyeRestLogMessage(
+            "eye_rest_continue_pressed",
+            "A",
+            "B",
+            2,
+            30f,
+            35.25f,
+            "Keyboard(B)");
+
+        StringAssert.Contains("[PaintingRotationController]", message);
+        StringAssert.Contains("eyeRest=eye_rest_continue_pressed", message);
+        StringAssert.Contains("from=\"A\"", message);
+        StringAssert.Contains("to=\"B\"", message);
+        StringAssert.Contains("completedPaintings=2", message);
+        StringAssert.Contains("requiredRest=30000ms", message);
+        StringAssert.Contains("elapsed=35250ms", message);
+        StringAssert.Contains("input=\"Keyboard(B)\"", message);
     }
 
     static StarryNightRhoneVfxAutoAnimator CreatePainting(string name, Transform parent)
