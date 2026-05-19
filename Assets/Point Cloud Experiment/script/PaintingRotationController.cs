@@ -2,6 +2,9 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.HighDefinition;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 using UnityEngine.XR;
 
@@ -14,11 +17,14 @@ public sealed class PaintingRotationController : MonoBehaviour
     public const float DefaultDissolveHoldDuration = 8f;
     public const float DefaultFeedbackDelay = 0.3f;
     public const float DefaultFeedbackTimeoutRatio = 0.85f;
-    public const float DefaultChoicePromptTimeoutSeconds = 45f;
+    public const float DefaultChoicePromptReminderDelaySeconds = 45f;
+    public const float DefaultChoicePromptTimeoutSeconds = DefaultChoicePromptReminderDelaySeconds;
+    public const float DefaultChoicePromptReminderAudioIntervalSeconds = 3f;
     public const float DefaultEyeRestDuration = 30f;
 
     const float DefaultAutoEyeRestOverlayDistanceMeters = 0.75f;
     const float AutoEyeRestOverlayFovPadding = 1.6f;
+    const string DefaultChoicePromptReminderClipAssetPath = "Assets/Audio/notification.mp3";
 
     [Header("Paintings")]
     [SerializeField] Transform _paintingsRoot;
@@ -45,7 +51,15 @@ public sealed class PaintingRotationController : MonoBehaviour
     [SerializeField, Min(0.1f)] float _choicePromptBreathInSeconds = 1.1f;
     [SerializeField, Min(0.1f)] float _choicePromptBreathOutSeconds = 1.55f;
     [SerializeField, Range(0f, 1f)] float _choicePromptBreathMinimumAmount;
-    [SerializeField, Min(0f)] float _choicePromptTimeoutSeconds = DefaultChoicePromptTimeoutSeconds;
+    [SerializeField, FormerlySerializedAs("_choicePromptTimeoutSeconds"), Min(0f)] float _choicePromptReminderDelaySeconds = DefaultChoicePromptReminderDelaySeconds;
+    [SerializeField] Volume _choicePromptReminderSkyVolume;
+    [SerializeField] Color _choicePromptReminderSkyMiddleColor = new Color(49f / 255f, 143f / 255f, 166f / 255f, 1f);
+    [SerializeField, Min(0.01f)] float _choicePromptReminderSkyTransitionSeconds = 1.5f;
+    [SerializeField] AnimationCurve _choicePromptReminderSkyTransitionCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+    [SerializeField] AudioClip _choicePromptReminderClip;
+    [SerializeField] AudioSource _choicePromptReminderAudioSource;
+    [SerializeField, Min(0.1f)] float _choicePromptReminderAudioIntervalSeconds = DefaultChoicePromptReminderAudioIntervalSeconds;
+    [SerializeField, Range(0f, 1f)] float _choicePromptReminderAudioVolume = 1f;
     [SerializeField] bool _requireEyeTrackingReadyBeforeStart = true;
     [SerializeField, Min(0f)] float _eyeTrackingStartGateTimeoutSeconds = 8f;
     [SerializeField, Min(0.05f)] float _eyeTrackingStartGatePollSeconds = 0.25f;
@@ -93,6 +107,17 @@ public sealed class PaintingRotationController : MonoBehaviour
     int _paintingRunIndex;
     float _choicePromptStartedAt;
     MeditationChoiceEyeGazeFeedback.SelectionResult _lastChoiceResult;
+    MeditationChoiceEyeGazeFeedback _subscribedChoiceFeedback;
+    Coroutine _choicePromptReminderRoutine;
+    Coroutine _choicePromptSkyTransitionRoutine;
+    AudioSource _runtimeChoicePromptReminderAudioSource;
+    GradientSky _choicePromptGradientSky;
+    Color _choicePromptOriginalSkyMiddleColor;
+    bool _choicePromptOriginalSkyMiddleOverrideState;
+    bool _choicePromptSkyOriginalCaptured;
+    bool _choicePromptReminderActive;
+    bool _missingChoicePromptReminderSkyWarningIssued;
+    bool _missingChoicePromptReminderClipWarningIssued;
     Canvas _runtimeEyeRestCanvas;
     Image _runtimeEyeRestOverlayImage;
 
@@ -396,6 +421,8 @@ public sealed class PaintingRotationController : MonoBehaviour
 
         if (_rotationRoutine == null)
         {
+            UnsubscribeFromMeditationChoiceFeedback();
+            StopChoicePromptReminder(true);
             SetEyeRestOverlayVisible(false);
             if (releaseExperimentControl)
             {
@@ -408,6 +435,8 @@ public sealed class PaintingRotationController : MonoBehaviour
         StopCoroutine(_rotationRoutine);
         _rotationRoutine = null;
         UnsubscribeFromCurrentAnimator();
+        UnsubscribeFromMeditationChoiceFeedback();
+        StopChoicePromptReminder(true);
         ConfigureMeditationChoiceForIdle();
         SetEyeRestOverlayVisible(false);
         if (releaseExperimentControl)
@@ -1027,7 +1056,7 @@ public sealed class PaintingRotationController : MonoBehaviour
         _choiceCompleted = false;
         _lastChoiceResult = null;
         _choicePromptStartedAt = Time.realtimeSinceStartup;
-        choiceFeedback.SelectionCompleted += HandleMeditationChoiceCompleted;
+        SubscribeToMeditationChoiceFeedback(choiceFeedback);
 
         LogStageCsv("choice_prompt_started", stageEvent, "Orb prompt breathing light starts; choices remain enabled during the breathing cue.");
         choiceFeedback.BeginChoicePrompt(
@@ -1035,17 +1064,17 @@ public sealed class PaintingRotationController : MonoBehaviour
             _choicePromptBreathInSeconds,
             _choicePromptBreathOutSeconds,
             _choicePromptBreathMinimumAmount);
+        BeginChoicePromptReminder();
 
-        var elapsed = 0f;
-        while (!_choiceCompleted && (_choicePromptTimeoutSeconds <= 0f || elapsed < _choicePromptTimeoutSeconds))
+        while (!_choiceCompleted)
         {
-            elapsed += Time.deltaTime;
             yield return null;
         }
 
-        choiceFeedback.SelectionCompleted -= HandleMeditationChoiceCompleted;
+        UnsubscribeFromMeditationChoiceFeedback();
+        StopChoicePromptReminder(true);
 
-        if (_choiceCompleted && _lastChoiceResult != null)
+        if (_lastChoiceResult != null)
         {
             var waitSeconds = Mathf.Max(0f, _lastChoiceResult.triggeredRealtime - _choicePromptStartedAt);
             choiceFeedback.CancelChoicePrompt(_choiceNormalColorIntensity);
@@ -1058,27 +1087,379 @@ public sealed class PaintingRotationController : MonoBehaviour
         }
         else
         {
-            var timeoutNotes = BuildChoiceTimeoutNotes(choiceFeedback);
-            Debug.LogWarning("[PaintingRotationController] " + timeoutNotes, this);
             choiceFeedback.CancelChoicePrompt(_choiceNormalColorIntensity);
-            LogChoiceCsv("choice_timeout", stageEvent, null, elapsed, timeoutNotes);
+            Debug.LogWarning("[PaintingRotationController] Choice prompt ended without a selection result.", this);
         }
-    }
-
-    static string BuildChoiceTimeoutNotes(MeditationChoiceEyeGazeFeedback choiceFeedback)
-    {
-        if (choiceFeedback == null || string.IsNullOrEmpty(choiceFeedback.lastInvalidGazeReason))
-        {
-            return "Choice prompt timed out.";
-        }
-
-        return "Choice prompt timed out. Last invalid gaze reason: " + choiceFeedback.lastInvalidGazeReason;
     }
 
     void HandleMeditationChoiceCompleted(MeditationChoiceEyeGazeFeedback.SelectionResult result)
     {
         _lastChoiceResult = result;
         _choiceCompleted = true;
+    }
+
+    void SubscribeToMeditationChoiceFeedback(MeditationChoiceEyeGazeFeedback choiceFeedback)
+    {
+        UnsubscribeFromMeditationChoiceFeedback();
+        if (choiceFeedback == null)
+        {
+            return;
+        }
+
+        _subscribedChoiceFeedback = choiceFeedback;
+        _subscribedChoiceFeedback.SelectionCompleted += HandleMeditationChoiceCompleted;
+    }
+
+    void UnsubscribeFromMeditationChoiceFeedback()
+    {
+        if (_subscribedChoiceFeedback == null)
+        {
+            return;
+        }
+
+        _subscribedChoiceFeedback.SelectionCompleted -= HandleMeditationChoiceCompleted;
+        _subscribedChoiceFeedback = null;
+    }
+
+    void BeginChoicePromptReminder()
+    {
+        StopChoicePromptReminder(false);
+        _choicePromptReminderActive = false;
+        _choicePromptSkyOriginalCaptured = CaptureChoicePromptSkyOriginal();
+        _choicePromptReminderRoutine = StartCoroutine(ChoicePromptReminderRoutine());
+    }
+
+    void StopChoicePromptReminder(bool restoreSky)
+    {
+        var shouldRestoreSky = restoreSky &&
+                               _choicePromptSkyOriginalCaptured &&
+                               (_choicePromptReminderActive || _choicePromptSkyTransitionRoutine != null);
+
+        if (_choicePromptReminderRoutine != null)
+        {
+            StopCoroutine(_choicePromptReminderRoutine);
+            _choicePromptReminderRoutine = null;
+        }
+
+        StopChoicePromptReminderAudio();
+
+        if (_choicePromptSkyTransitionRoutine != null)
+        {
+            StopCoroutine(_choicePromptSkyTransitionRoutine);
+            _choicePromptSkyTransitionRoutine = null;
+        }
+
+        _choicePromptReminderActive = false;
+
+        if (shouldRestoreSky)
+        {
+            StartChoicePromptSkyTransition(_choicePromptOriginalSkyMiddleColor, true);
+        }
+        else
+        {
+            _choicePromptSkyOriginalCaptured = false;
+        }
+    }
+
+    IEnumerator ChoicePromptReminderRoutine()
+    {
+        var delaySeconds = Mathf.Max(0f, _choicePromptReminderDelaySeconds);
+        var waitedSeconds = 0f;
+        while (!_choiceCompleted && waitedSeconds < delaySeconds)
+        {
+            waitedSeconds += Time.unscaledDeltaTime;
+            yield return null;
+        }
+
+        if (_choiceCompleted)
+        {
+            yield break;
+        }
+
+        _choicePromptReminderActive = true;
+        StartChoicePromptSkyTransition(_choicePromptReminderSkyMiddleColor, false);
+
+        while (!_choiceCompleted)
+        {
+            PlayChoicePromptReminderAudio();
+
+            var intervalSeconds = Mathf.Max(0.1f, _choicePromptReminderAudioIntervalSeconds);
+            var intervalElapsed = 0f;
+            while (!_choiceCompleted && intervalElapsed < intervalSeconds)
+            {
+                intervalElapsed += Time.unscaledDeltaTime;
+                yield return null;
+            }
+        }
+    }
+
+    bool CaptureChoicePromptSkyOriginal()
+    {
+        if (!TryResolveChoicePromptGradientSky(out var gradientSky))
+        {
+            WarnMissingChoicePromptReminderSky();
+            return false;
+        }
+
+        _choicePromptOriginalSkyMiddleColor = gradientSky.middle.value;
+        _choicePromptOriginalSkyMiddleOverrideState = gradientSky.middle.overrideState;
+        return true;
+    }
+
+    void StartChoicePromptSkyTransition(Color targetColor, bool restoreOriginalOverrideState)
+    {
+        if (!TryResolveChoicePromptGradientSky(out var gradientSky))
+        {
+            WarnMissingChoicePromptReminderSky();
+            return;
+        }
+
+        if (_choicePromptSkyTransitionRoutine != null)
+        {
+            StopCoroutine(_choicePromptSkyTransitionRoutine);
+            _choicePromptSkyTransitionRoutine = null;
+        }
+
+        if (isActiveAndEnabled && Application.isPlaying)
+        {
+            _choicePromptSkyTransitionRoutine = StartCoroutine(ChoicePromptSkyTransitionRoutine(
+                gradientSky,
+                targetColor,
+                restoreOriginalOverrideState));
+            return;
+        }
+
+        ApplyChoicePromptSkyMiddle(gradientSky, targetColor, true);
+        if (restoreOriginalOverrideState)
+        {
+            gradientSky.middle.overrideState = _choicePromptOriginalSkyMiddleOverrideState;
+            _choicePromptSkyOriginalCaptured = false;
+        }
+    }
+
+    IEnumerator ChoicePromptSkyTransitionRoutine(
+        GradientSky gradientSky,
+        Color targetColor,
+        bool restoreOriginalOverrideState)
+    {
+        var startColor = gradientSky.middle.value;
+        var elapsed = 0f;
+        var duration = Mathf.Max(0.01f, _choicePromptReminderSkyTransitionSeconds);
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            var progress = Mathf.Clamp01(elapsed / duration);
+            var eased = EvaluateChoicePromptReminderSkyCurve(progress);
+            ApplyChoicePromptSkyMiddle(gradientSky, Color.Lerp(startColor, targetColor, eased), true);
+            yield return null;
+        }
+
+        ApplyChoicePromptSkyMiddle(gradientSky, targetColor, true);
+        if (restoreOriginalOverrideState)
+        {
+            gradientSky.middle.overrideState = _choicePromptOriginalSkyMiddleOverrideState;
+            _choicePromptSkyOriginalCaptured = false;
+            RequestHdrpSkyEnvironmentUpdate();
+        }
+
+        _choicePromptSkyTransitionRoutine = null;
+    }
+
+    float EvaluateChoicePromptReminderSkyCurve(float progress)
+    {
+        var curve = _choicePromptReminderSkyTransitionCurve;
+        if (curve == null || curve.length == 0)
+        {
+            return SmoothStep01(progress);
+        }
+
+        return Mathf.Clamp01(curve.Evaluate(Mathf.Clamp01(progress)));
+    }
+
+    static void ApplyChoicePromptSkyMiddle(GradientSky gradientSky, Color color, bool overrideState)
+    {
+        if (gradientSky == null)
+        {
+            return;
+        }
+
+        gradientSky.middle.overrideState = overrideState;
+        gradientSky.middle.value = color;
+        RequestHdrpSkyEnvironmentUpdate();
+    }
+
+    bool TryResolveChoicePromptGradientSky(out GradientSky gradientSky)
+    {
+        gradientSky = null;
+        if (_choicePromptGradientSky != null)
+        {
+            gradientSky = _choicePromptGradientSky;
+            return true;
+        }
+
+        var volume = _choicePromptReminderSkyVolume != null
+            ? _choicePromptReminderSkyVolume
+            : FindChoicePromptReminderSkyVolume();
+        if (volume == null)
+        {
+            return false;
+        }
+
+        var profile = Application.isPlaying ? volume.profile : volume.sharedProfile;
+        if (profile == null || !profile.TryGet(out gradientSky))
+        {
+            return false;
+        }
+
+        _choicePromptReminderSkyVolume = volume;
+        _choicePromptGradientSky = gradientSky;
+        return true;
+    }
+
+    static Volume FindChoicePromptReminderSkyVolume()
+    {
+        Volume fallback = null;
+        var volumes = FindObjectsOfType<Volume>(true);
+        for (var i = 0; i < volumes.Length; i++)
+        {
+            var volume = volumes[i];
+            if (volume == null || !VolumeHasGradientSky(volume))
+            {
+                continue;
+            }
+
+            if (volume.isGlobal)
+            {
+                return volume;
+            }
+
+            if (fallback == null)
+            {
+                fallback = volume;
+            }
+        }
+
+        return fallback;
+    }
+
+    static bool VolumeHasGradientSky(Volume volume)
+    {
+        var profile = volume != null ? volume.sharedProfile : null;
+        return profile != null && profile.TryGet<GradientSky>(out _);
+    }
+
+    void WarnMissingChoicePromptReminderSky()
+    {
+        if (_missingChoicePromptReminderSkyWarningIssued)
+        {
+            return;
+        }
+
+        _missingChoicePromptReminderSkyWarningIssued = true;
+        Debug.LogWarning(
+            "[PaintingRotationController] Choice reminder could not find a Global Volume profile with Gradient Sky; audio reminder will still run.",
+            this);
+    }
+
+    void PlayChoicePromptReminderAudio()
+    {
+        var clip = ResolveChoicePromptReminderClip();
+        if (clip == null)
+        {
+            WarnMissingChoicePromptReminderClip();
+            return;
+        }
+
+        var audioSource = ResolveChoicePromptReminderAudioSource();
+        if (audioSource != null)
+        {
+            audioSource.PlayOneShot(clip, _choicePromptReminderAudioVolume);
+            return;
+        }
+
+        var position = Camera.main != null ? Camera.main.transform.position : transform.position;
+        AudioSource.PlayClipAtPoint(clip, position, _choicePromptReminderAudioVolume);
+    }
+
+    AudioClip ResolveChoicePromptReminderClip()
+    {
+        if (_choicePromptReminderClip != null)
+        {
+            return _choicePromptReminderClip;
+        }
+
+#if UNITY_EDITOR
+        _choicePromptReminderClip = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>(DefaultChoicePromptReminderClipAssetPath);
+#endif
+        return _choicePromptReminderClip;
+    }
+
+    AudioSource ResolveChoicePromptReminderAudioSource()
+    {
+        if (_choicePromptReminderAudioSource != null)
+        {
+            return _choicePromptReminderAudioSource;
+        }
+
+        if (_runtimeChoicePromptReminderAudioSource == null)
+        {
+            _runtimeChoicePromptReminderAudioSource = gameObject.AddComponent<AudioSource>();
+            _runtimeChoicePromptReminderAudioSource.playOnAwake = false;
+            _runtimeChoicePromptReminderAudioSource.loop = false;
+            _runtimeChoicePromptReminderAudioSource.spatialBlend = 0f;
+        }
+
+        return _runtimeChoicePromptReminderAudioSource;
+    }
+
+    void StopChoicePromptReminderAudio()
+    {
+        if (_choicePromptReminderAudioSource != null)
+        {
+            _choicePromptReminderAudioSource.Stop();
+        }
+
+        if (_runtimeChoicePromptReminderAudioSource != null)
+        {
+            _runtimeChoicePromptReminderAudioSource.Stop();
+        }
+    }
+
+    void WarnMissingChoicePromptReminderClip()
+    {
+        if (_missingChoicePromptReminderClipWarningIssued)
+        {
+            return;
+        }
+
+        _missingChoicePromptReminderClipWarningIssued = true;
+        Debug.LogWarning(
+            "[PaintingRotationController] Choice reminder audio clip is not assigned and Assets/Audio/notification.mp3 could not be loaded.",
+            this);
+    }
+
+    static void RequestHdrpSkyEnvironmentUpdate()
+    {
+        if (RenderPipelineManager.currentPipeline is HDRenderPipeline hdRenderPipeline)
+        {
+            hdRenderPipeline.RequestSkyEnvironmentUpdate();
+        }
+    }
+
+    void AutoAssignChoicePromptReminderDefaultsInEditor()
+    {
+#if UNITY_EDITOR
+        if (_choicePromptReminderClip == null)
+        {
+            _choicePromptReminderClip = UnityEditor.AssetDatabase.LoadAssetAtPath<AudioClip>(DefaultChoicePromptReminderClipAssetPath);
+        }
+
+        if (_choicePromptReminderSkyVolume == null)
+        {
+            _choicePromptReminderSkyVolume = FindChoicePromptReminderSkyVolume();
+        }
+#endif
     }
 
     IEnumerator RunEyeRestGate(PaintingEntry outgoing, PaintingEntry incoming, int completedPaintingCount)
@@ -1334,7 +1715,16 @@ public sealed class PaintingRotationController : MonoBehaviour
         _choicePromptBreathInSeconds = Mathf.Max(0.1f, _choicePromptBreathInSeconds);
         _choicePromptBreathOutSeconds = Mathf.Max(0.1f, _choicePromptBreathOutSeconds);
         _choicePromptBreathMinimumAmount = Mathf.Clamp01(_choicePromptBreathMinimumAmount);
-        _choicePromptTimeoutSeconds = Mathf.Max(0f, _choicePromptTimeoutSeconds);
+        _choicePromptReminderDelaySeconds = Mathf.Max(0f, _choicePromptReminderDelaySeconds);
+        _choicePromptReminderSkyTransitionSeconds = Mathf.Max(0.01f, _choicePromptReminderSkyTransitionSeconds);
+        if (_choicePromptReminderSkyTransitionCurve == null || _choicePromptReminderSkyTransitionCurve.length == 0)
+        {
+            _choicePromptReminderSkyTransitionCurve = AnimationCurve.EaseInOut(0f, 0f, 1f, 1f);
+        }
+
+        _choicePromptReminderAudioIntervalSeconds = Mathf.Max(0.1f, _choicePromptReminderAudioIntervalSeconds);
+        _choicePromptReminderAudioVolume = Mathf.Clamp01(_choicePromptReminderAudioVolume);
+        AutoAssignChoicePromptReminderDefaultsInEditor();
         _eyeTrackingStartGateTimeoutSeconds = Mathf.Max(0f, _eyeTrackingStartGateTimeoutSeconds);
         _eyeTrackingStartGatePollSeconds = Mathf.Max(0.05f, _eyeTrackingStartGatePollSeconds);
         _paintingsBetweenEyeRests = Mathf.Max(1, _paintingsBetweenEyeRests);
@@ -1570,6 +1960,9 @@ public sealed class PaintingRotationController : MonoBehaviour
 
     void ConfigureMeditationChoiceForIdle()
     {
+        UnsubscribeFromMeditationChoiceFeedback();
+        StopChoicePromptReminder(true);
+
         if (!_promptMeditationChoiceAfterStages)
         {
             return;

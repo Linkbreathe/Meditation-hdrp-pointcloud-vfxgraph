@@ -12,6 +12,7 @@ public sealed class MeditationChoiceEyeGazeFeedback : MonoBehaviour
     const string RightEyeGazeName = "[BuildingBlock] Eye Gaze Right";
     const string LeftEyeGazeName = "[BuildingBlock] Eye Gaze Left";
     const string CenterEyeAnchorName = "CenterEyeAnchor";
+    const string OvrPluginNotInitializedReason = "OVRPlugin is not initialized";
     const float RayDirectionEpsilon = 0.0001f;
 
     public enum GazeRayEvaluationMode
@@ -179,6 +180,7 @@ public sealed class MeditationChoiceEyeGazeFeedback : MonoBehaviour
     bool _selectionEffectActive;
     bool _waitingForGazeReleaseAfterSelection;
     bool _colorIntensityOverrideActive;
+    bool _unsupportedRuntimeDiagnosticsLogged;
     float _currentColorIntensity;
     float _choiceBreathAmount;
     Coroutine _choicePromptBreathRoutine;
@@ -890,6 +892,7 @@ public sealed class MeditationChoiceEyeGazeFeedback : MonoBehaviour
         }
 
         if (!OVRPermissionsRequester.IsPermissionGranted(OVRPermissionsRequester.Permission.EyeTracking) ||
+            !OVRPlugin.initialized ||
             !OVRPlugin.eyeTrackingSupported ||
             OVRPlugin.eyeTrackingEnabled)
         {
@@ -926,6 +929,12 @@ public sealed class MeditationChoiceEyeGazeFeedback : MonoBehaviour
         if (!OVRPermissionsRequester.IsPermissionGranted(OVRPermissionsRequester.Permission.EyeTracking))
         {
             reason = "eye tracking permission is not granted";
+            return false;
+        }
+
+        if (!OVRPlugin.initialized)
+        {
+            reason = OvrPluginNotInitializedReason;
             return false;
         }
 
@@ -972,6 +981,19 @@ public sealed class MeditationChoiceEyeGazeFeedback : MonoBehaviour
 
     void RecordInvalidGaze(string reason)
     {
+        _lastInvalidGazeReason = reason;
+        if (reason == OvrPluginNotInitializedReason)
+        {
+            return;
+        }
+
+        if (!_unsupportedRuntimeDiagnosticsLogged &&
+            reason.IndexOf("OVRPlugin reports eye tracking is not supported", StringComparison.Ordinal) >= 0)
+        {
+            _unsupportedRuntimeDiagnosticsLogged = true;
+            reason += "; " + MetaQuestRuntimeDiagnostics.BuildEyeTrackingStatus();
+        }
+
         _lastInvalidGazeReason = reason;
         if (!_logInvalidEyeTracking || !Application.isPlaying)
         {

@@ -4,6 +4,8 @@ using System.Globalization;
 using System.IO;
 using System.Text;
 using UnityEngine;
+using UnityEngine.XR;
+using UnityEngine.XR.Management;
 
 [DefaultExecutionOrder(1200)]
 [DisallowMultipleComponent]
@@ -27,6 +29,8 @@ public sealed class EyeTrackingDataLogger : MonoBehaviour
     [SerializeField] bool _requestEyeTrackingPermission = true;
     [SerializeField] bool _startEyeTrackingIfNeeded = true;
     [SerializeField, Min(0.25f)] float _startRetryInterval = 2f;
+    [SerializeField] bool _logRuntimeDiagnosticsOnStartup = true;
+    [SerializeField] bool _logRuntimeDiagnosticsWhenUnsupported = true;
 
     [Header("Logging")]
     [SerializeField, Min(0.02f)] float _sampleInterval = 0.1f;
@@ -51,6 +55,8 @@ public sealed class EyeTrackingDataLogger : MonoBehaviour
     float _nextSampleTime;
     float _nextConsoleTime;
     float _nextStartAttemptTime;
+    bool _startupDiagnosticsLogged;
+    bool _unsupportedDiagnosticsLogged;
     Action<string> _permissionGrantedCallback;
     MeditationExperimentCsvLogger _experimentCsvLogger;
 
@@ -78,6 +84,7 @@ public sealed class EyeTrackingDataLogger : MonoBehaviour
         RequestPermissionIfNeeded();
         _nextStartAttemptTime = 0f;
         StartEyeTrackingIfNeeded();
+        LogRuntimeDiagnostics("startup");
         OpenStandaloneCsvIfNeeded();
 
         _nextSampleTime = 0f;
@@ -173,6 +180,11 @@ public sealed class EyeTrackingDataLogger : MonoBehaviour
             return;
         }
 
+        if (!OVRPlugin.initialized)
+        {
+            return;
+        }
+
         var now = Time.unscaledTime;
         if (now < _nextStartAttemptTime)
         {
@@ -182,12 +194,46 @@ public sealed class EyeTrackingDataLogger : MonoBehaviour
         _nextStartAttemptTime = now + _startRetryInterval;
         if (!OVRPlugin.eyeTrackingSupported)
         {
-            Debug.LogWarning("[EyeTrackingDataLogger] OVRPlugin reports eye tracking is not supported on this runtime/device.", this);
+            LogUnsupportedEyeTrackingWarning();
             return;
         }
 
         var started = OVRPlugin.StartEyeTracking();
         Debug.Log("[EyeTrackingDataLogger] OVRPlugin.StartEyeTracking result: " + started, this);
+    }
+
+    void LogRuntimeDiagnostics(string reason)
+    {
+        if (!_logRuntimeDiagnosticsOnStartup || _startupDiagnosticsLogged)
+        {
+            return;
+        }
+
+        _startupDiagnosticsLogged = true;
+        Debug.Log(
+            "[EyeTrackingDataLogger] Runtime diagnostics (" + reason + "): " +
+            MetaQuestRuntimeDiagnostics.BuildEyeTrackingStatus(),
+            this);
+    }
+
+    void LogUnsupportedEyeTrackingWarning()
+    {
+        if (_logRuntimeDiagnosticsWhenUnsupported)
+        {
+            if (_unsupportedDiagnosticsLogged)
+            {
+                return;
+            }
+
+            _unsupportedDiagnosticsLogged = true;
+            Debug.LogWarning(
+                "[EyeTrackingDataLogger] OVRPlugin reports eye tracking is not supported on this runtime/device. " +
+                MetaQuestRuntimeDiagnostics.BuildEyeTrackingStatus(),
+                this);
+            return;
+        }
+
+        Debug.LogWarning("[EyeTrackingDataLogger] OVRPlugin reports eye tracking is not supported on this runtime/device.", this);
     }
 
     void HandlePermissionGranted(string permissionId)
@@ -763,5 +809,69 @@ public sealed class EyeTrackingDataLogger : MonoBehaviour
         public Vector3 position;
         public Quaternion rotation;
         public Vector3 forward;
+    }
+}
+
+static class MetaQuestRuntimeDiagnostics
+{
+    public static string BuildEyeTrackingStatus()
+    {
+        var sb = new StringBuilder(512);
+        Append(sb, "unity", Application.unityVersion);
+        Append(sb, "platform", Application.platform);
+        Append(sb, "isEditor", Application.isEditor);
+        Append(sb, "deviceModel", SystemInfo.deviceModel);
+        Append(sb, "xrEnabled", Safe(() => XRSettings.enabled));
+        Append(sb, "xrDeviceActive", Safe(() => XRSettings.isDeviceActive));
+        Append(sb, "loadedDevice", Safe(() => XRSettings.loadedDeviceName));
+        Append(sb, "activeLoader", GetActiveLoaderName());
+        Append(sb, "ovrInitialized", Safe(() => OVRPlugin.initialized));
+        Append(sb, "ovrManagerInitialized", Safe(() => OVRManager.OVRManagerinitialized));
+        Append(sb, "headset", Safe(() => OVRManager.systemHeadsetType));
+        Append(sb, "xrApi", Safe(() => OVRPlugin.nativeXrApi));
+        Append(sb, "ovrPluginVersion", Safe(() => OVRManager.pluginVersion));
+        Append(sb, "ovrSdkVersion", Safe(() => OVRManager.sdkVersion));
+        Append(sb, "eyePermissionGranted", Safe(() => OVRPermissionsRequester.IsPermissionGranted(OVRPermissionsRequester.Permission.EyeTracking)));
+        Append(sb, "eyeSupported", Safe(() => OVRPlugin.eyeTrackingSupported));
+        Append(sb, "eyeEnabled", Safe(() => OVRPlugin.eyeTrackingEnabled));
+        Append(sb, "openXRInstance", Safe(() => OVRPlugin.GetNativeOpenXRInstance()));
+        Append(sb, "openXRSession", Safe(() => OVRPlugin.GetNativeOpenXRSession()));
+        return sb.ToString();
+    }
+
+    static string GetActiveLoaderName()
+    {
+        return Safe(() =>
+        {
+            var settings = XRGeneralSettings.Instance;
+            var manager = settings != null ? settings.Manager : null;
+            var loader = manager != null ? manager.activeLoader : null;
+            return loader != null ? loader.name : "null";
+        });
+    }
+
+    static string Safe(Func<object> read)
+    {
+        try
+        {
+            var value = read();
+            return Convert.ToString(value, CultureInfo.InvariantCulture) ?? "null";
+        }
+        catch (Exception ex)
+        {
+            return "error:" + ex.GetType().Name;
+        }
+    }
+
+    static void Append(StringBuilder builder, string name, object value)
+    {
+        if (builder.Length > 0)
+        {
+            builder.Append(' ');
+        }
+
+        builder.Append(name);
+        builder.Append('=');
+        builder.Append(value ?? "null");
     }
 }

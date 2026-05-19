@@ -2413,7 +2413,7 @@ Transform:
   m_GameObject: {fileID: 462211013}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -25.86, y: -6.62, z: 9.35}
+  m_LocalPosition: {x: -25.86, y: -6.62, z: 9.140001}
   m_LocalScale: {x: 0.09000001, y: 0.09000001, z: 0.09000001}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -4509,7 +4509,7 @@ GameObject:
   - component: {fileID: 862574935}
   m_Layer: 0
   m_Name: LeftEyeAnchor
-  m_TagString: MainCamera
+  m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -4815,7 +4815,7 @@ Transform:
   m_GameObject: {fileID: 863084306}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -25.86, y: -6.72, z: 7.55}
+  m_LocalPosition: {x: -25.86, y: -6.72, z: 7.340001}
   m_LocalScale: {x: 0.09000001, y: 0.09000001, z: 0.09000001}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -5736,7 +5736,7 @@ MonoBehaviour:
   usePositionTracking: 1
   useRotationTracking: 1
   useIPDInPositionTracking: 1
-  resetTrackerOnLoad: 0
+  resetTrackerOnLoad: 1
   AllowRecenter: 1
   LateControllerUpdate: 1
   LateLatching: 0
@@ -8894,10 +8894,52 @@ MonoBehaviour:
   _choicePromptBreathInSeconds: 1.35
   _choicePromptBreathOutSeconds: 1.85
   _choicePromptBreathMinimumAmount: 0.18
-  _choicePromptTimeoutSeconds: 45
+  _choicePromptReminderDelaySeconds: 45
+  _choicePromptReminderSkyVolume: {fileID: 1411954856}
+  _choicePromptReminderSkyMiddleColor: {r: 0.19215687, g: 0.56078434, b: 0.6509804, a: 1}
+  _choicePromptReminderSkyTransitionSeconds: 1.5
+  _choicePromptReminderSkyTransitionCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  _choicePromptReminderClip: {fileID: 8300000, guid: fc748629437ca4d4489b4fbfed63f8cd, type: 3}
+  _choicePromptReminderAudioSource: {fileID: 0}
+  _choicePromptReminderAudioIntervalSeconds: 3
+  _choicePromptReminderAudioVolume: 1
   _requireEyeTrackingReadyBeforeStart: 1
   _eyeTrackingStartGateTimeoutSeconds: 8
   _eyeTrackingStartGatePollSeconds: 0.25
+  _enableEyeRestGate: 1
+  _paintingsBetweenEyeRests: 2
+  _eyeRestDuration: 30
+  _eyeRestContinueKey: 98
+  _eyeRestOverlayColor: {r: 0, g: 0, b: 0, a: 1}
+  _eyeRestOverlayAlpha: 1
+  _eyeRestOverlay: {fileID: 0}
+  _autoCreateEyeRestOverlay: 1
+  _autoEyeRestOverlayDistanceMeters: 0.75
+  _allowRightControllerBButtonForEyeRest: 1
+  _logEyeRestGate: 1
   _playOnStart: 0
   _waitForRightControllerAButtonBeforeStart: 0
   _disableChildPlayOnStartWhileWaiting: 1
@@ -9612,7 +9654,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1466357130
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -9783,7 +9825,7 @@ VisualEffect:
       m_Array: []
     m_Vector3f:
       m_Array:
-      - m_Value: {x: 0.08382856, y: -2.240963, z: -0.0000010265951}
+      - m_Value: {x: 0.08380675, y: -2.2567847, z: -0.0000010265951}
         m_Name: Gaze Hit Local Position
         m_Overridden: 1
     m_Vector4f:
@@ -10878,11 +10920,7 @@ MonoBehaviour:
   _showPreviewOnStart: 0
   _previewTimeoutSeconds: 120
   _previewPaintingId: calmness_feedback_preview
-  _optionViews:
-  - {fileID: 1247352165}
-  - {fileID: 118305675}
-  - {fileID: 1560833397}
-  - {fileID: 855040037}
+  _optionViews: []
   _autoFindReferences: 1
   _leftGazeTransform: {fileID: 587417169}
   _rightGazeTransform: {fileID: 582375830}
@@ -10922,10 +10960,52 @@ MonoBehaviour:
   _choicePromptBreathInSeconds: 1.35
   _choicePromptBreathOutSeconds: 1.85
   _choicePromptBreathMinimumAmount: 0.18
-  _choicePromptTimeoutSeconds: 45
+  _choicePromptReminderDelaySeconds: 45
+  _choicePromptReminderSkyVolume: {fileID: 1411954856}
+  _choicePromptReminderSkyMiddleColor: {r: 0.6509804, g: 0.5008987, b: 0.19215684, a: 1}
+  _choicePromptReminderSkyTransitionSeconds: 1.5
+  _choicePromptReminderSkyTransitionCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  _choicePromptReminderClip: {fileID: 8300000, guid: fc748629437ca4d4489b4fbfed63f8cd, type: 3}
+  _choicePromptReminderAudioSource: {fileID: 0}
+  _choicePromptReminderAudioIntervalSeconds: 8
+  _choicePromptReminderAudioVolume: 1
   _requireEyeTrackingReadyBeforeStart: 1
   _eyeTrackingStartGateTimeoutSeconds: 8
   _eyeTrackingStartGatePollSeconds: 0.25
+  _enableEyeRestGate: 1
+  _paintingsBetweenEyeRests: 2
+  _eyeRestDuration: 30
+  _eyeRestContinueKey: 98
+  _eyeRestOverlayColor: {r: 0, g: 0, b: 0, a: 1}
+  _eyeRestOverlayAlpha: 1
+  _eyeRestOverlay: {fileID: 0}
+  _autoCreateEyeRestOverlay: 1
+  _autoEyeRestOverlayDistanceMeters: 0.75
+  _allowRightControllerBButtonForEyeRest: 1
+  _logEyeRestGate: 1
   _playOnStart: 0
   _waitForRightControllerAButtonBeforeStart: 1
   _disableChildPlayOnStartWhileWaiting: 1
@@ -10989,9 +11069,9 @@ MonoBehaviour:
   _initialParticleIntensity: 0.01
   _initialParticleFrequency: 0
   _initialStateDuration: 3
-  _stageDuration: 30
-  _updateInterval: 15
-  _returnToInitialDuration: 10
+  _stageDuration: 2
+  _updateInterval: 1
+  _returnToInitialDuration: 1
   _randomRanges:
   - minimum: 0.01
     maximum: 0.21
@@ -11419,7 +11499,7 @@ Transform:
   m_GameObject: {fileID: 1615463118}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -25.86, y: -6.56, z: 8.75}
+  m_LocalPosition: {x: -25.86, y: -6.56, z: 8.540001}
   m_LocalScale: {x: 0.09000001, y: 0.09000001, z: 0.09000001}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -12188,7 +12268,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1672909521
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12359,7 +12439,7 @@ VisualEffect:
       m_Array: []
     m_Vector3f:
       m_Array:
-      - m_Value: {x: 0.06301893, y: -2.3054714, z: -0.0000007141311}
+      - m_Value: {x: 0.06301893, y: -2.3203773, z: -0.0000007141311}
         m_Name: Gaze Hit Local Position
         m_Overridden: 1
     m_Vector4f:
@@ -13848,10 +13928,52 @@ MonoBehaviour:
   _choicePromptBreathInSeconds: 1.35
   _choicePromptBreathOutSeconds: 1.85
   _choicePromptBreathMinimumAmount: 0.18
-  _choicePromptTimeoutSeconds: 45
+  _choicePromptReminderDelaySeconds: 45
+  _choicePromptReminderSkyVolume: {fileID: 1411954856}
+  _choicePromptReminderSkyMiddleColor: {r: 0.19215687, g: 0.56078434, b: 0.6509804, a: 1}
+  _choicePromptReminderSkyTransitionSeconds: 1.5
+  _choicePromptReminderSkyTransitionCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  _choicePromptReminderClip: {fileID: 8300000, guid: fc748629437ca4d4489b4fbfed63f8cd, type: 3}
+  _choicePromptReminderAudioSource: {fileID: 0}
+  _choicePromptReminderAudioIntervalSeconds: 3
+  _choicePromptReminderAudioVolume: 1
   _requireEyeTrackingReadyBeforeStart: 1
   _eyeTrackingStartGateTimeoutSeconds: 8
   _eyeTrackingStartGatePollSeconds: 0.25
+  _enableEyeRestGate: 1
+  _paintingsBetweenEyeRests: 2
+  _eyeRestDuration: 30
+  _eyeRestContinueKey: 98
+  _eyeRestOverlayColor: {r: 0, g: 0, b: 0, a: 1}
+  _eyeRestOverlayAlpha: 1
+  _eyeRestOverlay: {fileID: 0}
+  _autoCreateEyeRestOverlay: 1
+  _autoEyeRestOverlayDistanceMeters: 0.75
+  _allowRightControllerBButtonForEyeRest: 1
+  _logEyeRestGate: 1
   _playOnStart: 0
   _waitForRightControllerAButtonBeforeStart: 0
   _disableChildPlayOnStartWhileWaiting: 1
@@ -13964,7 +14086,7 @@ Transform:
   m_GameObject: {fileID: 1880932581}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -25.86, y: -6.62, z: 8.15}
+  m_LocalPosition: {x: -25.86, y: -6.62, z: 7.9400005}
   m_LocalScale: {x: 0.09000001, y: 0.09000001, z: 0.09000001}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -14075,7 +14197,7 @@ Transform:
   m_GameObject: {fileID: 1970989009}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -25.86, y: -6.72, z: 9.95}
+  m_LocalPosition: {x: -25.86, y: -6.72, z: 9.74}
   m_LocalScale: {x: 0.09000001, y: 0.09000001, z: 0.09000001}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -16040,12 +16162,15 @@ MonoBehaviour:
   _requestEyeTrackingPermission: 1
   _startEyeTrackingIfNeeded: 1
   _startRetryInterval: 2
+  _logRuntimeDiagnosticsOnStartup: 1
+  _logRuntimeDiagnosticsWhenUnsupported: 1
   _sampleInterval: 0.1
   _consoleInterval: 1
   _logToConsole: 1
   _writeCsv: 1
   _writeToExperimentSession: 1
   _writeStandaloneCsv: 0
+  _writeExcelSeparatorDirective: 1
   _logInvalidSamplesToConsole: 1
   _csvFilePrefix: eye_tracking_log
   _drawDebugRays: 1
@@ -16934,10 +17059,52 @@ MonoBehaviour:
   _choicePromptBreathInSeconds: 1.35
   _choicePromptBreathOutSeconds: 1.85
   _choicePromptBreathMinimumAmount: 0.18
-  _choicePromptTimeoutSeconds: 45
+  _choicePromptReminderDelaySeconds: 45
+  _choicePromptReminderSkyVolume: {fileID: 1411954856}
+  _choicePromptReminderSkyMiddleColor: {r: 0.19215687, g: 0.56078434, b: 0.6509804, a: 1}
+  _choicePromptReminderSkyTransitionSeconds: 1.5
+  _choicePromptReminderSkyTransitionCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  _choicePromptReminderClip: {fileID: 8300000, guid: fc748629437ca4d4489b4fbfed63f8cd, type: 3}
+  _choicePromptReminderAudioSource: {fileID: 0}
+  _choicePromptReminderAudioIntervalSeconds: 3
+  _choicePromptReminderAudioVolume: 1
   _requireEyeTrackingReadyBeforeStart: 1
   _eyeTrackingStartGateTimeoutSeconds: 8
   _eyeTrackingStartGatePollSeconds: 0.25
+  _enableEyeRestGate: 1
+  _paintingsBetweenEyeRests: 2
+  _eyeRestDuration: 30
+  _eyeRestContinueKey: 98
+  _eyeRestOverlayColor: {r: 0, g: 0, b: 0, a: 1}
+  _eyeRestOverlayAlpha: 1
+  _eyeRestOverlay: {fileID: 0}
+  _autoCreateEyeRestOverlay: 1
+  _autoEyeRestOverlayDistanceMeters: 0.75
+  _allowRightControllerBButtonForEyeRest: 1
+  _logEyeRestGate: 1
   _playOnStart: 1
   _waitForRightControllerAButtonBeforeStart: 1
   _disableChildPlayOnStartWhileWaiting: 1
