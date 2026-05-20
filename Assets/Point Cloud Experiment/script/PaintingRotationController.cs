@@ -46,6 +46,10 @@ public sealed class PaintingRotationController : MonoBehaviour
     [SerializeField] bool _promptMeditationChoiceAfterStages = true;
     [SerializeField] MeditationChoiceEyeGazeFeedback _meditationChoiceFeedback;
     [SerializeField] MeditationExperimentCsvLogger _experimentCsvLogger;
+    [SerializeField] bool _recordExperimentVideo = true;
+    [SerializeField] ExperimentVideoRecorder _experimentVideoRecorder;
+    [SerializeField] bool _recordExperimentAudio = true;
+    [SerializeField] ExperimentAudioRecorder _experimentAudioRecorder;
     [SerializeField] float _choiceNormalColorIntensity = 0f;
     [SerializeField] float _choicePromptColorIntensity = 3.5f;
     [SerializeField, Min(0.1f)] float _choicePromptBreathInSeconds = 1.1f;
@@ -426,6 +430,8 @@ public sealed class PaintingRotationController : MonoBehaviour
             SetEyeRestOverlayVisible(false);
             if (releaseExperimentControl)
             {
+                StopExperimentVideoRecordingIfNeeded("rotation_stopped");
+                StopExperimentAudioRecordingIfNeeded("rotation_stopped");
                 ReleaseExperimentControl();
             }
 
@@ -441,6 +447,8 @@ public sealed class PaintingRotationController : MonoBehaviour
         SetEyeRestOverlayVisible(false);
         if (releaseExperimentControl)
         {
+            StopExperimentVideoRecordingIfNeeded("rotation_stopped");
+            StopExperimentAudioRecordingIfNeeded("rotation_stopped");
             ReleaseExperimentControl();
         }
     }
@@ -1915,8 +1923,8 @@ public sealed class PaintingRotationController : MonoBehaviour
         }
 
         _paintingRunIndex = 0;
-        _hasStartedExperimentSession = ResolveExperimentCsvLogger().StartSession(
-            FormatSessionInputSource(inputSource));
+        var logger = ResolveExperimentCsvLogger();
+        _hasStartedExperimentSession = logger != null && logger.StartSession(FormatSessionInputSource(inputSource));
         if (!_hasStartedExperimentSession)
         {
             Debug.LogWarning(
@@ -1926,7 +1934,11 @@ public sealed class PaintingRotationController : MonoBehaviour
                     DescribeController(this),
                     inputSource),
                 this);
+            return;
         }
+
+        StartExperimentAudioRecordingIfNeeded(inputSource);
+        StartExperimentVideoRecordingIfNeeded(inputSource);
     }
 
     string FormatSessionInputSource(string inputSource)
@@ -1940,12 +1952,148 @@ public sealed class PaintingRotationController : MonoBehaviour
 
     MeditationExperimentCsvLogger ResolveExperimentCsvLogger()
     {
-        if (_experimentCsvLogger == null)
+        if (_experimentCsvLogger != null && _experimentCsvLogger.isActiveAndEnabled)
+        {
+            return _experimentCsvLogger;
+        }
+
+        _experimentCsvLogger = FindEnabledObject<MeditationExperimentCsvLogger>();
+        if (_experimentCsvLogger == null && !SceneHasObject<MeditationExperimentCsvLogger>())
         {
             _experimentCsvLogger = MeditationExperimentCsvLogger.Instance;
         }
 
-        return _experimentCsvLogger;
+        return _experimentCsvLogger != null && _experimentCsvLogger.isActiveAndEnabled
+            ? _experimentCsvLogger
+            : null;
+    }
+
+    ExperimentVideoRecorder ResolveExperimentVideoRecorder()
+    {
+        if (_experimentVideoRecorder != null && _experimentVideoRecorder.isActiveAndEnabled)
+        {
+            return _experimentVideoRecorder;
+        }
+
+        _experimentVideoRecorder = FindEnabledObject<ExperimentVideoRecorder>();
+        if (_experimentVideoRecorder == null && !SceneHasObject<ExperimentVideoRecorder>())
+        {
+            _experimentVideoRecorder = ExperimentVideoRecorder.Instance;
+        }
+
+        return _experimentVideoRecorder != null && _experimentVideoRecorder.isActiveAndEnabled
+            ? _experimentVideoRecorder
+            : null;
+    }
+
+    ExperimentAudioRecorder ResolveExperimentAudioRecorder()
+    {
+        if (_experimentAudioRecorder != null && _experimentAudioRecorder.isActiveAndEnabled)
+        {
+            return _experimentAudioRecorder;
+        }
+
+        _experimentAudioRecorder = FindEnabledObject<ExperimentAudioRecorder>();
+        if (_experimentAudioRecorder == null && !SceneHasObject<ExperimentAudioRecorder>())
+        {
+            _experimentAudioRecorder = ExperimentAudioRecorder.Instance;
+        }
+
+        return _experimentAudioRecorder != null && _experimentAudioRecorder.isActiveAndEnabled
+            ? _experimentAudioRecorder
+            : null;
+    }
+
+    static T FindEnabledObject<T>() where T : MonoBehaviour
+    {
+        var candidates = FindObjectsOfType<T>(true);
+        for (var i = 0; i < candidates.Length; i++)
+        {
+            var candidate = candidates[i];
+            if (candidate != null && candidate.isActiveAndEnabled)
+            {
+                return candidate;
+            }
+        }
+
+        return null;
+    }
+
+    static bool SceneHasObject<T>() where T : MonoBehaviour
+    {
+        return FindObjectsOfType<T>(true).Length > 0;
+    }
+
+    void StartExperimentAudioRecordingIfNeeded(string inputSource)
+    {
+        if (!_recordExperimentAudio || !_hasStartedExperimentSession)
+        {
+            return;
+        }
+
+        var recorder = ResolveExperimentAudioRecorder();
+        if (recorder == null)
+        {
+            return;
+        }
+
+        recorder.StartRecording(
+            ResolveExperimentCsvLogger(),
+            "experiment_started inputSource=" + inputSource);
+    }
+
+    void StartExperimentVideoRecordingIfNeeded(string inputSource)
+    {
+        if (!_recordExperimentVideo || !_hasStartedExperimentSession)
+        {
+            return;
+        }
+
+        var recorder = ResolveExperimentVideoRecorder();
+        if (recorder == null)
+        {
+            return;
+        }
+
+        recorder.StartRecording(
+            ResolveExperimentCsvLogger(),
+            "experiment_started inputSource=" + inputSource);
+    }
+
+    void StopExperimentVideoRecordingIfNeeded(string reason)
+    {
+        if (!_recordExperimentVideo)
+        {
+            return;
+        }
+
+        if (_experimentVideoRecorder == null)
+        {
+            _experimentVideoRecorder = FindObjectOfType<ExperimentVideoRecorder>();
+        }
+
+        if (_experimentVideoRecorder != null && _experimentVideoRecorder.isRecording)
+        {
+            _experimentVideoRecorder.StopRecording(reason);
+        }
+    }
+
+    void StopExperimentAudioRecordingIfNeeded(string reason)
+    {
+        if (!_recordExperimentAudio)
+        {
+            return;
+        }
+
+        if (_experimentAudioRecorder == null)
+        {
+            _experimentAudioRecorder = FindObjectOfType<ExperimentAudioRecorder>();
+        }
+
+        if (_experimentAudioRecorder != null && _experimentAudioRecorder.isRecording)
+        {
+            _experimentAudioRecorder.StopRecording(reason);
+        }
     }
 
     MeditationChoiceEyeGazeFeedback ResolveMeditationChoiceFeedback()

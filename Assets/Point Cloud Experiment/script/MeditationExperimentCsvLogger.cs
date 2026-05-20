@@ -8,11 +8,14 @@ using UnityEngine;
 [AddComponentMenu("Point Cloud/Meditation Experiment CSV Logger")]
 public sealed class MeditationExperimentCsvLogger : MonoBehaviour
 {
-    const string CsvVersion = "3";
+    const string CsvVersion = "5";
     const string CsvSeparatorDirective = "sep=,";
 
     [SerializeField] string _sessionFolderPrefix = "meditation_experiment";
     [SerializeField] string _dataCollectionFolderName = "data_collection";
+    [SerializeField] bool _useExternalDataCollectionRoot = true;
+    [SerializeField] string _externalDataCollectionRootPath = "C:/Users/linki/amaster/data collection";
+    [SerializeField] bool _usePersistentDataPathOutsideEditor = true;
     [SerializeField] bool _logSessionPath = true;
     [SerializeField] bool _writeExcelSeparatorDirective = true;
 
@@ -25,6 +28,7 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
     StreamWriter _eventsWriter;
     StreamWriter _summaryWriter;
     StreamWriter _eyeTrackingWriter;
+    StreamWriter _videoFramesWriter;
     string _sessionId;
     string _sessionFolderPath;
     DateTimeOffset _sessionStartedAt;
@@ -76,6 +80,12 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
 
     public bool StartSession(string inputSource, bool forceRestart = false)
     {
+        if (!isActiveAndEnabled)
+        {
+            Debug.LogWarning("[MeditationExperimentCsvLogger] Cannot start session because the logger component is disabled.", this);
+            return false;
+        }
+
         if (_sessionActive && !forceRestart)
         {
             Debug.LogWarning(
@@ -175,6 +185,21 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
         return true;
     }
 
+    public bool TryLogVideoFrame(VideoFrameRow row)
+    {
+        if (!_sessionActive)
+        {
+            return false;
+        }
+
+        row = row ?? new VideoFrameRow();
+        var sampleRealtime = !double.IsNaN(row.sampleRealtime)
+            ? row.sampleRealtime
+            : Time.realtimeSinceStartupAsDouble;
+        WriteLine(_videoFramesWriter, ToVideoFrameCsv(row, sampleRealtime));
+        return true;
+    }
+
     public void CloseCsv()
     {
         CloseWriter(ref _sessionWriter);
@@ -184,6 +209,7 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
         CloseWriter(ref _eventsWriter);
         CloseWriter(ref _summaryWriter);
         CloseWriter(ref _eyeTrackingWriter);
+        CloseWriter(ref _videoFramesWriter);
         _sessionActive = false;
     }
 
@@ -197,7 +223,7 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
 
     void OpenCsvSet()
     {
-        var root = Path.Combine(Application.dataPath, SafeFolderName(_dataCollectionFolderName, "data_collection"));
+        var root = GetDataCollectionRoot();
         Directory.CreateDirectory(root);
 
         _sessionFolderPath = Path.Combine(root, _sessionId);
@@ -210,11 +236,32 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
         _eventsWriter = OpenWriter("events.csv", GetEventsHeader());
         _summaryWriter = OpenWriter("summary.csv", GetSummaryHeader());
         _eyeTrackingWriter = OpenWriter("eye_tracking.csv", GetEyeTrackingHeader());
+        _videoFramesWriter = OpenWriter("video_frames.csv", GetVideoFramesHeader());
 
         if (_logSessionPath)
         {
             Debug.Log("[MeditationExperimentCsvLogger] Writing CSV folder to: " + _sessionFolderPath, this);
         }
+    }
+
+    string GetWritableDataRoot()
+    {
+#if UNITY_EDITOR
+        _ = _usePersistentDataPathOutsideEditor;
+        return Application.dataPath;
+#else
+        return _usePersistentDataPathOutsideEditor ? Application.persistentDataPath : Application.dataPath;
+#endif
+    }
+
+    string GetDataCollectionRoot()
+    {
+        if (_useExternalDataCollectionRoot && !string.IsNullOrWhiteSpace(_externalDataCollectionRootPath))
+        {
+            return NormalizePath(_externalDataCollectionRootPath);
+        }
+
+        return Path.Combine(GetWritableDataRoot(), SafeFolderName(_dataCollectionFolderName, "data_collection"));
     }
 
     StreamWriter OpenWriter(string fileName, string header)
@@ -426,6 +473,34 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
             VectorCsv(row.centerEyeForward));
     }
 
+    string ToVideoFrameCsv(VideoFrameRow row, double sampleRealtime)
+    {
+        return string.Join(",",
+            CsvEscape(_sessionId),
+            UnixMs(sampleRealtime),
+            ElapsedMs(sampleRealtime),
+            I(row.frameIndex),
+            row.unityFrame.ToString(CultureInfo.InvariantCulture),
+            I(row.width),
+            I(row.height),
+            F(row.captureFps),
+            CsvEscape(row.imageFormat),
+            I(row.jpegQuality),
+            CsvEscape(row.relativePath),
+            CsvEscape(row.absolutePath),
+            CsvEscape(row.sourceCameraName),
+            CsvEscape(row.captureCameraName),
+            VectorCsv(row.cameraPosition),
+            QuaternionCsv(row.cameraRotation),
+            VectorCsv(row.cameraForward),
+            VectorCsv(row.cameraUp),
+            L(row.encodedBytes),
+            F(row.readbackLatencyMs),
+            F(row.encodeWriteLatencyMs),
+            I(row.droppedFrames),
+            CsvEscape(row.notes));
+    }
+
     static string GetSessionHeader()
     {
         return string.Join(",",
@@ -602,6 +677,34 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
             VectorHeader("centerForward"));
     }
 
+    static string GetVideoFramesHeader()
+    {
+        return string.Join(",",
+            "sessionId",
+            "sampleUnixMs",
+            "elapsedMs",
+            "frameIndex",
+            "unityFrame",
+            "width",
+            "height",
+            "captureFps",
+            "imageFormat",
+            "jpegQuality",
+            "relativePath",
+            "absolutePath",
+            "sourceCameraName",
+            "captureCameraName",
+            VectorHeader("cameraPosition"),
+            QuaternionHeader("cameraRotation"),
+            VectorHeader("cameraForward"),
+            VectorHeader("cameraUp"),
+            "encodedBytes",
+            "readbackLatencyMs",
+            "encodeWriteLatencyMs",
+            "droppedFrames",
+            "notes");
+    }
+
     string CreateSessionId(DateTimeOffset startedAt)
     {
         var safePrefix = SafeFolderName(_sessionFolderPrefix, "meditation_experiment");
@@ -687,6 +790,11 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
         return value > 0 ? value.ToString(CultureInfo.InvariantCulture) : string.Empty;
     }
 
+    static string L(long value)
+    {
+        return value > 0 ? value.ToString(CultureInfo.InvariantCulture) : string.Empty;
+    }
+
     static string F(float value)
     {
         if (float.IsNaN(value))
@@ -707,9 +815,19 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
         return prefix + "X," + prefix + "Y," + prefix + "Z";
     }
 
+    static string QuaternionHeader(string prefix)
+    {
+        return prefix + "X," + prefix + "Y," + prefix + "Z," + prefix + "W";
+    }
+
     static string VectorCsv(Vector3 value)
     {
         return string.Join(",", F(value.x), F(value.y), F(value.z));
+    }
+
+    static string QuaternionCsv(Quaternion value)
+    {
+        return string.Join(",", F(value.x), F(value.y), F(value.z), F(value.w));
     }
 
     static string SecondsMs(float seconds)
@@ -744,6 +862,11 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
         }
 
         return builder.Length > 0 ? builder.ToString() : fallback;
+    }
+
+    static string NormalizePath(string path)
+    {
+        return path.Trim().Replace('\\', Path.DirectorySeparatorChar).Replace('/', Path.DirectorySeparatorChar);
     }
 
     public sealed class Row
@@ -794,5 +917,30 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
         public Vector3 rightForward;
         public Vector3 centerEyePosition;
         public Vector3 centerEyeForward;
+    }
+
+    public sealed class VideoFrameRow
+    {
+        public double sampleRealtime = double.NaN;
+        public int frameIndex;
+        public int unityFrame;
+        public int width;
+        public int height;
+        public float captureFps = float.NaN;
+        public string imageFormat;
+        public int jpegQuality = -1;
+        public string relativePath;
+        public string absolutePath;
+        public string sourceCameraName;
+        public string captureCameraName;
+        public Vector3 cameraPosition;
+        public Quaternion cameraRotation = Quaternion.identity;
+        public Vector3 cameraForward;
+        public Vector3 cameraUp;
+        public long encodedBytes = -1;
+        public float readbackLatencyMs = float.NaN;
+        public float encodeWriteLatencyMs = float.NaN;
+        public int droppedFrames;
+        public string notes;
     }
 }

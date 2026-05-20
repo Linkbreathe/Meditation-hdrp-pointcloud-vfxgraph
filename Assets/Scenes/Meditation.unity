@@ -2413,7 +2413,7 @@ Transform:
   m_GameObject: {fileID: 462211013}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -25.86, y: -6.62, z: 9.140001}
+  m_LocalPosition: {x: -25.86, y: -6.5199995, z: 9.025}
   m_LocalScale: {x: 0.09000001, y: 0.09000001, z: 0.09000001}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -4815,7 +4815,7 @@ Transform:
   m_GameObject: {fileID: 863084306}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -25.86, y: -6.72, z: 7.340001}
+  m_LocalPosition: {x: -25.86, y: -6.6199994, z: 7.2370005}
   m_LocalScale: {x: 0.09000001, y: 0.09000001, z: 0.09000001}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -5790,14 +5790,14 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 932450314}
   serializedVersion: 2
-  m_LocalRotation: {x: 0.0016537111, y: 0.70710486, z: 0.0016537111, w: 0.70710486}
+  m_LocalRotation: {x: 0, y: 0.7071068, z: 0, w: 0.7071068}
   m_LocalPosition: {x: 0.395, y: -6.808, z: -1.664}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 863728858}
   m_Father: {fileID: 409403237}
-  m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0.268}
+  m_LocalEulerAnglesHint: {x: 0, y: 90, z: 0}
 --- !u!1 &969447698
 GameObject:
   m_ObjectHideFlags: 0
@@ -8889,6 +8889,10 @@ MonoBehaviour:
   _promptMeditationChoiceAfterStages: 1
   _meditationChoiceFeedback: {fileID: 0}
   _experimentCsvLogger: {fileID: 0}
+  _recordExperimentVideo: 1
+  _experimentVideoRecorder: {fileID: 0}
+  _recordExperimentAudio: 1
+  _experimentAudioRecorder: {fileID: 0}
   _choiceNormalColorIntensity: 0
   _choicePromptColorIntensity: 3.5
   _choicePromptBreathInSeconds: 1.35
@@ -9654,7 +9658,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &1466357130
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -10955,6 +10959,10 @@ MonoBehaviour:
   _promptMeditationChoiceAfterStages: 1
   _meditationChoiceFeedback: {fileID: 0}
   _experimentCsvLogger: {fileID: 0}
+  _recordExperimentVideo: 1
+  _experimentVideoRecorder: {fileID: 0}
+  _recordExperimentAudio: 1
+  _experimentAudioRecorder: {fileID: 0}
   _choiceNormalColorIntensity: 0
   _choicePromptColorIntensity: 3.5
   _choicePromptBreathInSeconds: 1.35
@@ -10962,7 +10970,7 @@ MonoBehaviour:
   _choicePromptBreathMinimumAmount: 0.18
   _choicePromptReminderDelaySeconds: 45
   _choicePromptReminderSkyVolume: {fileID: 1411954856}
-  _choicePromptReminderSkyMiddleColor: {r: 0.6509804, g: 0.5008987, b: 0.19215684, a: 1}
+  _choicePromptReminderSkyMiddleColor: {r: 0.90943396, g: 0.81908125, b: 0.5336489, a: 1}
   _choicePromptReminderSkyTransitionSeconds: 1.5
   _choicePromptReminderSkyTransitionCurve:
     serializedVersion: 2
@@ -10990,7 +10998,7 @@ MonoBehaviour:
     m_RotationOrder: 4
   _choicePromptReminderClip: {fileID: 8300000, guid: fc748629437ca4d4489b4fbfed63f8cd, type: 3}
   _choicePromptReminderAudioSource: {fileID: 0}
-  _choicePromptReminderAudioIntervalSeconds: 8
+  _choicePromptReminderAudioIntervalSeconds: 12
   _choicePromptReminderAudioVolume: 1
   _requireEyeTrackingReadyBeforeStart: 1
   _eyeTrackingStartGateTimeoutSeconds: 8
@@ -11499,7 +11507,7 @@ Transform:
   m_GameObject: {fileID: 1615463118}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -25.86, y: -6.56, z: 8.540001}
+  m_LocalPosition: {x: -25.86, y: -6.4599996, z: 8.437}
   m_LocalScale: {x: 0.09000001, y: 0.09000001, z: 0.09000001}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -12268,7 +12276,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &1672909521
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13923,6 +13931,10 @@ MonoBehaviour:
   _promptMeditationChoiceAfterStages: 1
   _meditationChoiceFeedback: {fileID: 0}
   _experimentCsvLogger: {fileID: 0}
+  _recordExperimentVideo: 1
+  _experimentVideoRecorder: {fileID: 0}
+  _recordExperimentAudio: 1
+  _experimentAudioRecorder: {fileID: 0}
   _choiceNormalColorIntensity: 0
   _choicePromptColorIntensity: 3.5
   _choicePromptBreathInSeconds: 1.35
@@ -14086,7 +14098,7 @@ Transform:
   m_GameObject: {fileID: 1880932581}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -25.86, y: -6.62, z: 7.9400005}
+  m_LocalPosition: {x: -25.86, y: -6.5199995, z: 7.837}
   m_LocalScale: {x: 0.09000001, y: 0.09000001, z: 0.09000001}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -14197,7 +14209,7 @@ Transform:
   m_GameObject: {fileID: 1970989009}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: -25.86, y: -6.72, z: 9.74}
+  m_LocalPosition: {x: -25.86, y: -6.62, z: 9.637}
   m_LocalScale: {x: 0.09000001, y: 0.09000001, z: 0.09000001}
   m_ConstrainProportionsScale: 1
   m_Children: []
@@ -17054,6 +17066,10 @@ MonoBehaviour:
   _promptMeditationChoiceAfterStages: 1
   _meditationChoiceFeedback: {fileID: 0}
   _experimentCsvLogger: {fileID: 0}
+  _recordExperimentVideo: 1
+  _experimentVideoRecorder: {fileID: 0}
+  _recordExperimentAudio: 1
+  _experimentAudioRecorder: {fileID: 0}
   _choiceNormalColorIntensity: 0
   _choicePromptColorIntensity: 3.5
   _choicePromptBreathInSeconds: 1.35
@@ -17853,8 +17869,8 @@ MonoBehaviour:
     target: {fileID: 1615463121}
     visualEffect: {fileID: 1615463119}
     hitRadiusMeters: 0
-  _defaultHitRadiusMeters: 0.5
-  _autoHitRadiusScale: 0.35
+  _defaultHitRadiusMeters: 0.37
+  _autoHitRadiusScale: 0.4
   _maxGazeDistanceMeters: 100
   _dwellShrinkSeconds: 1.8
   _minimumHoveredScale: 0.55
@@ -17884,6 +17900,90 @@ MonoBehaviour:
   _trailsSpawnRateMultiplier: 1.8
   _trailsLifeTimeMultiplier: 1.25
   _hoverColorBrighten: 0.35
+--- !u!1 &4000000000
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 4000000001}
+  - component: {fileID: 4000000002}
+  - component: {fileID: 4000000003}
+  m_Layer: 0
+  m_Name: Recorder
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &4000000001
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4000000000}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &4000000002
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4000000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8647fd7cd95341b384c9538bd355f82f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _sessionFolderPrefix: meditation_experiment
+  _dataCollectionFolderName: data_collection
+  _useExternalDataCollectionRoot: 1
+  _externalDataCollectionRootPath: C:/Users/linki/amaster/data collection
+  _usePersistentDataPathOutsideEditor: 1
+  _logSessionPath: 1
+  _writeExcelSeparatorDirective: 1
+--- !u!114 &4000000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4000000000}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 298c72cb336944649a1748684e927d85, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  _autoStartWithExperimentSession: 1
+  _experimentCsvLogger: {fileID: 4000000002}
+  _autoFindReferences: 1
+  _viewTransform: {fileID: 2012041957}
+  _sourceCamera: {fileID: 2012041958}
+  _captureXrRenderPass: 1
+  _xrViewIndex: 0
+  _fallbackToCameraCaptureBridge: 0
+  _matchXrEyeTextureAspect: 0
+  _captureWidth: 1920
+  _captureHeight: 1080
+  _preserveSourceAspect: 1
+  _cropToFillOutput: 1
+  _captureFps: 30
+  _imageFormat: 0
+  _jpegQuality: 95
+  _maxPendingReadbacks: 2
+  _flipVertically: 1
+  _logLifecycle: 1
+  _logDroppedFrames: 0
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
@@ -17902,3 +18002,4 @@ SceneRoots:
   - {fileID: 61536720}
   - {fileID: 1577732625}
   - {fileID: 645202651}
+  - {fileID: 4000000001}
