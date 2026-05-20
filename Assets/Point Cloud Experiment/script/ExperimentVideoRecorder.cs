@@ -1,8 +1,12 @@
 using System;
+using System.Buffers;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Threading;
 using UnityEngine;
+using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.XR;
 
@@ -34,6 +38,7 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
     [SerializeField] bool _captureXrRenderPass = true;
     [SerializeField, Min(0)] int _xrViewIndex;
     [SerializeField] bool _fallbackToCameraCaptureBridge;
+    [SerializeField] bool _submitXrCaptureCommandBuffer = true;
     [SerializeField] bool _matchXrEyeTextureAspect;
     [SerializeField, Min(16)] int _captureWidth = 1280;
     [SerializeField, Min(16)] int _captureHeight = 720;
@@ -44,6 +49,13 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
     [SerializeField, Range(1, 100)] int _jpegQuality = 95;
     [SerializeField, Min(1)] int _maxPendingReadbacks = 2;
     [SerializeField] bool _flipVertically = true;
+
+    [Header("Performance")]
+    [SerializeField] bool _encodeAndWriteOnWorkerThread = true;
+    [SerializeField, Min(1)] int _maxQueuedEncodeFrames = 4;
+    [SerializeField] bool _dropCaptureWhenEncodeQueueFull = true;
+    [SerializeField, Min(1)] int _maxCompletedFramesLoggedPerUpdate = 8;
+    [SerializeField, Min(100)] int _workerShutdownWaitMilliseconds = 1500;
 
     [Header("Logging")]
     [SerializeField] bool _logLifecycle = true;
@@ -76,7 +88,21 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
     bool _writeWarningLogged;
     bool _blackFrameWarningLogged;
     bool _xrRenderPassWarningLogged;
+    bool _encodeQueueWarningLogged;
+    bool _workerWarningLogged;
+    bool _stoppedManifestNeedsFinalWrite;
     string _captureMethodName = "XRDisplayRenderPass";
+    string _lastStopReason;
+    ConcurrentQueue<PendingFrameWork> _encodeQueue;
+    ConcurrentQueue<CompletedFrameWork> _completedFrameQueue;
+    AutoResetEvent _encodeWorkerSignal;
+    Thread _encodeWorkerThread;
+    volatile bool _encodeWorkerShouldRun;
+    int _queuedEncodeFrames;
+    int _pendingEncodeWrites;
+    int _encodedFrameCount;
+    int _writeFailedFrames;
+    int _workerDroppedFrames;
 
     public static ExperimentVideoRecorder Instance
     {
@@ -127,6 +153,9 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
 
     void Update()
     {
+        DrainCompletedFrameWork(_maxCompletedFramesLoggedPerUpdate);
+        TryWriteFinalStoppedManifest();
+
         if (_autoFindReferences && HasMissingReferences())
         {
             AutoFindReferences();
@@ -157,12 +186,18 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
     void OnDisable()
     {
         StopRecording("component_disabled");
+        StopEncodeWorker(true);
+        DrainCompletedFrameWork(int.MaxValue);
+        TryWriteFinalStoppedManifest();
     }
 
     void OnDestroy()
     {
-        _recordingGeneration++;
         UnregisterCaptureAction();
+        StopEncodeWorker(true);
+        DrainCompletedFrameWork(int.MaxValue);
+        TryWriteFinalStoppedManifest();
+        _recordingGeneration++;
         ReleaseRenderTexture();
         ReleaseEyeCopyTexture();
 
@@ -180,6 +215,9 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
         _jpegQuality = Mathf.Clamp(_jpegQuality, 1, 100);
         _maxPendingReadbacks = Mathf.Max(1, _maxPendingReadbacks);
         _xrViewIndex = Mathf.Max(0, _xrViewIndex);
+        _maxQueuedEncodeFrames = Mathf.Max(1, _maxQueuedEncodeFrames);
+        _maxCompletedFramesLoggedPerUpdate = Mathf.Max(1, _maxCompletedFramesLoggedPerUpdate);
+        _workerShutdownWaitMilliseconds = Mathf.Max(100, _workerShutdownWaitMilliseconds);
     }
 
     [ContextMenu("Start Recording Active Session")]
@@ -241,6 +279,13 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
         _framesFolderPath = Path.Combine(_sessionFolderPath, FramesFolderName);
         Directory.CreateDirectory(_framesFolderPath);
 
+        DrainCompletedFrameWork(int.MaxValue);
+        if (Volatile.Read(ref _pendingEncodeWrites) > 0 || Volatile.Read(ref _queuedEncodeFrames) > 0)
+        {
+            StopEncodeWorker(true);
+            DrainCompletedFrameWork(int.MaxValue);
+        }
+
         _frameIndex = 0;
         _droppedFrames = 0;
         _pendingReadbacks = 0;
@@ -248,15 +293,29 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
         _writeWarningLogged = false;
         _blackFrameWarningLogged = false;
         _xrRenderPassWarningLogged = false;
+        _encodeQueueWarningLogged = false;
+        _workerWarningLogged = false;
         _releaseRenderTextureWhenPendingComplete = false;
         _captureIntervalSeconds = 1.0 / Mathf.Max(0.5f, _captureFps);
         _nextCaptureRealtime = Time.realtimeSinceStartupAsDouble;
         _activeSourceWidth = 0;
         _activeSourceHeight = 0;
         _activeSourceSlice = 0;
+        _queuedEncodeFrames = 0;
+        _pendingEncodeWrites = 0;
+        _encodedFrameCount = 0;
+        _writeFailedFrames = 0;
+        _workerDroppedFrames = 0;
+        _stoppedManifestNeedsFinalWrite = false;
+        _lastStopReason = string.Empty;
         _captureMethodName = _captureXrRenderPass ? "XRDisplayRenderPass" : "CameraCaptureBridge";
         _isRecording = true;
         _recordingGeneration++;
+
+        if (_encodeAndWriteOnWorkerThread)
+        {
+            EnsureEncodeWorkerStarted();
+        }
 
         if (!RegisterCaptureAction())
         {
@@ -295,9 +354,12 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
 
         _isRecording = false;
         UnregisterCaptureAction();
+        DrainCompletedFrameWork(int.MaxValue);
 
         LogExperimentEvent("video_recording_stopped", reason);
         WriteManifest("stopped", reason);
+        _lastStopReason = reason;
+        _stoppedManifestNeedsFinalWrite = true;
 
         if (_pendingReadbacks > 0)
         {
@@ -313,13 +375,17 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
             Debug.Log(
                 string.Format(
                     CultureInfo.InvariantCulture,
-                    "[ExperimentVideoRecorder] Recording stopped. frames={0} dropped={1} pending={2} reason={3}",
+                    "[ExperimentVideoRecorder] Recording stopped. frames={0} encoded={1} dropped={2} pendingReadbacks={3} pendingEncodeWrites={4} reason={5}",
                     _frameIndex,
+                    _encodedFrameCount,
                     _droppedFrames,
                     _pendingReadbacks,
+                    Volatile.Read(ref _pendingEncodeWrites),
                     reason),
                 this);
         }
+
+        TryWriteFinalStoppedManifest();
     }
 
     void CaptureXrRenderPassFrame(ScriptableRenderContext context, Camera camera)
@@ -336,14 +402,8 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
         }
 
         AdvanceNextCaptureTime(now);
-        if (_pendingReadbacks >= _maxPendingReadbacks)
+        if (ShouldSkipCaptureForBackpressure())
         {
-            _droppedFrames++;
-            if (_logDroppedFrames)
-            {
-                Debug.LogWarning("[ExperimentVideoRecorder] Dropped video frame because GPU readback is still pending.", this);
-            }
-
             return;
         }
 
@@ -391,7 +451,11 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
             TextureFormat.RGB24,
             request => HandleAsyncReadback(request, frame, generation));
         context.ExecuteCommandBuffer(commandBuffer);
-        context.Submit();
+        if (_submitXrCaptureCommandBuffer)
+        {
+            context.Submit();
+        }
+
         CommandBufferPool.Release(commandBuffer);
     }
 
@@ -454,14 +518,8 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
         }
 
         AdvanceNextCaptureTime(now);
-        if (_pendingReadbacks >= _maxPendingReadbacks)
+        if (ShouldSkipCaptureForBackpressure())
         {
-            _droppedFrames++;
-            if (_logDroppedFrames)
-            {
-                Debug.LogWarning("[ExperimentVideoRecorder] Dropped video frame because GPU readback is still pending.", this);
-            }
-
             return;
         }
 
@@ -501,6 +559,41 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
         }
     }
 
+    bool ShouldSkipCaptureForBackpressure()
+    {
+        if (_pendingReadbacks >= _maxPendingReadbacks)
+        {
+            _droppedFrames++;
+            if (_logDroppedFrames)
+            {
+                Debug.LogWarning("[ExperimentVideoRecorder] Dropped video frame because GPU readback is still pending.", this);
+            }
+
+            return true;
+        }
+
+        if (!_encodeAndWriteOnWorkerThread || !_dropCaptureWhenEncodeQueueFull)
+        {
+            return false;
+        }
+
+        if (Volatile.Read(ref _pendingEncodeWrites) < _maxQueuedEncodeFrames)
+        {
+            return false;
+        }
+
+        _droppedFrames++;
+        if (_logDroppedFrames || !_encodeQueueWarningLogged)
+        {
+            _encodeQueueWarningLogged = true;
+            Debug.LogWarning(
+                "[ExperimentVideoRecorder] Dropped video frame because the encode/write worker queue is full. Lower capture FPS/size/quality or increase Max Queued Encode Frames if storage can keep up.",
+                this);
+        }
+
+        return true;
+    }
+
     void HandleAsyncReadback(AsyncGPUReadbackRequest request, FrameMetadata frame, int generation)
     {
         _pendingReadbacks = Mathf.Max(0, _pendingReadbacks - 1);
@@ -525,28 +618,231 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
         }
 
         var readbackFinishedAt = Time.realtimeSinceStartupAsDouble;
-        var raw = request.GetData<byte>().ToArray();
+        var readbackData = request.GetData<byte>();
+        var raw = ArrayPool<byte>.Shared.Rent(readbackData.Length);
+        readbackData.CopyTo(raw);
         var readbackLatencyMs = (float)((readbackFinishedAt - frame.sampleRealtime) * 1000.0);
-        EncodeAndWriteFrame(raw, frame, readbackLatencyMs);
+        if (_encodeAndWriteOnWorkerThread)
+        {
+            if (!QueueFrameForEncode(raw, readbackData.Length, frame, readbackLatencyMs, generation))
+            {
+                ArrayPool<byte>.Shared.Return(raw);
+                _droppedFrames++;
+                if (_logDroppedFrames || !_encodeQueueWarningLogged)
+                {
+                    _encodeQueueWarningLogged = true;
+                    Debug.LogWarning(
+                        "[ExperimentVideoRecorder] Dropped video frame because the encode/write worker queue is full after GPU readback.",
+                        this);
+                }
+            }
+        }
+        else
+        {
+            ProcessCompletedFrameWork(EncodeFrameWork(new PendingFrameWork
+            {
+                rawData = raw,
+                rawDataLength = readbackData.Length,
+                frame = frame,
+                readbackLatencyMs = readbackLatencyMs,
+                generation = generation,
+                imageFormat = _imageFormat,
+                imageFormatName = GetImageFormatName(),
+                jpegQuality = _jpegQuality,
+                captureFps = _captureFps,
+                flipVertically = _flipVertically
+            }));
+        }
+
         ReleaseRenderTextureIfReady();
     }
 
-    void EncodeAndWriteFrame(byte[] rawData, FrameMetadata frame, float readbackLatencyMs)
+    bool QueueFrameForEncode(byte[] rawData, int rawDataLength, FrameMetadata frame, float readbackLatencyMs, int generation)
     {
-        if (rawData == null || rawData.Length == 0)
+        if (rawData == null || rawDataLength <= 0)
         {
-            _droppedFrames++;
+            return false;
+        }
+
+        EnsureEncodeWorkerStarted();
+        if (_encodeQueue == null)
+        {
+            return false;
+        }
+
+        var pending = Interlocked.Increment(ref _pendingEncodeWrites);
+        if (pending > _maxQueuedEncodeFrames)
+        {
+            Interlocked.Decrement(ref _pendingEncodeWrites);
+            return false;
+        }
+
+        Interlocked.Increment(ref _queuedEncodeFrames);
+        _encodeQueue.Enqueue(new PendingFrameWork
+        {
+            rawData = rawData,
+            rawDataLength = rawDataLength,
+            frame = frame,
+            readbackLatencyMs = readbackLatencyMs,
+            generation = generation,
+            imageFormat = _imageFormat,
+            imageFormatName = GetImageFormatName(),
+            jpegQuality = _jpegQuality,
+            captureFps = _captureFps,
+            flipVertically = _flipVertically
+        });
+        _encodeWorkerSignal.Set();
+        return true;
+    }
+
+    void EnsureEncodeWorkerStarted()
+    {
+        if (!_encodeAndWriteOnWorkerThread)
+        {
             return;
         }
 
-        var encodeStartedAt = Time.realtimeSinceStartupAsDouble;
-        if (_flipVertically)
+        if (_encodeWorkerThread != null && _encodeWorkerThread.IsAlive)
         {
-            FlipRowsInPlace(rawData, frame.width, frame.height, 3);
+            return;
         }
 
-        var blackFrameDetected = IsProbablyBlackFrame(rawData, frame.width, frame.height, 3);
-        if (blackFrameDetected && !_blackFrameWarningLogged)
+        if (_encodeWorkerThread != null && !_encodeWorkerThread.IsAlive)
+        {
+            _encodeWorkerThread = null;
+            _encodeWorkerSignal?.Dispose();
+            _encodeWorkerSignal = null;
+        }
+
+        _encodeQueue = new ConcurrentQueue<PendingFrameWork>();
+        _completedFrameQueue = new ConcurrentQueue<CompletedFrameWork>();
+        _encodeWorkerSignal = new AutoResetEvent(false);
+        _encodeWorkerShouldRun = true;
+        _encodeWorkerThread = new Thread(EncodeWorkerLoop)
+        {
+            IsBackground = true,
+            Name = "ExperimentVideoRecorder Encode Worker"
+        };
+        _encodeWorkerThread.Start();
+    }
+
+    void StopEncodeWorker(bool drainQueue)
+    {
+        if (_encodeWorkerThread == null)
+        {
+            return;
+        }
+
+        _encodeWorkerShouldRun = false;
+        if (!drainQueue)
+        {
+            while (_encodeQueue != null && _encodeQueue.TryDequeue(out _))
+            {
+                Interlocked.Decrement(ref _queuedEncodeFrames);
+                Interlocked.Decrement(ref _pendingEncodeWrites);
+                Interlocked.Increment(ref _workerDroppedFrames);
+            }
+        }
+
+        _encodeWorkerSignal?.Set();
+        if (!_encodeWorkerThread.Join(_workerShutdownWaitMilliseconds))
+        {
+            if (!_workerWarningLogged)
+            {
+                _workerWarningLogged = true;
+                Debug.LogWarning("[ExperimentVideoRecorder] Encode worker did not stop within the configured wait time; it will finish in the background.", this);
+            }
+
+            return;
+        }
+
+        _encodeWorkerThread = null;
+        _encodeWorkerSignal?.Dispose();
+        _encodeWorkerSignal = null;
+    }
+
+    void EncodeWorkerLoop()
+    {
+        while (_encodeWorkerShouldRun || (_encodeQueue != null && !_encodeQueue.IsEmpty))
+        {
+            if (_encodeQueue != null && _encodeQueue.TryDequeue(out var work))
+            {
+                Interlocked.Decrement(ref _queuedEncodeFrames);
+                var completed = EncodeFrameWork(work);
+                _completedFrameQueue?.Enqueue(completed);
+                Interlocked.Decrement(ref _pendingEncodeWrites);
+                continue;
+            }
+
+            _encodeWorkerSignal?.WaitOne(50);
+        }
+    }
+
+    void DrainCompletedFrameWork(int maxItems)
+    {
+        if (_completedFrameQueue == null || maxItems <= 0)
+        {
+            return;
+        }
+
+        var processed = 0;
+        while (processed < maxItems && _completedFrameQueue.TryDequeue(out var completed))
+        {
+            ProcessCompletedFrameWork(completed);
+            processed++;
+        }
+    }
+
+    void TryWriteFinalStoppedManifest()
+    {
+        if (!_stoppedManifestNeedsFinalWrite || _isRecording)
+        {
+            return;
+        }
+
+        if (_pendingReadbacks > 0 ||
+            Volatile.Read(ref _pendingEncodeWrites) > 0 ||
+            Volatile.Read(ref _queuedEncodeFrames) > 0 ||
+            (_completedFrameQueue != null && !_completedFrameQueue.IsEmpty))
+        {
+            return;
+        }
+
+        _stoppedManifestNeedsFinalWrite = false;
+        WriteManifest("stopped_final", _lastStopReason);
+    }
+
+    void ProcessCompletedFrameWork(CompletedFrameWork completed)
+    {
+        if (completed == null || completed.frame == null)
+        {
+            return;
+        }
+
+        if (completed.generation != _recordingGeneration)
+        {
+            return;
+        }
+
+        if (!completed.success)
+        {
+            _droppedFrames++;
+            if (completed.writeFailed)
+            {
+                _writeFailedFrames++;
+            }
+
+            if (!_writeWarningLogged)
+            {
+                _writeWarningLogged = true;
+                Debug.LogWarning("[ExperimentVideoRecorder] Failed to encode/write a video frame: " + completed.error, this);
+            }
+
+            return;
+        }
+
+        _encodedFrameCount++;
+        if (completed.blackFrameDetected && !_blackFrameWarningLogged)
         {
             _blackFrameWarningLogged = true;
             Debug.LogWarning(
@@ -554,65 +850,110 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
                 this);
         }
 
-        var texture = new Texture2D(frame.width, frame.height, TextureFormat.RGB24, false, false);
-        texture.LoadRawTextureData(rawData);
-        texture.Apply(false, false);
-        var encoded = _imageFormat == FrameImageFormat.Png
-            ? ImageConversion.EncodeToPNG(texture)
-            : ImageConversion.EncodeToJPG(texture, _jpegQuality);
-        UnityEngine.Object.Destroy(texture);
-        if (encoded == null || encoded.Length == 0)
-        {
-            _droppedFrames++;
-            return;
-        }
-
-        try
-        {
-            File.WriteAllBytes(frame.absolutePath, encoded);
-        }
-        catch (Exception ex)
-        {
-            _droppedFrames++;
-            if (!_writeWarningLogged)
-            {
-                _writeWarningLogged = true;
-                Debug.LogWarning("[ExperimentVideoRecorder] Failed to write a video frame: " + ex.Message, this);
-            }
-
-            return;
-        }
-
-        var encodeWriteLatencyMs = (float)((Time.realtimeSinceStartupAsDouble - encodeStartedAt) * 1000.0);
-
         var logger = _experimentCsvLogger;
         if (logger != null && logger.sessionActive)
         {
             logger.TryLogVideoFrame(new MeditationExperimentCsvLogger.VideoFrameRow
             {
-                sampleRealtime = frame.sampleRealtime,
-                frameIndex = frame.frameIndex,
-                unityFrame = frame.unityFrame,
-                width = frame.width,
-                height = frame.height,
-                captureFps = _captureFps,
-                imageFormat = GetImageFormatName(),
-                jpegQuality = _jpegQuality,
-                relativePath = frame.relativePath,
-                absolutePath = frame.absolutePath,
-                sourceCameraName = frame.sourceCameraName,
-                captureCameraName = frame.captureCameraName,
-                cameraPosition = frame.cameraPosition,
-                cameraRotation = frame.cameraRotation,
-                cameraForward = frame.cameraForward,
-                cameraUp = frame.cameraUp,
-                encodedBytes = encoded.LongLength,
-                readbackLatencyMs = readbackLatencyMs,
-                encodeWriteLatencyMs = encodeWriteLatencyMs,
+                sampleRealtime = completed.frame.sampleRealtime,
+                frameIndex = completed.frame.frameIndex,
+                unityFrame = completed.frame.unityFrame,
+                width = completed.frame.width,
+                height = completed.frame.height,
+                captureFps = completed.captureFps,
+                imageFormat = completed.imageFormatName,
+                jpegQuality = completed.jpegQuality,
+                relativePath = completed.frame.relativePath,
+                absolutePath = completed.frame.absolutePath,
+                sourceCameraName = completed.frame.sourceCameraName,
+                captureCameraName = completed.frame.captureCameraName,
+                cameraPosition = completed.frame.cameraPosition,
+                cameraRotation = completed.frame.cameraRotation,
+                cameraForward = completed.frame.cameraForward,
+                cameraUp = completed.frame.cameraUp,
+                encodedBytes = completed.encodedBytes,
+                readbackLatencyMs = completed.readbackLatencyMs,
+                encodeWriteLatencyMs = completed.encodeWriteLatencyMs,
                 droppedFrames = _droppedFrames,
-                notes = blackFrameDetected ? frame.notes + "; blackFrameDetected=True" : frame.notes
+                notes = completed.blackFrameDetected
+                    ? completed.frame.notes + "; blackFrameDetected=True; encodeWorker=" + _encodeAndWriteOnWorkerThread
+                    : completed.frame.notes + "; encodeWorker=" + _encodeAndWriteOnWorkerThread
             });
         }
+    }
+
+    static CompletedFrameWork EncodeFrameWork(PendingFrameWork work)
+    {
+        var completed = new CompletedFrameWork
+        {
+            frame = work.frame,
+            generation = work.generation,
+            readbackLatencyMs = work.readbackLatencyMs,
+            imageFormatName = work.imageFormatName,
+            jpegQuality = work.jpegQuality,
+            captureFps = work.captureFps
+        };
+
+        if (work.rawData == null || work.rawDataLength <= 0 || work.frame == null)
+        {
+            completed.error = "empty raw frame data";
+            if (work.rawData != null)
+            {
+                ArrayPool<byte>.Shared.Return(work.rawData);
+            }
+
+            return completed;
+        }
+
+        var startedAt = System.Diagnostics.Stopwatch.GetTimestamp();
+        try
+        {
+            if (work.flipVertically)
+            {
+                FlipRowsInPlace(work.rawData, work.frame.width, work.frame.height, 3);
+            }
+
+            completed.blackFrameDetected = IsProbablyBlackFrame(work.rawData, work.frame.width, work.frame.height, 3);
+            var encoded = EncodeRawImage(work.rawData, work.frame.width, work.frame.height, work.imageFormat, work.jpegQuality);
+            if (encoded == null || encoded.Length == 0)
+            {
+                completed.error = "encoder returned no bytes";
+                return completed;
+            }
+
+            File.WriteAllBytes(work.frame.absolutePath, encoded);
+            completed.encodedBytes = encoded.LongLength;
+            completed.success = true;
+        }
+        catch (Exception ex)
+        {
+            completed.error = ex.Message;
+            completed.writeFailed = true;
+        }
+        finally
+        {
+            completed.encodeWriteLatencyMs = ElapsedMilliseconds(startedAt);
+            if (work.rawData != null)
+            {
+                ArrayPool<byte>.Shared.Return(work.rawData);
+            }
+        }
+
+        return completed;
+    }
+
+    static byte[] EncodeRawImage(byte[] rawData, int width, int height, FrameImageFormat imageFormat, int jpegQuality)
+    {
+        var rowBytes = (uint)(Math.Max(1, width) * 3);
+        return imageFormat == FrameImageFormat.Png
+            ? ImageConversion.EncodeArrayToPNG(rawData, GraphicsFormat.R8G8B8_UNorm, (uint)width, (uint)height, rowBytes)
+            : ImageConversion.EncodeArrayToJPG(rawData, GraphicsFormat.R8G8B8_UNorm, (uint)width, (uint)height, rowBytes, jpegQuality);
+    }
+
+    static float ElapsedMilliseconds(long startedAt)
+    {
+        var elapsedTicks = System.Diagnostics.Stopwatch.GetTimestamp() - startedAt;
+        return (float)(elapsedTicks * 1000.0 / System.Diagnostics.Stopwatch.Frequency);
     }
 
     FrameMetadata CreateFrameMetadata(double sampleRealtime)
@@ -638,7 +979,7 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
             cameraUp = view != null ? view.up : Vector3.up,
             notes = string.Format(
                 CultureInfo.InvariantCulture,
-                "captureMethod={0}; frameTap={1}; xrViewIndex={2}; xrSource={3}x{4}; xrSourceSlice={5}; outputAspect={6:0.######}; preserveSourceAspect={7}; cropToFill={8}; flipVertically={9}; xrEnabled={10}; xrEyeTexture={11}x{12}; matchXrEyeAspect={13}",
+                "captureMethod={0}; frameTap={1}; xrViewIndex={2}; xrSource={3}x{4}; xrSourceSlice={5}; outputAspect={6:0.######}; preserveSourceAspect={7}; cropToFill={8}; flipVertically={9}; xrEnabled={10}; xrEyeTexture={11}x{12}; matchXrEyeAspect={13}; encodeWorker={14}; maxQueuedEncodeFrames={15}; submitXrCaptureCommandBuffer={16}",
                 _captureMethodName,
                 _captureMethodName == "XRDisplayRenderPass" ? "EndCameraRendering" : "AfterPostProcess",
                 _xrViewIndex,
@@ -652,7 +993,10 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
                 XRSettings.enabled,
                 XRSettings.eyeTextureWidth,
                 XRSettings.eyeTextureHeight,
-                _matchXrEyeTextureAspect)
+                _matchXrEyeTextureAspect,
+                _encodeAndWriteOnWorkerThread,
+                _maxQueuedEncodeFrames,
+                _submitXrCaptureCommandBuffer)
         };
     }
 
@@ -960,7 +1304,7 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
             eventRealtime = Time.realtimeSinceStartupAsDouble,
             notes = string.Format(
                 CultureInfo.InvariantCulture,
-                "reason={0}; captureMethod={1}; sourceCamera={2}; size={3}x{4}; sourceSize={5}x{6}; sourceSlice={7}; preserveSourceAspect={8}; cropToFill={9}; flipVertically={10}; fps={11:0.##}; imageFormat={12}; colorSpace={13}; xrEnabled={14}; xrEyeTexture={15}x{16}; frames={17}; dropped={18}; folder={19}",
+                "reason={0}; captureMethod={1}; sourceCamera={2}; size={3}x{4}; sourceSize={5}x{6}; sourceSlice={7}; preserveSourceAspect={8}; cropToFill={9}; flipVertically={10}; fps={11:0.##}; imageFormat={12}; colorSpace={13}; xrEnabled={14}; xrEyeTexture={15}x{16}; frames={17}; encoded={18}; dropped={19}; pendingReadbacks={20}; pendingEncodeWrites={21}; encodeWorker={22}; maxQueuedEncodeFrames={23}; submitXrCaptureCommandBuffer={24}; writeFailures={25}; folder={26}",
                 reason,
                 _captureMethodName,
                 _sourceCamera != null ? _sourceCamera.name : string.Empty,
@@ -979,7 +1323,14 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
                 XRSettings.eyeTextureWidth,
                 XRSettings.eyeTextureHeight,
                 _frameIndex,
+                _encodedFrameCount,
                 _droppedFrames,
+                _pendingReadbacks,
+                Volatile.Read(ref _pendingEncodeWrites),
+                _encodeAndWriteOnWorkerThread,
+                _maxQueuedEncodeFrames,
+                _submitXrCaptureCommandBuffer,
+                _writeFailedFrames,
                 _framesFolderPath)
         });
     }
@@ -1012,6 +1363,7 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
             "  \"frameTap\": " + JsonString(_captureMethodName == "XRDisplayRenderPass" ? "EndCameraRendering" : "AfterPostProcess") + ",",
             "  \"sourceCamera\": " + JsonString(_sourceCamera != null ? _sourceCamera.name : string.Empty) + ",",
             "  \"xrViewIndex\": " + _xrViewIndex.ToString(CultureInfo.InvariantCulture) + ",",
+            "  \"submitXrCaptureCommandBuffer\": " + JsonBool(_submitXrCaptureCommandBuffer) + ",",
             "  \"xrSourceWidth\": " + _activeSourceWidth.ToString(CultureInfo.InvariantCulture) + ",",
             "  \"xrSourceHeight\": " + _activeSourceHeight.ToString(CultureInfo.InvariantCulture) + ",",
             "  \"xrSourceSlice\": " + _activeSourceSlice.ToString(CultureInfo.InvariantCulture) + ",",
@@ -1029,11 +1381,20 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
             "  \"fps\": " + _captureFps.ToString("0.######", CultureInfo.InvariantCulture) + ",",
             "  \"imageFormat\": " + JsonString(GetImageFormatName()) + ",",
             "  \"jpegQuality\": " + _jpegQuality.ToString(CultureInfo.InvariantCulture) + ",",
+            "  \"encodeAndWriteOnWorkerThread\": " + JsonBool(_encodeAndWriteOnWorkerThread) + ",",
+            "  \"maxQueuedEncodeFrames\": " + _maxQueuedEncodeFrames.ToString(CultureInfo.InvariantCulture) + ",",
+            "  \"dropCaptureWhenEncodeQueueFull\": " + JsonBool(_dropCaptureWhenEncodeQueueFull) + ",",
+            "  \"maxCompletedFramesLoggedPerUpdate\": " + _maxCompletedFramesLoggedPerUpdate.ToString(CultureInfo.InvariantCulture) + ",",
             "  \"unityColorSpace\": " + JsonString(QualitySettings.activeColorSpace.ToString()) + ",",
             "  \"renderTextureReadWrite\": \"sRGB\",",
             "  \"frameCount\": " + _frameIndex.ToString(CultureInfo.InvariantCulture) + ",",
+            "  \"encodedFrameCount\": " + _encodedFrameCount.ToString(CultureInfo.InvariantCulture) + ",",
             "  \"droppedFrames\": " + _droppedFrames.ToString(CultureInfo.InvariantCulture) + ",",
             "  \"pendingReadbacks\": " + _pendingReadbacks.ToString(CultureInfo.InvariantCulture) + ",",
+            "  \"queuedEncodeFrames\": " + Volatile.Read(ref _queuedEncodeFrames).ToString(CultureInfo.InvariantCulture) + ",",
+            "  \"pendingEncodeWrites\": " + Volatile.Read(ref _pendingEncodeWrites).ToString(CultureInfo.InvariantCulture) + ",",
+            "  \"writeFailedFrames\": " + _writeFailedFrames.ToString(CultureInfo.InvariantCulture) + ",",
+            "  \"workerDroppedFrames\": " + _workerDroppedFrames.ToString(CultureInfo.InvariantCulture) + ",",
             "  \"framesFolder\": " + JsonString(_framesFolderPath) + ",",
             "  \"videoFramesCsv\": " + JsonString(Path.Combine(_sessionFolderPath, "video_frames.csv")) + ",",
             "  \"audioWav\": " + JsonString(Path.Combine(_sessionFolderPath, "audio.wav")) + ",",
@@ -1129,8 +1490,8 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
         }
 
         var stride = width * bytesPerPixel;
-        var stepX = Mathf.Max(1, width / 32);
-        var stepY = Mathf.Max(1, height / 32);
+        var stepX = Math.Max(1, width / 32);
+        var stepY = Math.Max(1, height / 32);
         var brightSamples = 0;
         var totalSamples = 0;
 
@@ -1191,5 +1552,35 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
         public Vector3 cameraForward;
         public Vector3 cameraUp;
         public string notes;
+    }
+
+    sealed class PendingFrameWork
+    {
+        public byte[] rawData;
+        public int rawDataLength;
+        public FrameMetadata frame;
+        public float readbackLatencyMs;
+        public int generation;
+        public FrameImageFormat imageFormat;
+        public string imageFormatName;
+        public int jpegQuality;
+        public float captureFps;
+        public bool flipVertically;
+    }
+
+    sealed class CompletedFrameWork
+    {
+        public FrameMetadata frame;
+        public int generation;
+        public bool success;
+        public bool blackFrameDetected;
+        public bool writeFailed;
+        public long encodedBytes = -1;
+        public float readbackLatencyMs = float.NaN;
+        public float encodeWriteLatencyMs = float.NaN;
+        public string imageFormatName;
+        public int jpegQuality;
+        public float captureFps;
+        public string error;
     }
 }

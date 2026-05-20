@@ -18,6 +18,8 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
     [SerializeField] bool _usePersistentDataPathOutsideEditor = true;
     [SerializeField] bool _logSessionPath = true;
     [SerializeField] bool _writeExcelSeparatorDirective = true;
+    [SerializeField] bool _flushEveryCsvWrite;
+    [SerializeField, Min(0.05f)] float _csvFlushIntervalSeconds = 1f;
 
     static MeditationExperimentCsvLogger _instance;
 
@@ -35,6 +37,7 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
     long _sessionStartedUnixMs;
     double _sessionStartedRealtime;
     bool _sessionActive;
+    double _nextCsvFlushRealtime;
 
     public static MeditationExperimentCsvLogger Instance
     {
@@ -73,9 +76,31 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
         _instance = this;
     }
 
+    void OnValidate()
+    {
+        _csvFlushIntervalSeconds = Mathf.Max(0.05f, _csvFlushIntervalSeconds);
+    }
+
     void OnDisable()
     {
+        FlushAllWriters();
         CloseCsv();
+    }
+
+    void OnApplicationPause(bool pause)
+    {
+        if (pause)
+        {
+            FlushAllWriters();
+        }
+    }
+
+    void OnApplicationFocus(bool focus)
+    {
+        if (!focus)
+        {
+            FlushAllWriters();
+        }
     }
 
     public bool StartSession(string inputSource, bool forceRestart = false)
@@ -110,7 +135,7 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
             _sessionStartedUnixMs.ToString(CultureInfo.InvariantCulture),
             CsvEscape(inputSource),
             CsvEscape(CsvVersion),
-            CsvEscape(_sessionFolderPath)));
+            CsvEscape(_sessionFolderPath)), true);
 
         LogEvent(new Row
         {
@@ -211,6 +236,7 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
         CloseWriter(ref _eyeTrackingWriter);
         CloseWriter(ref _videoFramesWriter);
         _sessionActive = false;
+        _nextCsvFlushRealtime = 0.0;
     }
 
     void EnsureSession()
@@ -280,7 +306,7 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
         return writer;
     }
 
-    static void WriteLine(StreamWriter writer, string line)
+    void WriteLine(StreamWriter writer, string line, bool flushImmediately = false)
     {
         if (writer == null)
         {
@@ -288,7 +314,35 @@ public sealed class MeditationExperimentCsvLogger : MonoBehaviour
         }
 
         writer.WriteLine(line);
-        writer.Flush();
+        if (_flushEveryCsvWrite || flushImmediately || !Application.isPlaying)
+        {
+            writer.Flush();
+            return;
+        }
+
+        var now = Time.realtimeSinceStartupAsDouble;
+        if (_nextCsvFlushRealtime <= 0.0 || now >= _nextCsvFlushRealtime)
+        {
+            FlushAllWriters();
+            _nextCsvFlushRealtime = now + Mathf.Max(0.05f, _csvFlushIntervalSeconds);
+        }
+    }
+
+    void FlushAllWriters()
+    {
+        FlushWriter(_sessionWriter);
+        FlushWriter(_paintingsWriter);
+        FlushWriter(_stageValuesWriter);
+        FlushWriter(_choicesWriter);
+        FlushWriter(_eventsWriter);
+        FlushWriter(_summaryWriter);
+        FlushWriter(_eyeTrackingWriter);
+        FlushWriter(_videoFramesWriter);
+    }
+
+    static void FlushWriter(StreamWriter writer)
+    {
+        writer?.Flush();
     }
 
     static void CloseWriter(ref StreamWriter writer)
