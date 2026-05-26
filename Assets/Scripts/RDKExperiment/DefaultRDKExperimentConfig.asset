@@ -19,27 +19,33 @@ MonoBehaviour:
     motionDirection: -1
     motionCoherence: 0.5
     repetitions: 8
+    stimulusSecondsOverride: 0
   - conditionName: right_50
     motionDirection: 1
     motionCoherence: 0.5
     repetitions: 8
+    stimulusSecondsOverride: 0
   - conditionName: random_0
     motionDirection: 0
     motionCoherence: 0
     repetitions: 8
+    stimulusSecondsOverride: 0
   _practiceConditions:
   - conditionName: practice_left_75
     motionDirection: -1
     motionCoherence: 0.75
     repetitions: 1
+    stimulusSecondsOverride: 0
   - conditionName: practice_right_75
     motionDirection: 1
     motionCoherence: 0.75
     repetitions: 1
+    stimulusSecondsOverride: 0
   - conditionName: practice_random_0
     motionDirection: 0
     motionCoherence: 0
     repetitions: 1
+    stimulusSecondsOverride: 0
   _pointCount: 54
   _pointSizeMeters: 0.12
   _dotSpeedMetersPerSecond: 0.45
@@ -48,10 +54,10 @@ MonoBehaviour:
   _useCurvedSurface: 1
   _randomDirectionRefreshSeconds: 0
   _randomizeDirectionOnWrap: 1
-  _fixationSeconds: 0.75
-  _stimulusSeconds: 1.5
-  _responseWindowSeconds: 2
-  _interTrialIntervalSeconds: 1
+  _fixationSeconds: 1.5
+  _stimulusSeconds: 3
+  _responseWindowSeconds: 4
+  _interTrialIntervalSeconds: 1.5
   _backgroundColor: {r: 0, g: 0, b: 0, a: 1}
   _recenterPanelBeforeEachTrial: 1
   _useHeadYawOnly: 1

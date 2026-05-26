@@ -24,6 +24,8 @@ public sealed class RDKTrialCondition
     public RDKMotionDirection motionDirection = RDKMotionDirection.Right;
     [Range(0f, 1f)] public float motionCoherence = 0.5f;
     [Min(1)] public int repetitions = 1;
+    [Tooltip("Optional display duration for this condition. Use 0 to use the global Timing / Stimulus Seconds value.")]
+    [Min(0f)] public float stimulusSecondsOverride;
 }
 
 public struct RDKTrialPlan
@@ -35,6 +37,7 @@ public struct RDKTrialPlan
     public string conditionName;
     public RDKMotionDirection motionDirection;
     public float motionCoherence;
+    public float stimulusSeconds;
 
     public string conditionType => motionDirection == RDKMotionDirection.None ? "none" : motionDirection.ToString().ToLowerInvariant();
 }
@@ -69,10 +72,11 @@ public sealed class RDKExperimentConfig : ScriptableObject
     [SerializeField] bool _randomizeDirectionOnWrap = true;
 
     [Header("Timing")]
-    [SerializeField, Min(0f)] float _fixationSeconds = 0.75f;
-    [SerializeField, Min(0.05f)] float _stimulusSeconds = 1.5f;
-    [SerializeField, Min(0.05f)] float _responseWindowSeconds = 2f;
-    [SerializeField, Min(0f)] float _interTrialIntervalSeconds = 1f;
+    [SerializeField, Min(0f)] float _fixationSeconds = 1.5f;
+    [Tooltip("How long each left/right/random RDK stimulus remains visible before the response-only phase.")]
+    [SerializeField, Min(0.05f)] float _stimulusSeconds = 3f;
+    [SerializeField, Min(0.05f)] float _responseWindowSeconds = 4f;
+    [SerializeField, Min(0f)] float _interTrialIntervalSeconds = 1.5f;
 
     [Header("Environment")]
     [SerializeField] Color _backgroundColor = Color.black;
@@ -145,7 +149,8 @@ public sealed class RDKExperimentConfig : ScriptableObject
                         isPractice = practice,
                         conditionName = string.IsNullOrEmpty(condition.conditionName) ? condition.motionDirection.ToString() : condition.conditionName,
                         motionDirection = condition.motionDirection,
-                        motionCoherence = Mathf.Clamp01(condition.motionCoherence)
+                        motionCoherence = Mathf.Clamp01(condition.motionCoherence),
+                        stimulusSeconds = ResolveStimulusSeconds(condition)
                     });
                 }
             }
@@ -179,7 +184,18 @@ public sealed class RDKExperimentConfig : ScriptableObject
 
             conditions[i].motionCoherence = Mathf.Clamp01(conditions[i].motionCoherence);
             conditions[i].repetitions = Mathf.Max(1, conditions[i].repetitions);
+            conditions[i].stimulusSecondsOverride = Mathf.Max(0f, conditions[i].stimulusSecondsOverride);
         }
+    }
+
+    float ResolveStimulusSeconds(RDKTrialCondition condition)
+    {
+        if (condition != null && condition.stimulusSecondsOverride > 0f)
+        {
+            return Mathf.Max(0.05f, condition.stimulusSecondsOverride);
+        }
+
+        return stimulusSeconds;
     }
 
     static void ShuffleRange(List<RDKTrialPlan> trials, int startInclusive, int endExclusive)

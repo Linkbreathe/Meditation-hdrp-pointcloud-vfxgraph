@@ -23,6 +23,9 @@ public enum RDKExperimentState
 [AddComponentMenu("RDK Experiment/RDK Experiment Manager")]
 public sealed class RDKExperimentManager : MonoBehaviour
 {
+    const float RuntimeUiPixelsPerMeter = 1000f;
+    const float RuntimeUiPaddingPixels = 48f;
+
     [Header("References")]
     [SerializeField] RDKExperimentConfig _config;
     [SerializeField] RDKStimulusManager _stimulusManager;
@@ -44,7 +47,7 @@ public sealed class RDKExperimentManager : MonoBehaviour
     [SerializeField] bool _autoStart;
     [SerializeField] bool _runPractice = true;
     [SerializeField] bool _waitForInputOnInstruction = true;
-    [SerializeField, Min(0f)] float _practiceFeedbackSeconds = 0.75f;
+    [SerializeField, Min(0f)] float _practiceFeedbackSeconds = 1.5f;
     [SerializeField] bool _debugLogging = true;
     [SerializeField] bool _preferXriCameraForPcSimulation = true;
 
@@ -235,7 +238,10 @@ public sealed class RDKExperimentManager : MonoBehaviour
 
     IEnumerator RunTrialRoutine(RDKTrialPlan trial, bool practice)
     {
-        DebugLog($"Trial {_globalTrialIndex}: {trial.conditionName}, direction={trial.motionDirection}, coherence={trial.motionCoherence:0.###}.");
+        float stimulusSeconds = trial.stimulusSeconds > 0f ? trial.stimulusSeconds : _config.stimulusSeconds;
+        stimulusSeconds = Mathf.Max(0.05f, stimulusSeconds);
+        float responseWindowSeconds = Mathf.Max(_config.responseWindowSeconds, stimulusSeconds);
+        DebugLog($"Trial {_globalTrialIndex}: {trial.conditionName}, direction={trial.motionDirection}, coherence={trial.motionCoherence:0.###}, stimulusSeconds={stimulusSeconds:0.###}.");
 
         bool earlyResponse = false;
         RDKInputSample earlySample = default;
@@ -268,8 +274,8 @@ public sealed class RDKExperimentManager : MonoBehaviour
         bool responded = false;
         RDKInputSample responseSample = default;
         double stimulusEnd = double.NaN;
-        float responseDeadline = Time.time + _config.responseWindowSeconds;
-        float stimulusEndTime = Time.time + _config.stimulusSeconds;
+        float responseDeadline = Time.time + responseWindowSeconds;
+        float stimulusEndTime = Time.time + stimulusSeconds;
 
         while (Time.time < responseDeadline)
         {
@@ -463,7 +469,8 @@ public sealed class RDKExperimentManager : MonoBehaviour
         root.AddComponent<GraphicRaycaster>();
 
         RectTransform rect = root.GetComponent<RectTransform>();
-        rect.sizeDelta = _uiPanelSizeMeters;
+        rect.sizeDelta = _uiPanelSizeMeters * RuntimeUiPixelsPerMeter;
+        root.transform.localScale = Vector3.one / RuntimeUiPixelsPerMeter;
 
         GameObject background = new GameObject("Background");
         background.transform.SetParent(root.transform, false);
@@ -479,8 +486,11 @@ public sealed class RDKExperimentManager : MonoBehaviour
         label.transform.SetParent(root.transform, false);
         Text text = label.AddComponent<Text>();
         text.text = message;
-        text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         text.fontSize = fontSize;
+        text.resizeTextForBestFit = true;
+        text.resizeTextMinSize = Mathf.Max(10, Mathf.RoundToInt(fontSize * 0.55f));
+        text.resizeTextMaxSize = fontSize;
         text.alignment = TextAnchor.MiddleCenter;
         text.color = Color.white;
         text.horizontalOverflow = HorizontalWrapMode.Wrap;
@@ -488,8 +498,8 @@ public sealed class RDKExperimentManager : MonoBehaviour
         RectTransform textRect = text.rectTransform;
         textRect.anchorMin = Vector2.zero;
         textRect.anchorMax = Vector2.one;
-        textRect.offsetMin = new Vector2(0.08f, 0.08f);
-        textRect.offsetMax = new Vector2(-0.08f, -0.08f);
+        textRect.offsetMin = new Vector2(RuntimeUiPaddingPixels, RuntimeUiPaddingPixels);
+        textRect.offsetMax = new Vector2(-RuntimeUiPaddingPixels, -RuntimeUiPaddingPixels);
 
         root.SetActive(false);
         return root;
@@ -505,13 +515,14 @@ public sealed class RDKExperimentManager : MonoBehaviour
         canvas.sortingOrder = 60;
 
         RectTransform rect = root.GetComponent<RectTransform>();
-        rect.sizeDelta = new Vector2(0.18f, 0.18f);
+        rect.sizeDelta = new Vector2(0.18f, 0.18f) * RuntimeUiPixelsPerMeter;
+        root.transform.localScale = Vector3.one / RuntimeUiPixelsPerMeter;
 
         GameObject label = new GameObject("Fixation Cross");
         label.transform.SetParent(root.transform, false);
         Text text = label.AddComponent<Text>();
         text.text = "+";
-        text.font = Resources.GetBuiltinResource<Font>("Arial.ttf");
+        text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         text.fontSize = 72;
         text.alignment = TextAnchor.MiddleCenter;
         text.color = Color.white;
