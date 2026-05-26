@@ -645,6 +645,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &83643168
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -657,6 +678,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 83643170}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &83643169
 VFXRenderer:
   serializedVersion: 1
@@ -715,19 +751,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 910629
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -1265,6 +1301,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &124908941
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1277,6 +1334,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 124908943}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &124908942
 VFXRenderer:
   serializedVersion: 1
@@ -1335,19 +1407,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 815331
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -1390,7 +1462,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!114 &159143643
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3326,6 +3398,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &546651990
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3338,6 +3431,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 546651992}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &546651991
 VFXRenderer:
   serializedVersion: 1
@@ -3396,19 +3504,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 728640
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -4333,6 +4441,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &621915680
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4345,6 +4474,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 621915682}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &621915681
 VFXRenderer:
   serializedVersion: 1
@@ -4403,19 +4547,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 841725
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -6041,13 +6185,13 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 628200
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
@@ -6091,6 +6235,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &891793452
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -6103,6 +6268,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 891793450}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!1 &895939849
 GameObject:
   m_ObjectHideFlags: 0
@@ -6464,7 +6644,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 0
+  m_IsActive: 1
 --- !u!114 &932450315
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7002,6 +7182,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &993492448
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7014,6 +7215,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 993492450}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &993492449
 VFXRenderer:
   serializedVersion: 1
@@ -7072,19 +7288,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 1079040
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -7374,6 +7590,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &1007528327
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -7386,6 +7623,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 1007528329}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &1007528328
 VFXRenderer:
   serializedVersion: 1
@@ -7444,19 +7696,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 1079040
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -8587,6 +8839,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &1085134398
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8599,6 +8872,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 1085134400}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &1085134399
 VFXRenderer:
   serializedVersion: 1
@@ -8657,19 +8945,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 729600
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -8768,7 +9056,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6598815579406187037, guid: 18ddb545287c546e19cc77dc9fbb2189, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -8807,6 +9095,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &1096619070
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8819,6 +9128,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 1096619072}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &1096619071
 VFXRenderer:
   serializedVersion: 1
@@ -8877,19 +9201,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 630000
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -11551,6 +11875,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &1276049665
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -11563,6 +11908,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 1276049667}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &1276049666
 VFXRenderer:
   serializedVersion: 1
@@ -11621,19 +11981,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 534300
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -12120,23 +12480,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a0047afe1ef454e848f7506dff4b73f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _visualEffect: {fileID: 1362876631}
-  _sourceVfx: {fileID: 8926484042661614526, guid: 9651836a90367c69e1a2fd2832fa3c82, type: 3}
-  _generatedVfx: {fileID: 8926484042661614526, guid: 0302b6ce564e4a50ad4be34f7b42160f, type: 3}
-  _sourcePly: {fileID: 5879066665630305242, guid: 13b52de257a037f46834ae673dc58d16, type: 3}
-  _generatedPly: {fileID: 0}
-  _oddballPercent: 10
-  _direction: 1
-  _xOffset: 1
-  _remainderMode: 0
-  _remainderJitter: 0.05
-  _gridColumns: 24
-  _gridRows: 12
-  _seed: 44
-  _applyGeneratedOnEnable: 1
-  _reinitAfterApply: 1
-  _outputFolder: Assets/Point Cloud Experiment/water lilies
-  _logGeneration: 1
 --- !u!1 &1362876627
 GameObject:
   m_ObjectHideFlags: 0
@@ -12170,21 +12513,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 7cb2baccf82b81d4fb82b2f73fb41fc0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _visualEffect: {fileID: 1362876631}
-  _spawnRate: 1800000
-  _particleIntensity: 0.01
-  _particleDrag: 1
-  _particleFrequency: 0
-  _cubeSmoothness: 0
-  _cubeMetallic: 0
-  _spawnRateProperty: System Spawn - rate
-  _particleIntensityProperty: System update particle - intensity
-  _particleDragProperty: System update particle - drag
-  _particleFrequencyProperty: System update particle - frequency
-  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
-  _cubeMetallicProperty: System hdrp lit cube - metallic
-  _applyContinuously: 1
-  _logMissingProperties: 1
 --- !u!114 &1362876629
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12197,27 +12525,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 869e05794edc40f4c9995d0512cae62d, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _vfxEntityName: Starry_Night_Over_the_Rhone
-  _visualEffect: {fileID: 1362876631}
-  _vfxController: {fileID: 0}
-  _particleIntensityProperty: System update particle - intensity
-  _particleFrequencyProperty: System update particle - frequency
-  _initialParticleIntensity: 0.01
-  _initialParticleFrequency: 0
-  _initialStateDuration: 10
-  _stageDuration: 20
-  _updateInterval: 5
-  _returnToInitialDuration: 10
-  _randomRanges:
-  - minimum: 0.01
-    maximum: 0.33
-  - minimum: 0.34
-    maximum: 0.66
-  - minimum: 0.67
-    maximum: 1
-  _playOnStart: 1
-  _logValueChanges: 1
-  _logMissingProperties: 1
 --- !u!73398921 &1362876630
 VFXRenderer:
   serializedVersion: 1
@@ -12266,7 +12573,7 @@ VisualEffect:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1362876627}
   m_Enabled: 1
-  m_Asset: {fileID: 8926484042661614526, guid: 0302b6ce564e4a50ad4be34f7b42160f, type: 3}
+  m_Asset: {fileID: 0}
   m_InitialEventName: OnPlay
   m_InitialEventNameOverriden: 0
   m_StartSeed: 0
@@ -12381,6 +12688,81 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1f3e9281f97f4a349a1d9d937a4fb1c2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _paintingsRoot: {fileID: 0}
+  _preferActiveChildOnStart: 1
+  _startIndex: 0
+  _fadeOutDuration: 12
+  _dissolveHoldDuration: 8
+  _fadeInDuration: 12
+  _collectCalmnessFeedback: 0
+  _feedbackCollector: {fileID: 0}
+  _feedbackDelay: 0.3
+  _feedbackTimeoutRatio: 0.85
+  _promptMeditationChoiceAfterStages: 1
+  _meditationChoiceFeedback: {fileID: 0}
+  _experimentCsvLogger: {fileID: 0}
+  _recordExperimentVideo: 1
+  _experimentVideoRecorder: {fileID: 0}
+  _recordExperimentAudio: 1
+  _experimentAudioRecorder: {fileID: 0}
+  _choiceNormalColorIntensity: 0
+  _choicePromptColorIntensity: 3.5
+  _choicePromptBreathInSeconds: 1.1
+  _choicePromptBreathOutSeconds: 1.55
+  _choicePromptBreathMinimumAmount: 0
+  _choicePromptReminderDelaySeconds: 45
+  _choicePromptReminderSkyVolume: {fileID: 1411954856}
+  _choicePromptReminderSkyMiddleColor: {r: 0.19215687, g: 0.56078434, b: 0.6509804, a: 1}
+  _choicePromptReminderSkyTransitionSeconds: 1.5
+  _choicePromptReminderSkyTransitionCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  _choicePromptReminderClip: {fileID: 8300000, guid: fc748629437ca4d4489b4fbfed63f8cd, type: 3}
+  _choicePromptReminderAudioSource: {fileID: 0}
+  _choicePromptReminderAudioIntervalSeconds: 3
+  _choicePromptReminderAudioVolume: 1
+  _requireEyeTrackingReadyBeforeStart: 1
+  _eyeTrackingStartGateTimeoutSeconds: 8
+  _eyeTrackingStartGatePollSeconds: 0.25
+  _enableEyeRestGate: 1
+  _paintingsBetweenEyeRests: 2
+  _eyeRestDuration: 30
+  _eyeRestContinueKey: 98
+  _eyeRestOverlayColor: {r: 0, g: 0, b: 0, a: 1}
+  _eyeRestOverlayAlpha: 1
+  _eyeRestOverlay: {fileID: 0}
+  _autoCreateEyeRestOverlay: 1
+  _autoEyeRestOverlayDistanceMeters: 0.75
+  _allowRightControllerBButtonForEyeRest: 1
+  _logEyeRestGate: 1
+  _playOnStart: 1
+  _waitForRightControllerAButtonBeforeStart: 0
+  _disableChildPlayOnStartWhileWaiting: 1
+  _allowKeyboardStartInEditor: 1
+  _logStartButtonInput: 1
+  _logTransitions: 1
+  _progressLogInterval: 1
 --- !u!1 &1382123507
 GameObject:
   m_ObjectHideFlags: 0
@@ -12881,6 +13263,51 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5423e3bb23b38424eb491b75c06f8916, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 1466357133}
+  _targetTransform: {fileID: 1466357134}
+  _gazeSourceMode: 1
+  _gazeTransform: {fileID: 724490839}
+  _leftGazeTransform: {fileID: 0}
+  _rightGazeTransform: {fileID: 0}
+  _rayOriginTransform: {fileID: 0}
+  _autoFindGazeTransform: 1
+  _preferredGazeObjectName: '[BuildingBlock] Eye Gaze Right'
+  _fallbackGazeObjectName: '[BuildingBlock] Eye Gaze Left'
+  _leftGazeObjectName: '[BuildingBlock] Eye Gaze Left'
+  _rightGazeObjectName: '[BuildingBlock] Eye Gaze Right'
+  _rayOriginObjectName: CenterEyeAnchor
+  _cameraFallbackName: CenterEyeAnchor
+  _paintingPlaneNormal: 2
+  _regionCenterLocal: {x: 0, y: 0, z: 0}
+  _regionShape: 1
+  _regionRadiusLocal: 5
+  _regionHalfSizeLocal: {x: 5, y: 5}
+  _softEdgeLocal: 0.5
+  _clampRectangularHitsToRegion: 0
+  _rectangularHitGraceLocal: 0.15
+  _brushRadiusLocal: 1
+  _maxRayDistance: 80
+  _regionStrengthMode: 0
+  _attackSpeed: 22
+  _releaseSpeed: 10
+  _hitPositionSmoothingSpeed: 30
+  _useUnscaledTime: 0
+  _gazeWorldHitProperty: Gaze Hit Position
+  _gazeLocalHitProperty: Gaze Hit Local Position
+  _gazeRadiusProperty: Gaze Radius
+  _gazeStrengthProperty: Gaze Strength
+  _gazeActiveProperty: Gaze Active
+  _driveExistingGlobalControls: 1
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _particleDragProperty: System update particle - drag
+  _baseParticleIntensity: 0.01
+  _disturbedParticleIntensity: 0.16
+  _baseParticleFrequency: 0.01
+  _disturbedParticleFrequency: 0.2
+  _baseParticleDrag: 1
+  _disturbedParticleDrag: 0.25
+  _drawGizmos: 1
 --- !u!114 &1466357131
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -12893,6 +13320,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 1466357133}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &1466357132
 VFXRenderer:
   serializedVersion: 1
@@ -12951,19 +13393,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 1145280
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: -0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -13322,6 +13764,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &1499324778
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13334,6 +13797,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 1499324780}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &1499324779
 VFXRenderer:
   serializedVersion: 1
@@ -13392,19 +13870,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 170500
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -13582,6 +14060,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 1517538924}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!114 &1517538922
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -13594,6 +14087,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!73398921 &1517538923
 VFXRenderer:
   serializedVersion: 1
@@ -13652,19 +14166,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 1145280
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -13812,6 +14326,81 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1f3e9281f97f4a349a1d9d937a4fb1c2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _paintingsRoot: {fileID: 0}
+  _preferActiveChildOnStart: 1
+  _startIndex: 0
+  _fadeOutDuration: 12
+  _dissolveHoldDuration: 8
+  _fadeInDuration: 12
+  _collectCalmnessFeedback: 0
+  _feedbackCollector: {fileID: 0}
+  _feedbackDelay: 0.3
+  _feedbackTimeoutRatio: 0.85
+  _promptMeditationChoiceAfterStages: 1
+  _meditationChoiceFeedback: {fileID: 0}
+  _experimentCsvLogger: {fileID: 0}
+  _recordExperimentVideo: 1
+  _experimentVideoRecorder: {fileID: 0}
+  _recordExperimentAudio: 1
+  _experimentAudioRecorder: {fileID: 0}
+  _choiceNormalColorIntensity: 0
+  _choicePromptColorIntensity: 3.5
+  _choicePromptBreathInSeconds: 1.1
+  _choicePromptBreathOutSeconds: 1.55
+  _choicePromptBreathMinimumAmount: 0
+  _choicePromptReminderDelaySeconds: 45
+  _choicePromptReminderSkyVolume: {fileID: 1411954856}
+  _choicePromptReminderSkyMiddleColor: {r: 0.19215687, g: 0.56078434, b: 0.6509804, a: 1}
+  _choicePromptReminderSkyTransitionSeconds: 1.5
+  _choicePromptReminderSkyTransitionCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  _choicePromptReminderClip: {fileID: 8300000, guid: fc748629437ca4d4489b4fbfed63f8cd, type: 3}
+  _choicePromptReminderAudioSource: {fileID: 0}
+  _choicePromptReminderAudioIntervalSeconds: 3
+  _choicePromptReminderAudioVolume: 1
+  _requireEyeTrackingReadyBeforeStart: 1
+  _eyeTrackingStartGateTimeoutSeconds: 8
+  _eyeTrackingStartGatePollSeconds: 0.25
+  _enableEyeRestGate: 1
+  _paintingsBetweenEyeRests: 2
+  _eyeRestDuration: 30
+  _eyeRestContinueKey: 98
+  _eyeRestOverlayColor: {r: 0, g: 0, b: 0, a: 1}
+  _eyeRestOverlayAlpha: 1
+  _eyeRestOverlay: {fileID: 0}
+  _autoCreateEyeRestOverlay: 1
+  _autoEyeRestOverlayDistanceMeters: 0.75
+  _allowRightControllerBButtonForEyeRest: 1
+  _logEyeRestGate: 1
+  _playOnStart: 1
+  _waitForRightControllerAButtonBeforeStart: 0
+  _disableChildPlayOnStartWhileWaiting: 1
+  _allowKeyboardStartInEditor: 1
+  _logStartButtonInput: 1
+  _logTransitions: 1
+  _progressLogInterval: 1
 --- !u!4 &1577724482
 Transform:
   m_ObjectHideFlags: 0
@@ -14559,6 +15148,51 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5423e3bb23b38424eb491b75c06f8916, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 1672909524}
+  _targetTransform: {fileID: 1672909525}
+  _gazeSourceMode: 1
+  _gazeTransform: {fileID: 724490839}
+  _leftGazeTransform: {fileID: 0}
+  _rightGazeTransform: {fileID: 0}
+  _rayOriginTransform: {fileID: 0}
+  _autoFindGazeTransform: 1
+  _preferredGazeObjectName: '[BuildingBlock] Eye Gaze Right'
+  _fallbackGazeObjectName: '[BuildingBlock] Eye Gaze Left'
+  _leftGazeObjectName: '[BuildingBlock] Eye Gaze Left'
+  _rightGazeObjectName: '[BuildingBlock] Eye Gaze Right'
+  _rayOriginObjectName: CenterEyeAnchor
+  _cameraFallbackName: CenterEyeAnchor
+  _paintingPlaneNormal: 2
+  _regionCenterLocal: {x: 0, y: 0, z: 0}
+  _regionShape: 1
+  _regionRadiusLocal: 5
+  _regionHalfSizeLocal: {x: 5, y: 5}
+  _softEdgeLocal: 0.5
+  _clampRectangularHitsToRegion: 0
+  _rectangularHitGraceLocal: 0.15
+  _brushRadiusLocal: 1
+  _maxRayDistance: 80
+  _regionStrengthMode: 0
+  _attackSpeed: 22
+  _releaseSpeed: 10
+  _hitPositionSmoothingSpeed: 30
+  _useUnscaledTime: 0
+  _gazeWorldHitProperty: Gaze Hit Position
+  _gazeLocalHitProperty: Gaze Hit Local Position
+  _gazeRadiusProperty: Gaze Radius
+  _gazeStrengthProperty: Gaze Strength
+  _gazeActiveProperty: Gaze Active
+  _driveExistingGlobalControls: 1
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _particleDragProperty: System update particle - drag
+  _baseParticleIntensity: 0.01
+  _disturbedParticleIntensity: 0.16
+  _baseParticleFrequency: 0.01
+  _disturbedParticleFrequency: 0.2
+  _baseParticleDrag: 1
+  _disturbedParticleDrag: 0.25
+  _drawGizmos: 1
 --- !u!114 &1672909522
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -14571,6 +15205,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 1672909524}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &1672909523
 VFXRenderer:
   serializedVersion: 1
@@ -15063,6 +15712,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &1738309513
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15075,6 +15745,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 1738309515}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &1738309514
 VFXRenderer:
   serializedVersion: 1
@@ -15123,7 +15808,7 @@ VisualEffect:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1738309510}
   m_Enabled: 1
-  m_Asset: {fileID: 8926484042661614526, guid: 0302b6ce564e4a50ad4be34f7b42160f, type: 3}
+  m_Asset: {fileID: 0}
   m_InitialEventName: OnPlay
   m_InitialEventNameOverriden: 0
   m_StartSeed: 0
@@ -15183,23 +15868,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a0047afe1ef454e848f7506dff4b73f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _visualEffect: {fileID: 1738309515}
-  _sourceVfx: {fileID: 8926484042661614526, guid: 9651836a90367c69e1a2fd2832fa3c82, type: 3}
-  _generatedVfx: {fileID: 8926484042661614526, guid: 0302b6ce564e4a50ad4be34f7b42160f, type: 3}
-  _sourcePly: {fileID: 5879066665630305242, guid: 13b52de257a037f46834ae673dc58d16, type: 3}
-  _generatedPly: {fileID: 0}
-  _oddballPercent: 10
-  _direction: 1
-  _xOffset: 1
-  _remainderMode: 0
-  _remainderJitter: 0.05
-  _gridColumns: 24
-  _gridRows: 12
-  _seed: 44
-  _applyGeneratedOnEnable: 1
-  _reinitAfterApply: 1
-  _outputFolder: Assets/Point Cloud Experiment/water lilies
-  _logGeneration: 1
 --- !u!1 &1739678651
 GameObject:
   m_ObjectHideFlags: 0
@@ -15542,6 +16210,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &1751084756
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15554,6 +16243,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 1751084758}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &1751084757
 VFXRenderer:
   serializedVersion: 1
@@ -15612,19 +16316,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 778500
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -15712,6 +16416,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &1764600240
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -15724,6 +16449,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 1764600242}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &1764600241
 VFXRenderer:
   serializedVersion: 1
@@ -15782,19 +16522,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 286080
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -16430,6 +17170,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &1855314376
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16442,6 +17203,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 1855314378}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &1855314377
 VFXRenderer:
   serializedVersion: 1
@@ -16500,19 +17276,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 816220
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -16590,6 +17366,81 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1f3e9281f97f4a349a1d9d937a4fb1c2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _paintingsRoot: {fileID: 0}
+  _preferActiveChildOnStart: 1
+  _startIndex: 0
+  _fadeOutDuration: 12
+  _dissolveHoldDuration: 8
+  _fadeInDuration: 12
+  _collectCalmnessFeedback: 0
+  _feedbackCollector: {fileID: 0}
+  _feedbackDelay: 0.3
+  _feedbackTimeoutRatio: 0.85
+  _promptMeditationChoiceAfterStages: 1
+  _meditationChoiceFeedback: {fileID: 0}
+  _experimentCsvLogger: {fileID: 0}
+  _recordExperimentVideo: 1
+  _experimentVideoRecorder: {fileID: 0}
+  _recordExperimentAudio: 1
+  _experimentAudioRecorder: {fileID: 0}
+  _choiceNormalColorIntensity: 0
+  _choicePromptColorIntensity: 3.5
+  _choicePromptBreathInSeconds: 1.1
+  _choicePromptBreathOutSeconds: 1.55
+  _choicePromptBreathMinimumAmount: 0
+  _choicePromptReminderDelaySeconds: 45
+  _choicePromptReminderSkyVolume: {fileID: 1411954856}
+  _choicePromptReminderSkyMiddleColor: {r: 0.19215687, g: 0.56078434, b: 0.6509804, a: 1}
+  _choicePromptReminderSkyTransitionSeconds: 1.5
+  _choicePromptReminderSkyTransitionCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  _choicePromptReminderClip: {fileID: 8300000, guid: fc748629437ca4d4489b4fbfed63f8cd, type: 3}
+  _choicePromptReminderAudioSource: {fileID: 0}
+  _choicePromptReminderAudioIntervalSeconds: 3
+  _choicePromptReminderAudioVolume: 1
+  _requireEyeTrackingReadyBeforeStart: 1
+  _eyeTrackingStartGateTimeoutSeconds: 8
+  _eyeTrackingStartGatePollSeconds: 0.25
+  _enableEyeRestGate: 1
+  _paintingsBetweenEyeRests: 2
+  _eyeRestDuration: 30
+  _eyeRestContinueKey: 98
+  _eyeRestOverlayColor: {r: 0, g: 0, b: 0, a: 1}
+  _eyeRestOverlayAlpha: 1
+  _eyeRestOverlay: {fileID: 0}
+  _autoCreateEyeRestOverlay: 1
+  _autoEyeRestOverlayDistanceMeters: 0.75
+  _allowRightControllerBButtonForEyeRest: 1
+  _logEyeRestGate: 1
+  _playOnStart: 1
+  _waitForRightControllerAButtonBeforeStart: 0
+  _disableChildPlayOnStartWhileWaiting: 1
+  _allowKeyboardStartInEditor: 1
+  _logStartButtonInput: 1
+  _logTransitions: 1
+  _progressLogInterval: 1
 --- !u!1 &1880932581
 GameObject:
   m_ObjectHideFlags: 0
@@ -16859,6 +17710,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &1976752921
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -16871,6 +17743,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 1976752923}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &1976752922
 VFXRenderer:
   serializedVersion: 1
@@ -16929,19 +17816,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 782000
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -17119,6 +18006,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &2000000003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17131,6 +18039,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 2000000005}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &2000000004
 VFXRenderer:
   serializedVersion: 1
@@ -17189,19 +18112,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 816220
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -17274,6 +18197,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &2000000013
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17286,6 +18230,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 2000000015}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &2000000014
 VFXRenderer:
   serializedVersion: 1
@@ -17344,19 +18303,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 728640
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -17429,6 +18388,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &2000000023
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17441,6 +18421,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 2000000025}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &2000000024
 VFXRenderer:
   serializedVersion: 1
@@ -17499,19 +18494,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 1145280
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -17584,6 +18579,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &2000000033
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17596,6 +18612,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 2000000035}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &2000000034
 VFXRenderer:
   serializedVersion: 1
@@ -17654,19 +18685,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 778500
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -17739,6 +18770,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &2000000043
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17751,6 +18803,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 2000000045}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &2000000044
 VFXRenderer:
   serializedVersion: 1
@@ -17809,19 +18876,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 630000
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -17894,6 +18961,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &2000000053
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -17906,6 +18994,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 2000000055}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &2000000054
 VFXRenderer:
   serializedVersion: 1
@@ -17964,19 +19067,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 628200
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -18049,6 +19152,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &2000000063
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18061,6 +19185,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 2000000065}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &2000000064
 VFXRenderer:
   serializedVersion: 1
@@ -18119,19 +19258,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 729600
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -18452,6 +19591,30 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1ead446936cc56f40a62fb0b5e2043a6, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _autoFindReferences: 1
+  _leftEyeGaze: {fileID: 0}
+  _rightEyeGaze: {fileID: 0}
+  _leftGazeTransform: {fileID: 0}
+  _rightGazeTransform: {fileID: 0}
+  _centerEyeTransform: {fileID: 0}
+  _requestEyeTrackingPermission: 1
+  _startEyeTrackingIfNeeded: 1
+  _startRetryInterval: 2
+  _logRuntimeDiagnosticsOnStartup: 1
+  _logRuntimeDiagnosticsWhenUnsupported: 1
+  _sampleInterval: 0.1
+  _consoleInterval: 1
+  _logToConsole: 1
+  _writeCsv: 1
+  _writeToExperimentSession: 1
+  _writeStandaloneCsv: 0
+  _writeExcelSeparatorDirective: 1
+  _logInvalidSamplesToConsole: 1
+  _csvFilePrefix: eye_tracking_log
+  _drawDebugRays: 1
+  _debugRayLength: 3
+  _leftRayColor: {r: 0.25, g: 0.65, b: 1, a: 1}
+  _rightRayColor: {r: 0.1, g: 1, b: 0.7, a: 1}
 --- !u!4 &2038853464
 Transform:
   m_ObjectHideFlags: 0
@@ -18514,6 +19677,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &2041468016
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18526,6 +19710,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 2041468018}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &2041468017
 VFXRenderer:
   serializedVersion: 1
@@ -18584,19 +19783,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 237056
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -18984,6 +20183,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &2102065719
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -18996,6 +20216,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 2102065721}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &2102065720
 VFXRenderer:
   serializedVersion: 1
@@ -19054,19 +20289,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 250880
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -19601,6 +20836,81 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 1f3e9281f97f4a349a1d9d937a4fb1c2, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _paintingsRoot: {fileID: 0}
+  _preferActiveChildOnStart: 1
+  _startIndex: 0
+  _fadeOutDuration: 12
+  _dissolveHoldDuration: 8
+  _fadeInDuration: 12
+  _collectCalmnessFeedback: 0
+  _feedbackCollector: {fileID: 0}
+  _feedbackDelay: 0.3
+  _feedbackTimeoutRatio: 0.85
+  _promptMeditationChoiceAfterStages: 1
+  _meditationChoiceFeedback: {fileID: 0}
+  _experimentCsvLogger: {fileID: 0}
+  _recordExperimentVideo: 1
+  _experimentVideoRecorder: {fileID: 0}
+  _recordExperimentAudio: 1
+  _experimentAudioRecorder: {fileID: 0}
+  _choiceNormalColorIntensity: 0
+  _choicePromptColorIntensity: 3.5
+  _choicePromptBreathInSeconds: 1.1
+  _choicePromptBreathOutSeconds: 1.55
+  _choicePromptBreathMinimumAmount: 0
+  _choicePromptReminderDelaySeconds: 45
+  _choicePromptReminderSkyVolume: {fileID: 1411954856}
+  _choicePromptReminderSkyMiddleColor: {r: 0.19215687, g: 0.56078434, b: 0.6509804, a: 1}
+  _choicePromptReminderSkyTransitionSeconds: 1.5
+  _choicePromptReminderSkyTransitionCurve:
+    serializedVersion: 2
+    m_Curve:
+    - serializedVersion: 3
+      time: 0
+      value: 0
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    - serializedVersion: 3
+      time: 1
+      value: 1
+      inSlope: 0
+      outSlope: 0
+      tangentMode: 0
+      weightedMode: 0
+      inWeight: 0
+      outWeight: 0
+    m_PreInfinity: 2
+    m_PostInfinity: 2
+    m_RotationOrder: 4
+  _choicePromptReminderClip: {fileID: 8300000, guid: fc748629437ca4d4489b4fbfed63f8cd, type: 3}
+  _choicePromptReminderAudioSource: {fileID: 0}
+  _choicePromptReminderAudioIntervalSeconds: 3
+  _choicePromptReminderAudioVolume: 1
+  _requireEyeTrackingReadyBeforeStart: 1
+  _eyeTrackingStartGateTimeoutSeconds: 8
+  _eyeTrackingStartGatePollSeconds: 0.25
+  _enableEyeRestGate: 1
+  _paintingsBetweenEyeRests: 2
+  _eyeRestDuration: 30
+  _eyeRestContinueKey: 98
+  _eyeRestOverlayColor: {r: 0, g: 0, b: 0, a: 1}
+  _eyeRestOverlayAlpha: 1
+  _eyeRestOverlay: {fileID: 0}
+  _autoCreateEyeRestOverlay: 1
+  _autoEyeRestOverlayDistanceMeters: 0.75
+  _allowRightControllerBButtonForEyeRest: 1
+  _logEyeRestGate: 1
+  _playOnStart: 1
+  _waitForRightControllerAButtonBeforeStart: 0
+  _disableChildPlayOnStartWhileWaiting: 1
+  _allowKeyboardStartInEditor: 1
+  _logStartButtonInput: 1
+  _logTransitions: 1
+  _progressLogInterval: 1
 --- !u!114 &3000000003
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -19678,6 +20988,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &3000000013
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -19690,6 +21021,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 3000000015}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &3000000014
 VFXRenderer:
   serializedVersion: 1
@@ -19738,7 +21084,7 @@ VisualEffect:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3000000010}
   m_Enabled: 1
-  m_Asset: {fileID: 8926484042661614526, guid: 0302b6ce564e4a50ad4be34f7b42160f, type: 3}
+  m_Asset: {fileID: 0}
   m_InitialEventName: OnPlay
   m_InitialEventNameOverriden: 0
   m_StartSeed: 0
@@ -19798,23 +21144,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 4a0047afe1ef454e848f7506dff4b73f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _visualEffect: {fileID: 3000000015}
-  _sourceVfx: {fileID: 8926484042661614526, guid: 9651836a90367c69e1a2fd2832fa3c82, type: 3}
-  _generatedVfx: {fileID: 8926484042661614526, guid: 0302b6ce564e4a50ad4be34f7b42160f, type: 3}
-  _sourcePly: {fileID: 5879066665630305242, guid: 13b52de257a037f46834ae673dc58d16, type: 3}
-  _generatedPly: {fileID: 0}
-  _oddballPercent: 10
-  _direction: 1
-  _xOffset: 1
-  _remainderMode: 0
-  _remainderJitter: 0.05
-  _gridColumns: 24
-  _gridRows: 12
-  _seed: 44
-  _applyGeneratedOnEnable: 1
-  _reinitAfterApply: 1
-  _outputFolder: Assets/Point Cloud Experiment/water lilies
-  _logGeneration: 1
 --- !u!1 &3000000020
 GameObject:
   m_ObjectHideFlags: 0
@@ -19862,6 +21191,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _vfxEntityName: Starry_Night_Over_the_Rhone
+  _visualEffect: {fileID: 0}
+  _vfxController: {fileID: 0}
+  _particleIntensityProperty: System update particle - intensity
+  _particleFrequencyProperty: System update particle - frequency
+  _initialParticleIntensity: 0.01
+  _initialParticleFrequency: 0
+  _initialStateDuration: 10
+  _stageDuration: 20
+  _updateInterval: 5
+  _returnToInitialDuration: 10
+  _randomRanges:
+  - minimum: 0.01
+    maximum: 0.33
+  - minimum: 0.34
+    maximum: 0.66
+  - minimum: 0.67
+    maximum: 1
+  _playOnStart: 1
+  _logValueChanges: 1
+  _logMissingProperties: 1
 --- !u!114 &3000000023
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -19874,6 +21224,21 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _visualEffect: {fileID: 3000000025}
+  _spawnRate: 180000
+  _particleIntensity: 0.01
+  _particleDrag: 1
+  _particleFrequency: 0.01
+  _cubeSmoothness: 0.8
+  _cubeMetallic: 0.7
+  _spawnRateProperty: System Spawn - rate
+  _particleIntensityProperty: System update particle - intensity
+  _particleDragProperty: System update particle - drag
+  _particleFrequencyProperty: System update particle - frequency
+  _cubeSmoothnessProperty: System hdrp lit cube - smoothness
+  _cubeMetallicProperty: System hdrp lit cube - metallic
+  _applyContinuously: 1
+  _logMissingProperties: 1
 --- !u!73398921 &3000000024
 VFXRenderer:
   serializedVersion: 1
@@ -19932,19 +21297,19 @@ VisualEffect:
   m_PropertySheet:
     m_Float:
       m_Array:
-      - m_Value: 0
+      - m_Value: 0.7
         m_Name: System hdrp lit cube - metallic
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.8
         m_Name: System hdrp lit cube - smoothness
         m_Overridden: 1
-      - m_Value: 782000
+      - m_Value: 180000
         m_Name: System Spawn - rate
         m_Overridden: 1
       - m_Value: 1
         m_Name: System update particle - drag
         m_Overridden: 1
-      - m_Value: 0
+      - m_Value: 0.01
         m_Name: System update particle - frequency
         m_Overridden: 1
       - m_Value: 0.01
@@ -20299,17 +21664,6 @@ MonoBehaviour:
   _defaultHitRadiusMeters: 0.37
   _autoHitRadiusScale: 0.4
   _maxGazeDistanceMeters: 100
-  _arrangeOrbsOnSphericalRect: 1
-  _refreshOrbLayoutEveryFrame: 0
-  _orbLayoutViewerTransform: {fileID: 0}
-  _orbLayoutDistanceMeters: 1.8
-  _orbLayoutWidthMeters: 2.4
-  _orbLayoutHeightMeters: 0.6
-  _orbLayoutColumns: 5
-  _orbLayoutRows: 1
-  _orbLayoutHorizontalAngleDegrees: 0
-  _orbLayoutVerticalAngleDegrees: -5
-  _orientOrbsToViewer: 0
   _dwellShrinkSeconds: 1.8
   _minimumHoveredScale: 0.55
   _attackSpeed: 5
