@@ -1,0 +1,57 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 68c7854485994c6f81e3afd11daa9f83, type: 3}
+  m_Name: DefaultRDKExperimentConfig
+  m_EditorClassIdentifier:
+  _blockCount: 1
+  _shuffleTrialsWithinBlock: 1
+  _conditions:
+  - conditionName: left_50
+    motionDirection: -1
+    motionCoherence: 0.5
+    repetitions: 8
+  - conditionName: right_50
+    motionDirection: 1
+    motionCoherence: 0.5
+    repetitions: 8
+  - conditionName: random_0
+    motionDirection: 0
+    motionCoherence: 0
+    repetitions: 8
+  _practiceConditions:
+  - conditionName: practice_left_75
+    motionDirection: -1
+    motionCoherence: 0.75
+    repetitions: 1
+  - conditionName: practice_right_75
+    motionDirection: 1
+    motionCoherence: 0.75
+    repetitions: 1
+  - conditionName: practice_random_0
+    motionDirection: 0
+    motionCoherence: 0
+    repetitions: 1
+  _pointCount: 54
+  _pointSizeMeters: 0.12
+  _dotSpeedMetersPerSecond: 0.45
+  _panelDistanceMeters: 3
+  _observationWindowMeters: {x: 2.8, y: 1.75}
+  _useCurvedSurface: 1
+  _randomDirectionRefreshSeconds: 0
+  _randomizeDirectionOnWrap: 1
+  _fixationSeconds: 0.75
+  _stimulusSeconds: 1.5
+  _responseWindowSeconds: 2
+  _interTrialIntervalSeconds: 1
+  _backgroundColor: {r: 0, g: 0, b: 0, a: 1}
+  _recenterPanelBeforeEachTrial: 1
+  _useHeadYawOnly: 1
