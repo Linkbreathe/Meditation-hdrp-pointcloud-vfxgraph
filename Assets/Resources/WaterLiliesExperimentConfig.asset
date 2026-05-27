@@ -1,0 +1,104 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b86f8421508f439a9ab688b80f2b9e63, type: 3}
+  m_Name: WaterLiliesExperimentConfig
+  m_EditorClassIdentifier:
+  _participantId: P001
+  _mode: 0
+  _targetPaintingObjectName: 5_Water_Lilies
+  _isolateTargetPainting: 1
+  _disableLegacyPaintingControllers: 1
+  _baselineSeconds: 90
+  _adaptationSeconds: 60
+  _conditionSeconds: 90
+  _questionnaireMinimumSeconds: 0
+  _recenterSeconds: 7
+  _restSeconds: 30
+  _restEveryConditionCount: 3
+  _intensityValues:
+    low: 0.2
+    medium: 0.5
+    high: 0.8
+  _frequencyValues:
+    low: 0.2
+    medium: 0.5
+    high: 0.8
+  _baselineIntensity: 0.01
+  _baselineFrequency: 0
+  _conditions:
+  - conditionId: C1
+    intensityLevel: 0
+    frequencyLevel: 0
+    overrideDurationSeconds: 0
+    durationSeconds: 90
+  - conditionId: C2
+    intensityLevel: 0
+    frequencyLevel: 1
+    overrideDurationSeconds: 0
+    durationSeconds: 90
+  - conditionId: C3
+    intensityLevel: 0
+    frequencyLevel: 2
+    overrideDurationSeconds: 0
+    durationSeconds: 90
+  - conditionId: C4
+    intensityLevel: 1
+    frequencyLevel: 0
+    overrideDurationSeconds: 0
+    durationSeconds: 90
+  - conditionId: C5
+    intensityLevel: 1
+    frequencyLevel: 1
+    overrideDurationSeconds: 0
+    durationSeconds: 90
+  - conditionId: C6
+    intensityLevel: 1
+    frequencyLevel: 2
+    overrideDurationSeconds: 0
+    durationSeconds: 90
+  - conditionId: C7
+    intensityLevel: 2
+    frequencyLevel: 0
+    overrideDurationSeconds: 0
+    durationSeconds: 90
+  - conditionId: C8
+    intensityLevel: 2
+    frequencyLevel: 1
+    overrideDurationSeconds: 0
+    durationSeconds: 90
+  - conditionId: C9
+    intensityLevel: 2
+    frequencyLevel: 2
+    overrideDurationSeconds: 0
+    durationSeconds: 90
+  _conditionOrder:
+  - C1
+  - C2
+  - C3
+  - C4
+  - C5
+  - C6
+  - C7
+  - C8
+  - C9
+  _autoStart: 0
+  _requireManualQuestionnaireContinue: 1
+  _requireHeadsetWornBeforeQuestionnaireContinue: 1
+  _requireHeadsetCycleBeforeQuestionnaireContinue: 1
+  _autoDetectHeadsetPresence: 1
+  _allowPilotSkipShortcut: 1
+  _writeCsv: 1
+  _writeJsonLines: 1
+  _logFolderName: water_lilies_vfx_experiment
+  _useExternalLogRoot: 0
+  _externalLogRootPath:
+  _sampleIntervalSeconds: 0.1
