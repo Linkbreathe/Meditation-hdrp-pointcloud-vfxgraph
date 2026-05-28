@@ -64,7 +64,11 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
     [SerializeField] WaterLiliesVfxController _vfxController;
     [SerializeField] WaterLiliesExperimentLogger _logger;
     [SerializeField] WaterLiliesTrackingSampler _trackingSampler;
+    [SerializeField] WaterLiliesLslMarkerOutlet _lslMarkerOutlet;
     [SerializeField] GameObject _targetPainting;
+
+    [Header("LSL")]
+    [SerializeField] bool _autoCreateLslMarkerOutlet = true;
 
     [Header("Keyboard Controls")]
     [SerializeField] KeyCode _startKey = KeyCode.S;
@@ -114,6 +118,7 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
     {
         _logger = GetComponent<WaterLiliesExperimentLogger>();
         _trackingSampler = GetComponent<WaterLiliesTrackingSampler>();
+        _lslMarkerOutlet = GetComponent<WaterLiliesLslMarkerOutlet>();
     }
 
     void Awake()
@@ -646,6 +651,16 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
         {
             _trackingSampler = gameObject.AddComponent<WaterLiliesTrackingSampler>();
         }
+
+        if (_lslMarkerOutlet == null)
+        {
+            _lslMarkerOutlet = GetComponent<WaterLiliesLslMarkerOutlet>();
+        }
+
+        if (_lslMarkerOutlet == null && _autoCreateLslMarkerOutlet)
+        {
+            _lslMarkerOutlet = gameObject.AddComponent<WaterLiliesLslMarkerOutlet>();
+        }
     }
 
     void PrepareFixedPaintingPreview()
@@ -809,6 +824,10 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
         }
 
         _logger.LogEvent(row);
+        if (_lslMarkerOutlet != null)
+        {
+            _lslMarkerOutlet.PushEvent(row);
+        }
     }
 
     WaterLiliesExperimentLogRow CreateLogRow(string eventType, string notes)

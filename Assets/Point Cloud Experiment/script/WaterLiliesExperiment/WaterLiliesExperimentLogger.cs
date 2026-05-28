@@ -321,7 +321,7 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         return builder.ToString();
     }
 
-    static string ToJsonLine(WaterLiliesExperimentLogRow row)
+    public static string ToJsonLine(WaterLiliesExperimentLogRow row)
     {
         var builder = new StringBuilder();
         builder.Append('{');

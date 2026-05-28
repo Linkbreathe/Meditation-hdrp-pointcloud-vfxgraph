@@ -81,6 +81,18 @@ If headset presence is available, `headset_removed` and `headset_worn` are recor
 
 For Meta Quest Pro, gaze sampling first tries Unity XR `Eyes` data and then falls back to the Meta/OVR gaze transforms named `[BuildingBlock] Eye Gaze Left` and `[BuildingBlock] Eye Gaze Right` if they are present in the scene.
 
+## LSL Markers
+
+The project depends on `com.labstreaminglayer.lsl4unity` for PCVR event synchronization.
+
+`WaterLiliesExperimentManager` auto-creates `WaterLiliesLslMarkerOutlet` on the `Water Lilies Experiment` object unless `Auto Create Lsl Marker Outlet` is disabled. The outlet publishes one irregular string marker stream:
+
+- stream name: `WaterLiliesExperimentMarkers`
+- stream type: `Markers`
+- payload: the same JSON row written to `events.jsonl`
+
+Use LabRecorder or another LSL recorder before starting Play Mode if you want the marker stream captured in the same `.xdf` recording as external physiology streams.
+
 ## Logs
 
 Each session writes to:
