@@ -13,7 +13,7 @@ The runtime flow is:
 5. After each stage, present a gaze-based orb choice prompt.
 6. Record experiment events, stage values, choices, summaries, and eye-tracking samples.
 
-The project also includes optional calmness feedback collection, ambient background music with runtime volume control, XR/OpenXR setup, editor tests, and helper tools for VFX setup.
+The project also includes the Water Lilies fixed-stimulus prototype, optional calmness feedback collection, ambient background music with runtime volume control, XR/OpenXR setup, editor tests, and helper tools for VFX setup.
 
 This project references and builds on ideas from [yumayanagisawa/Unity-Point-Cloud-VFX-Graph](https://github.com/yumayanagisawa/Unity-Point-Cloud-VFX-Graph), a Unity HDRP/VFX Graph point-cloud rendering project based on Keijiro's Pcx workflow.
 
@@ -58,6 +58,7 @@ Package versions are declared in `Packages/manifest.json`. The Unity editor vers
 - `MeditationChoiceEyeGazeFeedback` handles gaze-based orb selection, sustained hover feedback, selection bursts, and choice-prompt breathing visuals.
 - `EyeTrackingDataLogger` requests/starts eye tracking when configured, samples eye gaze data, draws optional debug rays, and can write samples into the active experiment session.
 - `MeditationExperimentCsvLogger` creates the experiment session folder and writes the seven CSV tables.
+- `WaterLiliesExperimentManager`, `WaterLiliesExperimentLogger`, and `WaterLiliesTrackingSampler` run the fixed Water Lilies Intensity x Frequency prototype and write separated event, head-pose sample, gaze, and video-frame logs.
 - `CalmnessFeedbackCollector` and `CalmnessFeedbackLogger` support optional post-painting calmness feedback. Feedback is written as JSON Lines under `Application.persistentDataPath`.
 - `BackgroundMusicVolumeControl` exposes runtime control over background music volume.
 
@@ -82,7 +83,9 @@ If eye tracking is required before starting, `PaintingRotationController` can ga
 
 ## Data Collection
 
-When a meditation experiment session starts, `MeditationExperimentCsvLogger` creates:
+### Meditation Rotation Logs
+
+When a meditation rotation session starts, `MeditationExperimentCsvLogger` creates:
 
 ```text
 Assets/data_collection/<sessionId>/
@@ -107,6 +110,16 @@ Assets/data_collection/CSV_TABLES.md
 CSV version `3` can write an initial `sep=,` line so Excel opens comma-separated files correctly on systems whose default list separator is semicolon. Programmatic readers should skip that first line if present.
 
 Standalone eye-tracking CSV output is also available from `EyeTrackingDataLogger` when `Write Standalone Csv` is enabled. Calmness feedback uses JSONL and is written to `Application.persistentDataPath`.
+
+### Water Lilies Logs
+
+The fixed Water Lilies prototype is documented in:
+
+```text
+Assets/Point Cloud Experiment/script/WaterLiliesExperiment/README.md
+```
+
+Its current parameter table maps both intensity and frequency as `Low=0.15`, `Medium=0.40`, and `High=0.65`. Sessions write `events`, `samples`, `eye_tracking`, `video_frames`, and `video_manifest.json` under the configured Water Lilies log root.
 
 ## Tests
 

@@ -32,6 +32,10 @@ public enum WaterLiliesExperimentPhase
 [Serializable]
 public struct WaterLiliesLevelValues
 {
+    public const float DefaultLow = 0.15f;
+    public const float DefaultMedium = 0.4f;
+    public const float DefaultHigh = 0.65f;
+
     [Min(0f)] public float low;
     [Min(0f)] public float medium;
     [Min(0f)] public float high;
@@ -41,6 +45,11 @@ public struct WaterLiliesLevelValues
         this.low = low;
         this.medium = medium;
         this.high = high;
+    }
+
+    public static WaterLiliesLevelValues CreateDefault()
+    {
+        return new WaterLiliesLevelValues(DefaultLow, DefaultMedium, DefaultHigh);
     }
 
     public float Get(WaterLiliesParameterLevel level)
@@ -212,8 +221,8 @@ public sealed class WaterLiliesExperimentConfig : ScriptableObject
     [SerializeField] WaterLiliesDurationProfile _pilotDurations = WaterLiliesDurationProfile.CreateDefault();
 
     [Header("Parameter Tables")]
-    [SerializeField] WaterLiliesLevelValues _intensityValues = new WaterLiliesLevelValues(0.2f, 0.5f, 0.8f);
-    [SerializeField] WaterLiliesLevelValues _frequencyValues = new WaterLiliesLevelValues(0.2f, 0.5f, 0.8f);
+    [SerializeField] WaterLiliesLevelValues _intensityValues = WaterLiliesLevelValues.CreateDefault();
+    [SerializeField] WaterLiliesLevelValues _frequencyValues = WaterLiliesLevelValues.CreateDefault();
     [SerializeField, Min(0f)] float _baselineIntensity = 0.01f;
     [SerializeField, Min(0f)] float _baselineFrequency;
 

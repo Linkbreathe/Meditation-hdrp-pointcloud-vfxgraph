@@ -75,7 +75,7 @@ public sealed class WaterLiliesVfxController : MonoBehaviour
     {
         if (config == null)
         {
-            ApplyParameters(0.2f, 0.2f, true);
+            ApplyParameters(WaterLiliesLevelValues.DefaultLow, WaterLiliesLevelValues.DefaultLow, true);
             return;
         }
 

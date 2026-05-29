@@ -45,15 +45,15 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
     [SerializeField, Min(16)] int _captureHeight = 720;
     [SerializeField] bool _preserveSourceAspect = true;
     [SerializeField] bool _cropToFillOutput = true;
-    [SerializeField, Min(0.5f)] float _captureFps = 15f;
+    [SerializeField, Min(0.5f)] float _captureFps = 10f;
     [SerializeField] FrameImageFormat _imageFormat = FrameImageFormat.Jpg;
-    [SerializeField, Range(1, 100)] int _jpegQuality = 95;
-    [SerializeField, Min(1)] int _maxPendingReadbacks = 2;
+    [SerializeField, Range(1, 100)] int _jpegQuality = 70;
+    [SerializeField, Min(1)] int _maxPendingReadbacks = 4;
     [SerializeField] bool _flipVertically = true;
 
     [Header("Performance")]
     [SerializeField] bool _encodeAndWriteOnWorkerThread = true;
-    [SerializeField, Min(1)] int _maxQueuedEncodeFrames = 4;
+    [SerializeField, Min(1)] int _maxQueuedEncodeFrames = 8;
     [SerializeField] bool _dropCaptureWhenEncodeQueueFull = true;
     [SerializeField, Min(1)] int _maxCompletedFramesLoggedPerUpdate = 8;
     [SerializeField, Min(100)] int _workerShutdownWaitMilliseconds = 1500;
@@ -107,6 +107,12 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
     int _encodedFrameCount;
     int _writeFailedFrames;
     int _workerDroppedFrames;
+    int _captureSourceDroppedFrames;
+    int _captureTargetDroppedFrames;
+    int _readbackBackpressureDroppedFrames;
+    int _encodeBackpressureDroppedFrames;
+    int _readbackErrorDroppedFrames;
+    int _encodeFailedDroppedFrames;
 
     public static ExperimentVideoRecorder Instance
     {
@@ -375,6 +381,12 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
         _encodedFrameCount = 0;
         _writeFailedFrames = 0;
         _workerDroppedFrames = 0;
+        _captureSourceDroppedFrames = 0;
+        _captureTargetDroppedFrames = 0;
+        _readbackBackpressureDroppedFrames = 0;
+        _encodeBackpressureDroppedFrames = 0;
+        _readbackErrorDroppedFrames = 0;
+        _encodeFailedDroppedFrames = 0;
         _stoppedManifestNeedsFinalWrite = false;
         _lastStopReason = string.Empty;
         _captureMethodName = _captureXrRenderPass ? "XRDisplayRenderPass" : "CameraCaptureBridge";
@@ -488,13 +500,13 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
 
         if (!TryGetXrRenderPassSource(camera, out var renderPass, out var renderParam, out var sourceX, out var sourceY, out var sourceWidth, out var sourceHeight, out var sourceSlice))
         {
-            _droppedFrames++;
+            RegisterDroppedFrame(ref _captureSourceDroppedFrames);
             return;
         }
 
         if (!EnsureEyeCopyTarget(renderPass.renderTargetDesc, sourceWidth, sourceHeight) || !EnsureCaptureTarget())
         {
-            _droppedFrames++;
+            RegisterDroppedFrame(ref _captureTargetDroppedFrames);
             return;
         }
 
@@ -604,7 +616,7 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
 
         if (!EnsureCaptureTarget())
         {
-            _droppedFrames++;
+            RegisterDroppedFrame(ref _captureTargetDroppedFrames);
             return;
         }
 
@@ -642,7 +654,7 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
     {
         if (_pendingReadbacks >= _maxPendingReadbacks)
         {
-            _droppedFrames++;
+            RegisterDroppedFrame(ref _readbackBackpressureDroppedFrames);
             if (_logDroppedFrames)
             {
                 Debug.LogWarning("[ExperimentVideoRecorder] Dropped video frame because GPU readback is still pending.", this);
@@ -661,7 +673,7 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
             return false;
         }
 
-        _droppedFrames++;
+        RegisterDroppedFrame(ref _encodeBackpressureDroppedFrames);
         if (_logDroppedFrames || !_encodeQueueWarningLogged)
         {
             _encodeQueueWarningLogged = true;
@@ -685,7 +697,7 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
 
         if (request.hasError)
         {
-            _droppedFrames++;
+            RegisterDroppedFrame(ref _readbackErrorDroppedFrames);
             if (!_readbackWarningLogged)
             {
                 _readbackWarningLogged = true;
@@ -706,7 +718,7 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
             if (!QueueFrameForEncode(raw, readbackData.Length, frame, readbackLatencyMs, generation))
             {
                 ArrayPool<byte>.Shared.Return(raw);
-                _droppedFrames++;
+                RegisterDroppedFrame(ref _encodeBackpressureDroppedFrames);
                 if (_logDroppedFrames || !_encodeQueueWarningLogged)
                 {
                     _encodeQueueWarningLogged = true;
@@ -905,7 +917,7 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
 
         if (!completed.success)
         {
-            _droppedFrames++;
+            RegisterDroppedFrame(ref _encodeFailedDroppedFrames);
             if (completed.writeFailed)
             {
                 _writeFailedFrames++;
@@ -1430,7 +1442,7 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
 
     string BuildLifecycleNotes(string reason)
     {
-        return string.Format(
+        var notes = string.Format(
             CultureInfo.InvariantCulture,
             "reason={0}; captureMethod={1}; sourceCamera={2}; size={3}x{4}; sourceSize={5}x{6}; sourceSlice={7}; preserveSourceAspect={8}; cropToFill={9}; flipVertically={10}; fps={11:0.##}; imageFormat={12}; colorSpace={13}; xrEnabled={14}; xrEyeTexture={15}x{16}; frames={17}; encoded={18}; dropped={19}; pendingReadbacks={20}; pendingEncodeWrites={21}; encodeWorker={22}; maxQueuedEncodeFrames={23}; submitXrCaptureCommandBuffer={24}; writeFailures={25}; folder={26}",
             reason,
@@ -1460,6 +1472,23 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
             _submitXrCaptureCommandBuffer,
             _writeFailedFrames,
             _framesFolderPath);
+        return notes + string.Format(
+            CultureInfo.InvariantCulture,
+            "; maxPendingReadbacks={0}; captureSourceDrops={1}; captureTargetDrops={2}; readbackBackpressureDrops={3}; encodeBackpressureDrops={4}; readbackErrorDrops={5}; encodeFailedDrops={6}; workerDroppedFrames={7}",
+            _maxPendingReadbacks,
+            _captureSourceDroppedFrames,
+            _captureTargetDroppedFrames,
+            _readbackBackpressureDroppedFrames,
+            _encodeBackpressureDroppedFrames,
+            _readbackErrorDroppedFrames,
+            _encodeFailedDroppedFrames,
+            _workerDroppedFrames);
+    }
+
+    void RegisterDroppedFrame(ref int reasonCounter)
+    {
+        _droppedFrames++;
+        reasonCounter++;
     }
 
     void LogXrRenderPassWarning(string reason)
@@ -1511,12 +1540,19 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
             "  \"encodeAndWriteOnWorkerThread\": " + JsonBool(_encodeAndWriteOnWorkerThread) + ",",
             "  \"maxQueuedEncodeFrames\": " + _maxQueuedEncodeFrames.ToString(CultureInfo.InvariantCulture) + ",",
             "  \"dropCaptureWhenEncodeQueueFull\": " + JsonBool(_dropCaptureWhenEncodeQueueFull) + ",",
+            "  \"maxPendingReadbacks\": " + _maxPendingReadbacks.ToString(CultureInfo.InvariantCulture) + ",",
             "  \"maxCompletedFramesLoggedPerUpdate\": " + _maxCompletedFramesLoggedPerUpdate.ToString(CultureInfo.InvariantCulture) + ",",
             "  \"unityColorSpace\": " + JsonString(QualitySettings.activeColorSpace.ToString()) + ",",
             "  \"renderTextureReadWrite\": \"sRGB\",",
             "  \"frameCount\": " + _frameIndex.ToString(CultureInfo.InvariantCulture) + ",",
             "  \"encodedFrameCount\": " + _encodedFrameCount.ToString(CultureInfo.InvariantCulture) + ",",
             "  \"droppedFrames\": " + _droppedFrames.ToString(CultureInfo.InvariantCulture) + ",",
+            "  \"captureSourceDroppedFrames\": " + _captureSourceDroppedFrames.ToString(CultureInfo.InvariantCulture) + ",",
+            "  \"captureTargetDroppedFrames\": " + _captureTargetDroppedFrames.ToString(CultureInfo.InvariantCulture) + ",",
+            "  \"readbackBackpressureDroppedFrames\": " + _readbackBackpressureDroppedFrames.ToString(CultureInfo.InvariantCulture) + ",",
+            "  \"encodeBackpressureDroppedFrames\": " + _encodeBackpressureDroppedFrames.ToString(CultureInfo.InvariantCulture) + ",",
+            "  \"readbackErrorDroppedFrames\": " + _readbackErrorDroppedFrames.ToString(CultureInfo.InvariantCulture) + ",",
+            "  \"encodeFailedDroppedFrames\": " + _encodeFailedDroppedFrames.ToString(CultureInfo.InvariantCulture) + ",",
             "  \"pendingReadbacks\": " + _pendingReadbacks.ToString(CultureInfo.InvariantCulture) + ",",
             "  \"queuedEncodeFrames\": " + Volatile.Read(ref _queuedEncodeFrames).ToString(CultureInfo.InvariantCulture) + ",",
             "  \"pendingEncodeWrites\": " + Volatile.Read(ref _pendingEncodeWrites).ToString(CultureInfo.InvariantCulture) + ",",

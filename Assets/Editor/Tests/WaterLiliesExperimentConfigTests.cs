@@ -16,15 +16,15 @@ public sealed class WaterLiliesExperimentConfigTests
             config.BuildResolvedConditionList(conditions);
 
             Assert.AreEqual(9, conditions.Count);
-            AssertCondition(conditions[0], "C1", WaterLiliesParameterLevel.Low, WaterLiliesParameterLevel.Low, 0.2f, 0.2f);
-            AssertCondition(conditions[1], "C2", WaterLiliesParameterLevel.Low, WaterLiliesParameterLevel.Medium, 0.2f, 0.5f);
-            AssertCondition(conditions[2], "C3", WaterLiliesParameterLevel.Low, WaterLiliesParameterLevel.High, 0.2f, 0.8f);
-            AssertCondition(conditions[3], "C4", WaterLiliesParameterLevel.Medium, WaterLiliesParameterLevel.Low, 0.5f, 0.2f);
-            AssertCondition(conditions[4], "C5", WaterLiliesParameterLevel.Medium, WaterLiliesParameterLevel.Medium, 0.5f, 0.5f);
-            AssertCondition(conditions[5], "C6", WaterLiliesParameterLevel.Medium, WaterLiliesParameterLevel.High, 0.5f, 0.8f);
-            AssertCondition(conditions[6], "C7", WaterLiliesParameterLevel.High, WaterLiliesParameterLevel.Low, 0.8f, 0.2f);
-            AssertCondition(conditions[7], "C8", WaterLiliesParameterLevel.High, WaterLiliesParameterLevel.Medium, 0.8f, 0.5f);
-            AssertCondition(conditions[8], "C9", WaterLiliesParameterLevel.High, WaterLiliesParameterLevel.High, 0.8f, 0.8f);
+            AssertCondition(conditions[0], "C1", WaterLiliesParameterLevel.Low, WaterLiliesParameterLevel.Low, 0.15f, 0.15f);
+            AssertCondition(conditions[1], "C2", WaterLiliesParameterLevel.Low, WaterLiliesParameterLevel.Medium, 0.15f, 0.4f);
+            AssertCondition(conditions[2], "C3", WaterLiliesParameterLevel.Low, WaterLiliesParameterLevel.High, 0.15f, 0.65f);
+            AssertCondition(conditions[3], "C4", WaterLiliesParameterLevel.Medium, WaterLiliesParameterLevel.Low, 0.4f, 0.15f);
+            AssertCondition(conditions[4], "C5", WaterLiliesParameterLevel.Medium, WaterLiliesParameterLevel.Medium, 0.4f, 0.4f);
+            AssertCondition(conditions[5], "C6", WaterLiliesParameterLevel.Medium, WaterLiliesParameterLevel.High, 0.4f, 0.65f);
+            AssertCondition(conditions[6], "C7", WaterLiliesParameterLevel.High, WaterLiliesParameterLevel.Low, 0.65f, 0.15f);
+            AssertCondition(conditions[7], "C8", WaterLiliesParameterLevel.High, WaterLiliesParameterLevel.Medium, 0.65f, 0.4f);
+            AssertCondition(conditions[8], "C9", WaterLiliesParameterLevel.High, WaterLiliesParameterLevel.High, 0.65f, 0.65f);
         }
         finally
         {
@@ -41,15 +41,21 @@ public sealed class WaterLiliesExperimentConfigTests
         Assert.IsNotNull(config);
         Assert.AreEqual("P001", config.participantId);
         Assert.AreEqual("5_Water_Lilies", config.targetPaintingObjectName);
-        Assert.AreEqual(50f, config.baselineSeconds);
-        Assert.AreEqual(60f, config.adaptationSeconds);
-        Assert.AreEqual(90f, config.conditionSeconds);
-        Assert.AreEqual(50f, config.formalDurations.baselineSeconds);
-        Assert.AreEqual(50f, config.pilotDurations.baselineSeconds);
+        Assert.AreEqual(5f, config.baselineSeconds);
+        Assert.AreEqual(6f, config.adaptationSeconds);
+        Assert.AreEqual(9f, config.conditionSeconds);
+        Assert.AreEqual(5f, config.formalDurations.baselineSeconds);
+        Assert.AreEqual(5f, config.pilotDurations.baselineSeconds);
+        Assert.AreEqual(0.15f, config.intensityValues.Get(WaterLiliesParameterLevel.Low));
+        Assert.AreEqual(0.4f, config.intensityValues.Get(WaterLiliesParameterLevel.Medium));
+        Assert.AreEqual(0.65f, config.intensityValues.Get(WaterLiliesParameterLevel.High));
+        Assert.AreEqual(0.15f, config.frequencyValues.Get(WaterLiliesParameterLevel.Low));
+        Assert.AreEqual(0.4f, config.frequencyValues.Get(WaterLiliesParameterLevel.Medium));
+        Assert.AreEqual(0.65f, config.frequencyValues.Get(WaterLiliesParameterLevel.High));
         Assert.AreEqual(0.01f, config.baselineIntensity);
         Assert.AreEqual(0f, config.baselineFrequency);
         Assert.AreEqual(7f, config.recenterSeconds);
-        Assert.AreEqual(30f, config.restSeconds);
+        Assert.AreEqual(3f, config.restSeconds);
         Assert.IsTrue(config.requireManualQuestionnaireContinue);
         Assert.IsTrue(config.requireHeadsetWornBeforeQuestionnaireContinue);
         Assert.IsTrue(config.requireHeadsetCycleBeforeQuestionnaireContinue);
@@ -59,7 +65,7 @@ public sealed class WaterLiliesExperimentConfigTests
         Assert.AreEqual(9, conditions.Count);
         for (var i = 0; i < conditions.Count; i++)
         {
-            Assert.AreEqual(90f, conditions[i].durationSeconds);
+            Assert.AreEqual(9f, conditions[i].durationSeconds);
             Assert.AreEqual("C" + (i + 1), conditions[i].conditionId);
         }
     }

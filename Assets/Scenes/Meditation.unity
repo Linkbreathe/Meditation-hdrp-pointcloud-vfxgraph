@@ -11868,7 +11868,7 @@ MonoBehaviour:
   shouldBoundaryVisibilityBeSuppressed: 0
   requestBodyTrackingPermissionOnStartup: 0
   requestFaceTrackingPermissionOnStartup: 0
-  requestEyeTrackingPermissionOnStartup: 0
+  requestEyeTrackingPermissionOnStartup: 1
   requestScenePermissionOnStartup: 0
   requestRecordAudioPermissionOnStartup: 0
   requestPassthroughCameraAccessPermissionOnStartup: 0
@@ -15471,10 +15471,10 @@ MonoBehaviour:
   _captureFps: 10
   _imageFormat: 0
   _jpegQuality: 70
-  _maxPendingReadbacks: 2
+  _maxPendingReadbacks: 4
   _flipVertically: 1
   _encodeAndWriteOnWorkerThread: 1
-  _maxQueuedEncodeFrames: 4
+  _maxQueuedEncodeFrames: 8
   _dropCaptureWhenEncodeQueueFull: 1
   _maxCompletedFramesLoggedPerUpdate: 8
   _workerShutdownWaitMilliseconds: 1500

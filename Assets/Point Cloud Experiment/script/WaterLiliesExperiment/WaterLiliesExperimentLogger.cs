@@ -96,7 +96,7 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
 {
     const string CsvSeparatorDirective = "sep=,";
 
-    static readonly string[] Columns =
+    static readonly string[] EventColumns =
     {
         "row_type",
         "event_type",
@@ -134,6 +134,85 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         "head_velocity_y",
         "head_velocity_z",
         "head_angular_velocity_deg_s",
+        "gaze_available",
+        "gaze_origin_x",
+        "gaze_origin_y",
+        "gaze_origin_z",
+        "gaze_direction_x",
+        "gaze_direction_y",
+        "gaze_direction_z",
+        "gaze_hit",
+        "gaze_hit_x",
+        "gaze_hit_y",
+        "gaze_hit_z",
+        "gaze_on_painting",
+        "notes"
+    };
+
+    static readonly string[] SampleColumns =
+    {
+        "row_type",
+        "event_type",
+        "session_id",
+        "participant_id",
+        "experiment_mode",
+        "phase",
+        "condition_id",
+        "condition_order_index",
+        "condition_order_total",
+        "intensity_level",
+        "frequency_level",
+        "intensity_value",
+        "frequency_value",
+        "planned_duration_seconds",
+        "phase_elapsed_seconds",
+        "phase_remaining_seconds",
+        "formal_viewing",
+        "utc_timestamp_iso",
+        "unix_time_ms",
+        "realtime_since_startup_seconds",
+        "session_elapsed_seconds",
+        "headset_presence_available",
+        "headset_user_present",
+        "headset_off_interval_seconds",
+        "head_pose_available",
+        "head_position_x",
+        "head_position_y",
+        "head_position_z",
+        "head_rotation_x",
+        "head_rotation_y",
+        "head_rotation_z",
+        "head_rotation_w",
+        "head_velocity_x",
+        "head_velocity_y",
+        "head_velocity_z",
+        "head_angular_velocity_deg_s",
+        "notes"
+    };
+
+    static readonly string[] EyeTrackingColumns =
+    {
+        "row_type",
+        "event_type",
+        "session_id",
+        "participant_id",
+        "experiment_mode",
+        "phase",
+        "condition_id",
+        "condition_order_index",
+        "condition_order_total",
+        "intensity_level",
+        "frequency_level",
+        "intensity_value",
+        "frequency_value",
+        "planned_duration_seconds",
+        "phase_elapsed_seconds",
+        "phase_remaining_seconds",
+        "formal_viewing",
+        "utc_timestamp_iso",
+        "unix_time_ms",
+        "realtime_since_startup_seconds",
+        "session_elapsed_seconds",
         "gaze_available",
         "gaze_origin_x",
         "gaze_origin_y",
@@ -197,6 +276,8 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
     StreamWriter _eventsJsonlWriter;
     StreamWriter _samplesCsvWriter;
     StreamWriter _samplesJsonlWriter;
+    StreamWriter _eyeTrackingCsvWriter;
+    StreamWriter _eyeTrackingJsonlWriter;
     StreamWriter _videoFramesCsvWriter;
     StreamWriter _videoFramesJsonlWriter;
     string _sessionId;
@@ -237,8 +318,9 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
 
         if (_writeCsv)
         {
-            _eventsCsvWriter = OpenCsvWriter("events.csv", Columns);
-            _samplesCsvWriter = OpenCsvWriter("samples.csv", Columns);
+            _eventsCsvWriter = OpenCsvWriter("events.csv", EventColumns);
+            _samplesCsvWriter = OpenCsvWriter("samples.csv", SampleColumns);
+            _eyeTrackingCsvWriter = OpenCsvWriter("eye_tracking.csv", EyeTrackingColumns);
             _videoFramesCsvWriter = OpenCsvWriter("video_frames.csv", VideoFrameColumns);
         }
 
@@ -246,6 +328,7 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         {
             _eventsJsonlWriter = new StreamWriter(Path.Combine(_sessionFolderPath, "events.jsonl"), false, Encoding.UTF8);
             _samplesJsonlWriter = new StreamWriter(Path.Combine(_sessionFolderPath, "samples.jsonl"), false, Encoding.UTF8);
+            _eyeTrackingJsonlWriter = new StreamWriter(Path.Combine(_sessionFolderPath, "eye_tracking.jsonl"), false, Encoding.UTF8);
             _videoFramesJsonlWriter = new StreamWriter(Path.Combine(_sessionFolderPath, "video_frames.jsonl"), false, Encoding.UTF8);
         }
 
@@ -260,6 +343,8 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         CloseWriter(ref _eventsJsonlWriter);
         CloseWriter(ref _samplesCsvWriter);
         CloseWriter(ref _samplesJsonlWriter);
+        CloseWriter(ref _eyeTrackingCsvWriter);
+        CloseWriter(ref _eyeTrackingJsonlWriter);
         CloseWriter(ref _videoFramesCsvWriter);
         CloseWriter(ref _videoFramesJsonlWriter);
         _sessionActive = false;
@@ -272,7 +357,17 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
 
     public void LogSample(WaterLiliesExperimentLogRow row)
     {
-        WriteRow(row, "sample", _samplesCsvWriter, _samplesJsonlWriter);
+        if (!_sessionActive)
+        {
+            return;
+        }
+
+        row ??= new WaterLiliesExperimentLogRow();
+        PrepareRow(row, "sample");
+        WritePreparedSampleRow(row);
+
+        row.row_type = "eye_tracking_sample";
+        WritePreparedEyeTrackingRow(row);
     }
 
     public bool TryLogVideoFrame(WaterLiliesVideoFrameLogRow row)
@@ -335,6 +430,12 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         }
 
         row ??= new WaterLiliesExperimentLogRow();
+        PrepareRow(row, rowType);
+        WritePreparedRow(row, csvWriter, jsonlWriter);
+    }
+
+    void PrepareRow(WaterLiliesExperimentLogRow row, string rowType)
+    {
         row.row_type = rowType;
         if (string.IsNullOrEmpty(row.session_id))
         {
@@ -346,6 +447,17 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         row.unix_time_ms = now.ToUnixTimeMilliseconds();
         row.realtime_since_startup_seconds = Time.realtimeSinceStartupAsDouble;
         row.session_elapsed_seconds = row.realtime_since_startup_seconds - _sessionStartedRealtime;
+    }
+
+    void WritePreparedRow(
+        WaterLiliesExperimentLogRow row,
+        StreamWriter csvWriter,
+        StreamWriter jsonlWriter)
+    {
+        if (!_sessionActive)
+        {
+            return;
+        }
 
         if (_writeCsv && csvWriter != null)
         {
@@ -357,6 +469,46 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         {
             jsonlWriter.WriteLine(ToJsonLine(row));
             FlushIfNeeded(jsonlWriter);
+        }
+    }
+
+    void WritePreparedSampleRow(WaterLiliesExperimentLogRow row)
+    {
+        if (!_sessionActive)
+        {
+            return;
+        }
+
+        if (_writeCsv && _samplesCsvWriter != null)
+        {
+            _samplesCsvWriter.WriteLine(ToSampleCsv(row));
+            FlushIfNeeded(_samplesCsvWriter);
+        }
+
+        if (_writeJsonLines && _samplesJsonlWriter != null)
+        {
+            _samplesJsonlWriter.WriteLine(ToSampleJsonLine(row));
+            FlushIfNeeded(_samplesJsonlWriter);
+        }
+    }
+
+    void WritePreparedEyeTrackingRow(WaterLiliesExperimentLogRow row)
+    {
+        if (!_sessionActive)
+        {
+            return;
+        }
+
+        if (_writeCsv && _eyeTrackingCsvWriter != null)
+        {
+            _eyeTrackingCsvWriter.WriteLine(ToEyeTrackingCsv(row));
+            FlushIfNeeded(_eyeTrackingCsvWriter);
+        }
+
+        if (_writeJsonLines && _eyeTrackingJsonlWriter != null)
+        {
+            _eyeTrackingJsonlWriter.WriteLine(ToEyeTrackingJsonLine(row));
+            FlushIfNeeded(_eyeTrackingJsonlWriter);
         }
     }
 
@@ -443,18 +595,96 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
             row.notes
         };
 
-        var builder = new StringBuilder();
-        for (var i = 0; i < values.Length; i++)
+        return ToCsvLine(values);
+    }
+
+    static string ToSampleCsv(WaterLiliesExperimentLogRow row)
+    {
+        var values = new[]
         {
-            if (i > 0)
-            {
-                builder.Append(',');
-            }
+            row.row_type,
+            row.event_type,
+            row.session_id,
+            row.participant_id,
+            row.experiment_mode,
+            row.phase,
+            row.condition_id,
+            FormatInt(row.condition_order_index),
+            FormatInt(row.condition_order_total),
+            row.intensity_level,
+            row.frequency_level,
+            FormatDouble(row.intensity_value),
+            FormatDouble(row.frequency_value),
+            FormatDouble(row.planned_duration_seconds),
+            FormatDouble(row.phase_elapsed_seconds),
+            FormatDouble(row.phase_remaining_seconds),
+            FormatBool(row.formal_viewing),
+            row.utc_timestamp_iso,
+            row.unix_time_ms.ToString(CultureInfo.InvariantCulture),
+            FormatDouble(row.realtime_since_startup_seconds),
+            FormatDouble(row.session_elapsed_seconds),
+            FormatBool(row.headset_presence_available),
+            FormatBool(row.headset_user_present),
+            FormatDouble(row.headset_off_interval_seconds),
+            FormatBool(row.head_pose_available),
+            FormatFloat(row.head_position_x),
+            FormatFloat(row.head_position_y),
+            FormatFloat(row.head_position_z),
+            FormatFloat(row.head_rotation_x),
+            FormatFloat(row.head_rotation_y),
+            FormatFloat(row.head_rotation_z),
+            FormatFloat(row.head_rotation_w),
+            FormatFloat(row.head_velocity_x),
+            FormatFloat(row.head_velocity_y),
+            FormatFloat(row.head_velocity_z),
+            FormatFloat(row.head_angular_velocity_deg_s),
+            row.notes
+        };
 
-            AppendCsvValue(builder, values[i]);
-        }
+        return ToCsvLine(values);
+    }
 
-        return builder.ToString();
+    static string ToEyeTrackingCsv(WaterLiliesExperimentLogRow row)
+    {
+        var values = new[]
+        {
+            row.row_type,
+            row.event_type,
+            row.session_id,
+            row.participant_id,
+            row.experiment_mode,
+            row.phase,
+            row.condition_id,
+            FormatInt(row.condition_order_index),
+            FormatInt(row.condition_order_total),
+            row.intensity_level,
+            row.frequency_level,
+            FormatDouble(row.intensity_value),
+            FormatDouble(row.frequency_value),
+            FormatDouble(row.planned_duration_seconds),
+            FormatDouble(row.phase_elapsed_seconds),
+            FormatDouble(row.phase_remaining_seconds),
+            FormatBool(row.formal_viewing),
+            row.utc_timestamp_iso,
+            row.unix_time_ms.ToString(CultureInfo.InvariantCulture),
+            FormatDouble(row.realtime_since_startup_seconds),
+            FormatDouble(row.session_elapsed_seconds),
+            FormatBool(row.gaze_available),
+            FormatFloat(row.gaze_origin_x),
+            FormatFloat(row.gaze_origin_y),
+            FormatFloat(row.gaze_origin_z),
+            FormatFloat(row.gaze_direction_x),
+            FormatFloat(row.gaze_direction_y),
+            FormatFloat(row.gaze_direction_z),
+            FormatBool(row.gaze_hit),
+            FormatFloat(row.gaze_hit_x),
+            FormatFloat(row.gaze_hit_y),
+            FormatFloat(row.gaze_hit_z),
+            FormatBool(row.gaze_on_painting),
+            row.notes
+        };
+
+        return ToCsvLine(values);
     }
 
     static string ToVideoFrameCsv(WaterLiliesVideoFrameLogRow row)
@@ -499,6 +729,11 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
             row.notes
         };
 
+        return ToCsvLine(values);
+    }
+
+    static string ToCsvLine(string[] values)
+    {
         var builder = new StringBuilder();
         for (var i = 0; i < values.Length; i++)
         {
@@ -569,6 +804,80 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         AppendJson(builder, ref first, "notes", row.notes);
         builder.Append('}');
         return builder.ToString();
+    }
+
+    static string ToSampleJsonLine(WaterLiliesExperimentLogRow row)
+    {
+        var builder = new StringBuilder();
+        builder.Append('{');
+        var first = true;
+        AppendCommonSampleJson(builder, ref first, row);
+        AppendJson(builder, ref first, "headset_presence_available", row.headset_presence_available);
+        AppendJson(builder, ref first, "headset_user_present", row.headset_user_present);
+        AppendJson(builder, ref first, "headset_off_interval_seconds", row.headset_off_interval_seconds);
+        AppendJson(builder, ref first, "head_pose_available", row.head_pose_available);
+        AppendJson(builder, ref first, "head_position_x", row.head_position_x);
+        AppendJson(builder, ref first, "head_position_y", row.head_position_y);
+        AppendJson(builder, ref first, "head_position_z", row.head_position_z);
+        AppendJson(builder, ref first, "head_rotation_x", row.head_rotation_x);
+        AppendJson(builder, ref first, "head_rotation_y", row.head_rotation_y);
+        AppendJson(builder, ref first, "head_rotation_z", row.head_rotation_z);
+        AppendJson(builder, ref first, "head_rotation_w", row.head_rotation_w);
+        AppendJson(builder, ref first, "head_velocity_x", row.head_velocity_x);
+        AppendJson(builder, ref first, "head_velocity_y", row.head_velocity_y);
+        AppendJson(builder, ref first, "head_velocity_z", row.head_velocity_z);
+        AppendJson(builder, ref first, "head_angular_velocity_deg_s", row.head_angular_velocity_deg_s);
+        AppendJson(builder, ref first, "notes", row.notes);
+        builder.Append('}');
+        return builder.ToString();
+    }
+
+    static string ToEyeTrackingJsonLine(WaterLiliesExperimentLogRow row)
+    {
+        var builder = new StringBuilder();
+        builder.Append('{');
+        var first = true;
+        AppendCommonSampleJson(builder, ref first, row);
+        AppendJson(builder, ref first, "gaze_available", row.gaze_available);
+        AppendJson(builder, ref first, "gaze_origin_x", row.gaze_origin_x);
+        AppendJson(builder, ref first, "gaze_origin_y", row.gaze_origin_y);
+        AppendJson(builder, ref first, "gaze_origin_z", row.gaze_origin_z);
+        AppendJson(builder, ref first, "gaze_direction_x", row.gaze_direction_x);
+        AppendJson(builder, ref first, "gaze_direction_y", row.gaze_direction_y);
+        AppendJson(builder, ref first, "gaze_direction_z", row.gaze_direction_z);
+        AppendJson(builder, ref first, "gaze_hit", row.gaze_hit);
+        AppendJson(builder, ref first, "gaze_hit_x", row.gaze_hit_x);
+        AppendJson(builder, ref first, "gaze_hit_y", row.gaze_hit_y);
+        AppendJson(builder, ref first, "gaze_hit_z", row.gaze_hit_z);
+        AppendJson(builder, ref first, "gaze_on_painting", row.gaze_on_painting);
+        AppendJson(builder, ref first, "notes", row.notes);
+        builder.Append('}');
+        return builder.ToString();
+    }
+
+    static void AppendCommonSampleJson(StringBuilder builder, ref bool first, WaterLiliesExperimentLogRow row)
+    {
+        AppendJson(builder, ref first, "row_type", row.row_type);
+        AppendJson(builder, ref first, "event_type", row.event_type);
+        AppendJson(builder, ref first, "session_id", row.session_id);
+        AppendJson(builder, ref first, "participant_id", row.participant_id);
+        AppendJson(builder, ref first, "experiment_mode", row.experiment_mode);
+        AppendJson(builder, ref first, "phase", row.phase);
+        AppendJson(builder, ref first, "condition_id", row.condition_id);
+        AppendJson(builder, ref first, "condition_order_index", row.condition_order_index);
+        AppendJson(builder, ref first, "condition_order_total", row.condition_order_total);
+        AppendJson(builder, ref first, "intensity_level", row.intensity_level);
+        AppendJson(builder, ref first, "frequency_level", row.frequency_level);
+        AppendJson(builder, ref first, "intensity_value", row.intensity_value);
+        AppendJson(builder, ref first, "frequency_value", row.frequency_value);
+        AppendJson(builder, ref first, "planned_duration_seconds", row.planned_duration_seconds);
+        AppendJson(builder, ref first, "phase_elapsed_seconds", row.phase_elapsed_seconds);
+        AppendJson(builder, ref first, "phase_remaining_seconds", row.phase_remaining_seconds);
+        AppendJson(builder, ref first, "formal_viewing", row.formal_viewing);
+        AppendJson(builder, ref first, "utc_timestamp_iso", row.utc_timestamp_iso);
+        AppendJson(builder, ref first, "unix_time_ms", row.unix_time_ms);
+        AppendJson(builder, ref first, "realtime_since_startup_seconds", row.realtime_since_startup_seconds);
+        AppendJson(builder, ref first, "session_elapsed_seconds", row.session_elapsed_seconds);
     }
 
     static string ToVideoFrameJsonLine(WaterLiliesVideoFrameLogRow row)

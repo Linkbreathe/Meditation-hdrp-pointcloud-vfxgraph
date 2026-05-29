@@ -1,4 +1,4 @@
-# Water Lilies VR-VFX Experiment Prototype
+# Water Lilies VR-VFX Experiment
 
 This prototype runs a fixed Water Lilies point-cloud VFX stimulus for the first-stage Intensity x Frequency data collection experiment.
 
@@ -6,19 +6,17 @@ This prototype runs a fixed Water Lilies point-cloud VFX stimulus for the first-
 
 Open `Assets/Scenes/Meditation.unity`.
 
-The scene contains a root object named `Water Lilies Experiment` with:
+The scene contains a root object named `Water Lilies Experiment` with these runtime components:
 
 - `WaterLiliesExperimentManager`
 - `WaterLiliesExperimentLogger`
 - `WaterLiliesTrackingSampler`
 
-The manager loads `Assets/Resources/WaterLiliesExperimentConfig.asset` by default.
+The manager uses `Assets/Resources/WaterLiliesExperimentConfig.asset`. When Play Mode starts, it previews the fixed `5_Water_Lilies` painting with baseline parameters. The experiment clock and log session begin only after Start or `S`.
 
-When Play Mode starts, the manager previews the fixed `5_Water_Lilies` painting with baseline parameters. The experiment clock and event log still begin only after `S` / Start.
+`2d_paintings/5_Water_Lilies` is visible in the hierarchy so researchers can position, rotate, and scale it manually. `Place Painting In Front Of Viewer` is disabled by default; enable it only for quick debugging when Play Mode should move the painting in front of `MainCamera` or `CenterEyeAnchor`.
 
-`2d_paintings/5_Water_Lilies` is visible in the scene hierarchy so researchers can position, rotate, and scale it manually. The manager's `Target Painting` reference points to this object. `Place Painting In Front Of Viewer` is disabled by default; enable it only for quick debugging when you want Play Mode to move the painting in front of the current `MainCamera` / `CenterEyeAnchor`.
-
-## Controls
+## Operator Controls
 
 - `S`: start experiment
 - `Space`: continue after questionnaire break
@@ -27,63 +25,106 @@ When Play Mode starts, the manager previews the fixed `5_Water_Lilies` painting 
 - `K`: pilot-mode skip current timed phase
 - `Esc`: abort experiment
 
-The runtime overlay is intended as a researcher/operator status panel. It includes Start, Continue, Headset Removed, Headset Worn, and Skip buttons. Skip follows the same rule as `K`: it only works in Pilot mode when pilot skipping is enabled. The overlay uses a screen-space Unity Canvas for the desktop Game view, not a world-space VR instruction panel for the participant. Keep `Auto Create Runtime Ui` enabled for editor/operator runs, and disable it if a Quest build should show no experiment-control UI to the participant.
+The runtime overlay is a researcher/operator status panel in the desktop Game view. It is not a world-space VR instruction panel for the participant. Keep `Auto Create Runtime Ui` enabled for editor/operator runs, and disable it for builds that should show no experiment-control UI to the participant.
 
-## Mode-Specific Durations
+## Current Parameter Table
 
-`Mode` selects the active duration profile at runtime. In the config Inspector, edit `Active Durations (Formal)` or `Active Durations (Pilot)` for the mode currently selected, and edit `Other Mode Durations (...)` when preparing the alternate mode. The manager reads only the selected mode's duration profile when the run starts.
+Both intensity and frequency use the same level values:
 
-## Condition Design
+| Level | Value |
+| --- | ---: |
+| Low | `0.15` |
+| Medium | `0.40` |
+| High | `0.65` |
 
-The default config defines 9 fixed conditions:
+The default 3 x 3 condition grid is:
 
-- `C1`: Low intensity + Low frequency
-- `C2`: Low intensity + Medium frequency
-- `C3`: Low intensity + High frequency
-- `C4`: Medium intensity + Low frequency
-- `C5`: Medium intensity + Medium frequency
-- `C6`: Medium intensity + High frequency
-- `C7`: High intensity + Low frequency
-- `C8`: High intensity + Medium frequency
-- `C9`: High intensity + High frequency
+| Condition | Intensity | Frequency |
+| --- | --- | --- |
+| `C1` | Low | Low |
+| `C2` | Low | Medium |
+| `C3` | Low | High |
+| `C4` | Medium | Low |
+| `C5` | Medium | Medium |
+| `C6` | Medium | High |
+| `C7` | High | Low |
+| `C8` | High | Medium |
+| `C9` | High | High |
 
-Default level values:
+`events.csv`, `samples.csv`, and `eye_tracking.csv` write the resolved numeric values from the active config, so `Low / Medium / High` should appear as `0.15 / 0.40 / 0.65` for both intensity and frequency. These VFX parameters are engineering controls only; they are not interpreted as calmness, meditation state, engagement, or relaxation.
 
-- Low = `0.20`
-- Medium = `0.50`
-- High = `0.80`
+## Timing Profiles
 
-Pilot fallback values can be entered directly in the config:
+`Mode` selects the active duration profile at runtime. In the config Inspector, edit `Active Durations (Formal)` for Formal mode and `Active Durations (Pilot)` for Pilot mode. The manager reads only the selected profile when the run starts.
 
-- Low = `0.15`
-- Medium = `0.40`
-- High = `0.65`
+## Formal Flow
 
-The VFX parameters are engineering controls only. They are not interpreted as calmness, meditation state, engagement, or relaxation.
-
-## Flow
-
-The formal sequence is:
-
-1. `experiment_start`
-2. `baseline_start` / `baseline_end`
-3. `adaptation_start` / `adaptation_end`
-4. For each condition:
+1. `video_recording_started`
+2. `experiment_start`
+3. `baseline_start` / `baseline_end`
+4. `adaptation_start` / `adaptation_end`
+5. For each condition:
    - `condition_prepare`
    - `recenter_start` / `recenter_end`
    - `condition_start` / `condition_end`
    - `questionnaire_break_start`
    - `headset_removed`
-   - participant completes Google Form outside Unity
+   - participant completes the Google Form outside Unity
    - `headset_worn`
    - `questionnaire_break_end`
-5. After every 3 completed conditions:
+6. After every 3 completed conditions:
    - `rest_start` / `rest_end`
-6. `experiment_end`
+7. `experiment_end`
+8. `video_recording_stopped`
 
-If headset presence is available, `headset_removed` and `headset_worn` are recorded automatically. Otherwise, use the manual keys. By default, each questionnaire break must include both markers before `Space` / Continue can advance. Disable `Require Headset Cycle Before Questionnaire Continue` only for editor-only dry runs.
+If headset presence is available, `headset_removed` and `headset_worn` are recorded automatically. Otherwise, use the manual keys. By default, each questionnaire break must include both markers before Continue or `Space` can advance. Disable `Require Headset Cycle Before Questionnaire Continue` only for editor dry runs.
 
-For Meta Quest Pro, gaze sampling first tries Unity XR `Eyes` data and then falls back to the Meta/OVR gaze transforms named `[BuildingBlock] Eye Gaze Left` and `[BuildingBlock] Eye Gaze Right` if they are present in the scene.
+## Gaze Sampling
+
+For Meta Quest Pro, gaze sampling first tries Unity XR `Eyes` data and then falls back to the Meta/OVR gaze transforms named `[BuildingBlock] Eye Gaze Left`, `[BuildingBlock] Eye Gaze Right`, or `[BuildingBlock] Eye Gaze Center` if they are present in the scene.
+
+`WaterLiliesTrackingSampler` can fall back to head-forward gaze when eye data and gaze transforms are unavailable. When analyzing eye tracking, use `gaze_available`, `gaze_hit`, and `gaze_on_painting` to separate usable gaze samples from fallback or missing data.
+
+## Logs
+
+Each session writes to the configured log root:
+
+```text
+<log_root>/<session_id>/
+```
+
+The current config uses:
+
+```text
+C:\Users\linki\amaster\data_collection_v2\<session_id>\
+```
+
+Generated files:
+
+| File | Purpose |
+| --- | --- |
+| `events.csv` / `events.jsonl` | Event markers plus the tracking snapshot captured at each event time. |
+| `samples.csv` / `samples.jsonl` | Regular session samples: phase, condition, parameter values, headset presence, and head pose. Gaze columns are intentionally excluded. |
+| `eye_tracking.csv` / `eye_tracking.jsonl` | Regular gaze samples: phase/condition context plus gaze origin, direction, hit point, and painting-hit flags. Head-pose columns are intentionally excluded. |
+| `video_frames.csv` / `video_frames.jsonl` | One row per encoded video frame, including camera pose, output path, latency, and cumulative dropped frame count. |
+| `video_manifest.json` | Recording settings, final frame counts, dropped-frame counters by cause, and an ffmpeg example. |
+| `video_frames/` | Encoded image sequence. |
+
+Use `formal_viewing=true` and `condition_start` / `condition_end` markers to extract valid VFX exposure windows. Questionnaire breaks, headset-off intervals, re-centering, and rest intervals are explicitly marked so they can be excluded from condition-level physiology analysis.
+
+## Video Drop Diagnostics
+
+`droppedFrames` in `video_manifest.json` is the total count. The manifest also records cause-specific counters:
+
+- `captureSourceDroppedFrames`
+- `captureTargetDroppedFrames`
+- `readbackBackpressureDroppedFrames`
+- `encodeBackpressureDroppedFrames`
+- `readbackErrorDroppedFrames`
+- `encodeFailedDroppedFrames`
+- `workerDroppedFrames`
+
+Recent sessions commonly showed `droppedFrames=1` after a temporary AsyncGPUReadback latency spike at 15 fps. The recorder defaults now use 10 fps, JPEG quality 70, `maxPendingReadbacks=4`, and `maxQueuedEncodeFrames=8` for auto-created recorders to reduce this startup/run-time backpressure.
 
 ## LSL Markers
 
@@ -95,46 +136,4 @@ The project depends on `com.labstreaminglayer.lsl4unity` for PCVR event synchron
 - stream type: `Markers`
 - payload: the same JSON row written to `events.jsonl`
 
-Use LabRecorder or another LSL recorder before starting Play Mode if you want the marker stream captured in the same `.xdf` recording as external physiology streams.
-
-## Logs
-
-Each session writes to:
-
-`Application.persistentDataPath/water_lilies_vfx_experiment/<session_id>/`
-
-Files:
-
-- `events.csv`
-- `events.jsonl`
-- `samples.csv`
-- `samples.jsonl`
-
-Important columns:
-
-- `event_type`
-- `participant_id`
-- `experiment_mode`
-- `phase`
-- `condition_id`
-- `condition_order_index`
-- `intensity_level`
-- `frequency_level`
-- `intensity_value`
-- `frequency_value`
-- `formal_viewing`
-- `utc_timestamp_iso`
-- `unix_time_ms`
-- `realtime_since_startup_seconds`
-- `session_elapsed_seconds`
-- `headset_presence_available`
-- `headset_user_present`
-- `headset_off_interval_seconds`
-- `head_position_*`
-- `head_rotation_*`
-- `head_velocity_*`
-- `head_angular_velocity_deg_s`
-- `gaze_available`
-- `gaze_on_painting`
-
-Use `formal_viewing=true` and `condition_start` / `condition_end` markers to extract valid VFX exposure windows. Questionnaire breaks, headset-off intervals, re-centering, and rest intervals are explicitly marked so they can be excluded from condition-level physiology analysis.
+Use LabRecorder or another LSL recorder before starting Play Mode if the marker stream should be captured in the same `.xdf` recording as external physiology streams.
