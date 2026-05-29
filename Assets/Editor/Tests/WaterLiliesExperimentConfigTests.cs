@@ -33,7 +33,7 @@ public sealed class WaterLiliesExperimentConfigTests
     }
 
     [Test]
-    public void DefaultResourceConfigAssetExistsAndUsesNinetySecondConditions()
+    public void DefaultResourceConfigAssetExistsAndUsesConfiguredDurations()
     {
         var config = AssetDatabase.LoadAssetAtPath<WaterLiliesExperimentConfig>(
             WaterLiliesExperimentValidator.ConfigAssetPath);
@@ -41,9 +41,11 @@ public sealed class WaterLiliesExperimentConfigTests
         Assert.IsNotNull(config);
         Assert.AreEqual("P001", config.participantId);
         Assert.AreEqual("5_Water_Lilies", config.targetPaintingObjectName);
-        Assert.AreEqual(90f, config.baselineSeconds);
+        Assert.AreEqual(50f, config.baselineSeconds);
         Assert.AreEqual(60f, config.adaptationSeconds);
         Assert.AreEqual(90f, config.conditionSeconds);
+        Assert.AreEqual(50f, config.formalDurations.baselineSeconds);
+        Assert.AreEqual(50f, config.pilotDurations.baselineSeconds);
         Assert.AreEqual(0.01f, config.baselineIntensity);
         Assert.AreEqual(0f, config.baselineFrequency);
         Assert.AreEqual(7f, config.recenterSeconds);
@@ -63,10 +65,56 @@ public sealed class WaterLiliesExperimentConfigTests
     }
 
     [Test]
+    public void ModeSelectsIndependentDurationProfile()
+    {
+        var config = ScriptableObject.CreateInstance<WaterLiliesExperimentConfig>();
+
+        try
+        {
+            var serialized = new SerializedObject(config);
+            serialized.FindProperty("_durationProfilesMigrated").boolValue = true;
+            SetDurationProfile(serialized.FindProperty("_formalDurations"), 50f, 60f, 90f, 0f, 7f, 30f, 3);
+            SetDurationProfile(serialized.FindProperty("_pilotDurations"), 5f, 6f, 7f, 1f, 2f, 3f, 2);
+            serialized.FindProperty("_mode").enumValueIndex = (int)WaterLiliesExperimentMode.Formal;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            Assert.AreEqual(50f, config.baselineSeconds);
+            Assert.AreEqual(60f, config.adaptationSeconds);
+            Assert.AreEqual(90f, config.conditionSeconds);
+            Assert.AreEqual(0f, config.questionnaireMinimumSeconds);
+            Assert.AreEqual(7f, config.recenterSeconds);
+            Assert.AreEqual(30f, config.restSeconds);
+            Assert.AreEqual(3, config.restEveryConditionCount);
+
+            serialized.Update();
+            serialized.FindProperty("_mode").enumValueIndex = (int)WaterLiliesExperimentMode.Pilot;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+
+            Assert.AreEqual(5f, config.baselineSeconds);
+            Assert.AreEqual(6f, config.adaptationSeconds);
+            Assert.AreEqual(7f, config.conditionSeconds);
+            Assert.AreEqual(1f, config.questionnaireMinimumSeconds);
+            Assert.AreEqual(2f, config.recenterSeconds);
+            Assert.AreEqual(3f, config.restSeconds);
+            Assert.AreEqual(2, config.restEveryConditionCount);
+
+            var conditions = new List<WaterLiliesResolvedCondition>();
+            config.BuildResolvedConditionList(conditions);
+            Assert.AreEqual(9, conditions.Count);
+            Assert.AreEqual(7f, conditions[0].durationSeconds);
+        }
+        finally
+        {
+            Object.DestroyImmediate(config);
+        }
+    }
+
+    [Test]
     public void RequiredMarkerContractIncludesArtifactSeparationEvents()
     {
         var markers = WaterLiliesExperimentManager.RequiredEventMarkers;
 
+        CollectionAssert.Contains(markers, WaterLiliesExperimentManager.EventVideoRecordingStart);
         CollectionAssert.Contains(markers, WaterLiliesExperimentManager.EventExperimentStart);
         CollectionAssert.Contains(markers, WaterLiliesExperimentManager.EventBaselineStart);
         CollectionAssert.Contains(markers, WaterLiliesExperimentManager.EventBaselineEnd);
@@ -84,6 +132,7 @@ public sealed class WaterLiliesExperimentConfigTests
         CollectionAssert.Contains(markers, WaterLiliesExperimentManager.EventRestStart);
         CollectionAssert.Contains(markers, WaterLiliesExperimentManager.EventRestEnd);
         CollectionAssert.Contains(markers, WaterLiliesExperimentManager.EventExperimentEnd);
+        CollectionAssert.Contains(markers, WaterLiliesExperimentManager.EventVideoRecordingStop);
     }
 
     static void AssertCondition(
@@ -100,5 +149,24 @@ public sealed class WaterLiliesExperimentConfigTests
         Assert.AreEqual(intensityValue, condition.intensityValue);
         Assert.AreEqual(frequencyValue, condition.frequencyValue);
         Assert.AreEqual(90f, condition.durationSeconds);
+    }
+
+    static void SetDurationProfile(
+        SerializedProperty profile,
+        float baselineSeconds,
+        float adaptationSeconds,
+        float conditionSeconds,
+        float questionnaireMinimumSeconds,
+        float recenterSeconds,
+        float restSeconds,
+        int restEveryConditionCount)
+    {
+        profile.FindPropertyRelative("_baselineSeconds").floatValue = baselineSeconds;
+        profile.FindPropertyRelative("_adaptationSeconds").floatValue = adaptationSeconds;
+        profile.FindPropertyRelative("_conditionSeconds").floatValue = conditionSeconds;
+        profile.FindPropertyRelative("_questionnaireMinimumSeconds").floatValue = questionnaireMinimumSeconds;
+        profile.FindPropertyRelative("_recenterSeconds").floatValue = recenterSeconds;
+        profile.FindPropertyRelative("_restSeconds").floatValue = restSeconds;
+        profile.FindPropertyRelative("_restEveryConditionCount").intValue = restEveryConditionCount;
     }
 }

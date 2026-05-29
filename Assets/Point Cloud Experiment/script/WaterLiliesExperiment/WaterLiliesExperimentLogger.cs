@@ -58,6 +58,38 @@ public sealed class WaterLiliesExperimentLogRow
     public string notes = "";
 }
 
+[Serializable]
+public sealed class WaterLiliesVideoFrameLogRow
+{
+    public string session_id = "";
+    public string participant_id = "";
+    public string experiment_mode = "";
+    public string utc_timestamp_iso = "";
+    public long unix_time_ms;
+    public double realtime_since_startup_seconds = double.NaN;
+    public double session_elapsed_seconds = double.NaN;
+    public int frame_index = -1;
+    public int unity_frame = -1;
+    public int width = -1;
+    public int height = -1;
+    public float capture_fps = float.NaN;
+    public string image_format = "";
+    public int jpeg_quality = -1;
+    public string relative_path = "";
+    public string absolute_path = "";
+    public string source_camera_name = "";
+    public string capture_camera_name = "";
+    public Vector3 camera_position;
+    public Quaternion camera_rotation = Quaternion.identity;
+    public Vector3 camera_forward;
+    public Vector3 camera_up;
+    public long encoded_bytes = -1;
+    public float readback_latency_ms = float.NaN;
+    public float encode_write_latency_ms = float.NaN;
+    public int dropped_frames;
+    public string notes = "";
+}
+
 [DisallowMultipleComponent]
 [AddComponentMenu("Water Lilies Experiment/Water Lilies Experiment Logger")]
 public sealed class WaterLiliesExperimentLogger : MonoBehaviour
@@ -117,6 +149,46 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         "notes"
     };
 
+    static readonly string[] VideoFrameColumns =
+    {
+        "session_id",
+        "participant_id",
+        "experiment_mode",
+        "utc_timestamp_iso",
+        "unix_time_ms",
+        "realtime_since_startup_seconds",
+        "session_elapsed_seconds",
+        "frame_index",
+        "unity_frame",
+        "width",
+        "height",
+        "capture_fps",
+        "image_format",
+        "jpeg_quality",
+        "relative_path",
+        "absolute_path",
+        "source_camera_name",
+        "capture_camera_name",
+        "camera_position_x",
+        "camera_position_y",
+        "camera_position_z",
+        "camera_rotation_x",
+        "camera_rotation_y",
+        "camera_rotation_z",
+        "camera_rotation_w",
+        "camera_forward_x",
+        "camera_forward_y",
+        "camera_forward_z",
+        "camera_up_x",
+        "camera_up_y",
+        "camera_up_z",
+        "encoded_bytes",
+        "readback_latency_ms",
+        "encode_write_latency_ms",
+        "dropped_frames",
+        "notes"
+    };
+
     [Header("CSV")]
     [SerializeField] bool _writeExcelSeparatorDirective = true;
     [SerializeField] bool _flushEveryWrite = true;
@@ -125,8 +197,13 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
     StreamWriter _eventsJsonlWriter;
     StreamWriter _samplesCsvWriter;
     StreamWriter _samplesJsonlWriter;
+    StreamWriter _videoFramesCsvWriter;
+    StreamWriter _videoFramesJsonlWriter;
     string _sessionId;
     string _sessionFolderPath;
+    string _participantId;
+    string _experimentMode;
+    DateTimeOffset _sessionStartedUtc;
     double _sessionStartedRealtime;
     bool _sessionActive;
     bool _writeCsv;
@@ -141,31 +218,35 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         CloseSession();
     }
 
-    public bool StartSession(WaterLiliesExperimentConfig config)
+    public bool StartSession(WaterLiliesExperimentConfig config, string overrideLogRootPath = "")
     {
         CloseSession();
 
-        var participantId = config != null ? config.participantId : "P001";
         var now = DateTimeOffset.UtcNow;
+        _sessionStartedUtc = now;
         _sessionStartedRealtime = Time.realtimeSinceStartupAsDouble;
-        _sessionId = SafeFileName(participantId) + "_" + now.ToString("yyyyMMdd_HHmmss_fff", CultureInfo.InvariantCulture);
+        _participantId = config != null ? config.participantId : "P001";
+        _experimentMode = config != null ? config.mode.ToString() : string.Empty;
+        _sessionId = SafeFileName(_participantId) + "_" + now.ToString("yyyyMMdd_HHmmss_fff", CultureInfo.InvariantCulture);
         _writeCsv = config == null || config.writeCsv;
         _writeJsonLines = config == null || config.writeJsonLines;
 
-        var root = ResolveLogRoot(config);
+        var root = ResolveLogRoot(config, overrideLogRootPath);
         _sessionFolderPath = Path.Combine(root, _sessionId);
         Directory.CreateDirectory(_sessionFolderPath);
 
         if (_writeCsv)
         {
-            _eventsCsvWriter = OpenCsvWriter("events.csv");
-            _samplesCsvWriter = OpenCsvWriter("samples.csv");
+            _eventsCsvWriter = OpenCsvWriter("events.csv", Columns);
+            _samplesCsvWriter = OpenCsvWriter("samples.csv", Columns);
+            _videoFramesCsvWriter = OpenCsvWriter("video_frames.csv", VideoFrameColumns);
         }
 
         if (_writeJsonLines)
         {
             _eventsJsonlWriter = new StreamWriter(Path.Combine(_sessionFolderPath, "events.jsonl"), false, Encoding.UTF8);
             _samplesJsonlWriter = new StreamWriter(Path.Combine(_sessionFolderPath, "samples.jsonl"), false, Encoding.UTF8);
+            _videoFramesJsonlWriter = new StreamWriter(Path.Combine(_sessionFolderPath, "video_frames.jsonl"), false, Encoding.UTF8);
         }
 
         _sessionActive = true;
@@ -179,6 +260,8 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         CloseWriter(ref _eventsJsonlWriter);
         CloseWriter(ref _samplesCsvWriter);
         CloseWriter(ref _samplesJsonlWriter);
+        CloseWriter(ref _videoFramesCsvWriter);
+        CloseWriter(ref _videoFramesJsonlWriter);
         _sessionActive = false;
     }
 
@@ -190,6 +273,54 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
     public void LogSample(WaterLiliesExperimentLogRow row)
     {
         WriteRow(row, "sample", _samplesCsvWriter, _samplesJsonlWriter);
+    }
+
+    public bool TryLogVideoFrame(WaterLiliesVideoFrameLogRow row)
+    {
+        if (!_sessionActive)
+        {
+            return false;
+        }
+
+        row ??= new WaterLiliesVideoFrameLogRow();
+        if (string.IsNullOrEmpty(row.session_id))
+        {
+            row.session_id = _sessionId;
+        }
+
+        if (string.IsNullOrEmpty(row.participant_id))
+        {
+            row.participant_id = _participantId;
+        }
+
+        if (string.IsNullOrEmpty(row.experiment_mode))
+        {
+            row.experiment_mode = _experimentMode;
+        }
+
+        var sampleRealtime = !double.IsNaN(row.realtime_since_startup_seconds)
+            ? row.realtime_since_startup_seconds
+            : Time.realtimeSinceStartupAsDouble;
+        row.realtime_since_startup_seconds = sampleRealtime;
+        row.session_elapsed_seconds = sampleRealtime - _sessionStartedRealtime;
+
+        var timestamp = _sessionStartedUtc.AddSeconds(row.session_elapsed_seconds);
+        row.utc_timestamp_iso = timestamp.ToString("O", CultureInfo.InvariantCulture);
+        row.unix_time_ms = timestamp.ToUnixTimeMilliseconds();
+
+        if (_writeCsv && _videoFramesCsvWriter != null)
+        {
+            _videoFramesCsvWriter.WriteLine(ToVideoFrameCsv(row));
+            FlushIfNeeded(_videoFramesCsvWriter);
+        }
+
+        if (_writeJsonLines && _videoFramesJsonlWriter != null)
+        {
+            _videoFramesJsonlWriter.WriteLine(ToVideoFrameJsonLine(row));
+            FlushIfNeeded(_videoFramesJsonlWriter);
+        }
+
+        return true;
     }
 
     void WriteRow(
@@ -229,7 +360,7 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         }
     }
 
-    StreamWriter OpenCsvWriter(string fileName)
+    StreamWriter OpenCsvWriter(string fileName, string[] columns)
     {
         var writer = new StreamWriter(Path.Combine(_sessionFolderPath, fileName), false, Encoding.UTF8);
         if (_writeExcelSeparatorDirective)
@@ -237,12 +368,17 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
             writer.WriteLine(CsvSeparatorDirective);
         }
 
-        writer.WriteLine(string.Join(",", Columns));
+        writer.WriteLine(string.Join(",", columns));
         return writer;
     }
 
-    static string ResolveLogRoot(WaterLiliesExperimentConfig config)
+    static string ResolveLogRoot(WaterLiliesExperimentConfig config, string overrideLogRootPath)
     {
+        if (!string.IsNullOrWhiteSpace(overrideLogRootPath))
+        {
+            return overrideLogRootPath.Trim();
+        }
+
         if (config != null && config.useExternalLogRoot)
         {
             return config.externalLogRootPath;
@@ -321,6 +457,62 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         return builder.ToString();
     }
 
+    static string ToVideoFrameCsv(WaterLiliesVideoFrameLogRow row)
+    {
+        var values = new[]
+        {
+            row.session_id,
+            row.participant_id,
+            row.experiment_mode,
+            row.utc_timestamp_iso,
+            row.unix_time_ms.ToString(CultureInfo.InvariantCulture),
+            FormatDouble(row.realtime_since_startup_seconds),
+            FormatDouble(row.session_elapsed_seconds),
+            FormatInt(row.frame_index),
+            FormatInt(row.unity_frame),
+            FormatInt(row.width),
+            FormatInt(row.height),
+            FormatFloat(row.capture_fps),
+            row.image_format,
+            FormatInt(row.jpeg_quality),
+            row.relative_path,
+            row.absolute_path,
+            row.source_camera_name,
+            row.capture_camera_name,
+            FormatFloat(row.camera_position.x),
+            FormatFloat(row.camera_position.y),
+            FormatFloat(row.camera_position.z),
+            FormatFloat(row.camera_rotation.x),
+            FormatFloat(row.camera_rotation.y),
+            FormatFloat(row.camera_rotation.z),
+            FormatFloat(row.camera_rotation.w),
+            FormatFloat(row.camera_forward.x),
+            FormatFloat(row.camera_forward.y),
+            FormatFloat(row.camera_forward.z),
+            FormatFloat(row.camera_up.x),
+            FormatFloat(row.camera_up.y),
+            FormatFloat(row.camera_up.z),
+            FormatLong(row.encoded_bytes),
+            FormatFloat(row.readback_latency_ms),
+            FormatFloat(row.encode_write_latency_ms),
+            FormatInt(row.dropped_frames),
+            row.notes
+        };
+
+        var builder = new StringBuilder();
+        for (var i = 0; i < values.Length; i++)
+        {
+            if (i > 0)
+            {
+                builder.Append(',');
+            }
+
+            AppendCsvValue(builder, values[i]);
+        }
+
+        return builder.ToString();
+    }
+
     public static string ToJsonLine(WaterLiliesExperimentLogRow row)
     {
         var builder = new StringBuilder();
@@ -374,6 +566,51 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         AppendJson(builder, ref first, "gaze_hit_y", row.gaze_hit_y);
         AppendJson(builder, ref first, "gaze_hit_z", row.gaze_hit_z);
         AppendJson(builder, ref first, "gaze_on_painting", row.gaze_on_painting);
+        AppendJson(builder, ref first, "notes", row.notes);
+        builder.Append('}');
+        return builder.ToString();
+    }
+
+    static string ToVideoFrameJsonLine(WaterLiliesVideoFrameLogRow row)
+    {
+        var builder = new StringBuilder();
+        builder.Append('{');
+        var first = true;
+        AppendJson(builder, ref first, "session_id", row.session_id);
+        AppendJson(builder, ref first, "participant_id", row.participant_id);
+        AppendJson(builder, ref first, "experiment_mode", row.experiment_mode);
+        AppendJson(builder, ref first, "utc_timestamp_iso", row.utc_timestamp_iso);
+        AppendJson(builder, ref first, "unix_time_ms", row.unix_time_ms);
+        AppendJson(builder, ref first, "realtime_since_startup_seconds", row.realtime_since_startup_seconds);
+        AppendJson(builder, ref first, "session_elapsed_seconds", row.session_elapsed_seconds);
+        AppendJson(builder, ref first, "frame_index", row.frame_index);
+        AppendJson(builder, ref first, "unity_frame", row.unity_frame);
+        AppendJson(builder, ref first, "width", row.width);
+        AppendJson(builder, ref first, "height", row.height);
+        AppendJson(builder, ref first, "capture_fps", row.capture_fps);
+        AppendJson(builder, ref first, "image_format", row.image_format);
+        AppendJson(builder, ref first, "jpeg_quality", row.jpeg_quality);
+        AppendJson(builder, ref first, "relative_path", row.relative_path);
+        AppendJson(builder, ref first, "absolute_path", row.absolute_path);
+        AppendJson(builder, ref first, "source_camera_name", row.source_camera_name);
+        AppendJson(builder, ref first, "capture_camera_name", row.capture_camera_name);
+        AppendJson(builder, ref first, "camera_position_x", row.camera_position.x);
+        AppendJson(builder, ref first, "camera_position_y", row.camera_position.y);
+        AppendJson(builder, ref first, "camera_position_z", row.camera_position.z);
+        AppendJson(builder, ref first, "camera_rotation_x", row.camera_rotation.x);
+        AppendJson(builder, ref first, "camera_rotation_y", row.camera_rotation.y);
+        AppendJson(builder, ref first, "camera_rotation_z", row.camera_rotation.z);
+        AppendJson(builder, ref first, "camera_rotation_w", row.camera_rotation.w);
+        AppendJson(builder, ref first, "camera_forward_x", row.camera_forward.x);
+        AppendJson(builder, ref first, "camera_forward_y", row.camera_forward.y);
+        AppendJson(builder, ref first, "camera_forward_z", row.camera_forward.z);
+        AppendJson(builder, ref first, "camera_up_x", row.camera_up.x);
+        AppendJson(builder, ref first, "camera_up_y", row.camera_up.y);
+        AppendJson(builder, ref first, "camera_up_z", row.camera_up.z);
+        AppendJson(builder, ref first, "encoded_bytes", row.encoded_bytes);
+        AppendJson(builder, ref first, "readback_latency_ms", row.readback_latency_ms);
+        AppendJson(builder, ref first, "encode_write_latency_ms", row.encode_write_latency_ms);
+        AppendJson(builder, ref first, "dropped_frames", row.dropped_frames);
         AppendJson(builder, ref first, "notes", row.notes);
         builder.Append('}');
         return builder.ToString();
@@ -467,6 +704,11 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
     }
 
     static string FormatInt(int value)
+    {
+        return value < 0 ? string.Empty : value.ToString(CultureInfo.InvariantCulture);
+    }
+
+    static string FormatLong(long value)
     {
         return value < 0 ? string.Empty : value.ToString(CultureInfo.InvariantCulture);
     }

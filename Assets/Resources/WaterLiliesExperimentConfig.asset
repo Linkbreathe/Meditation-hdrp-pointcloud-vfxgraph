@@ -11,27 +11,44 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: b86f8421508f439a9ab688b80f2b9e63, type: 3}
   m_Name: WaterLiliesExperimentConfig
-  m_EditorClassIdentifier:
+  m_EditorClassIdentifier: 
   _participantId: P001
-  _mode: 0
+  _mode: 1
   _targetPaintingObjectName: 5_Water_Lilies
   _isolateTargetPainting: 1
   _disableLegacyPaintingControllers: 1
-  _baselineSeconds: 90
+  _baselineSeconds: 50
   _adaptationSeconds: 60
   _conditionSeconds: 90
   _questionnaireMinimumSeconds: 0
   _recenterSeconds: 7
   _restSeconds: 30
   _restEveryConditionCount: 3
+  _durationProfilesMigrated: 1
+  _formalDurations:
+    _baselineSeconds: 5
+    _adaptationSeconds: 6
+    _conditionSeconds: 9
+    _questionnaireMinimumSeconds: 0
+    _recenterSeconds: 7
+    _restSeconds: 3
+    _restEveryConditionCount: 3
+  _pilotDurations:
+    _baselineSeconds: 5
+    _adaptationSeconds: 6
+    _conditionSeconds: 9
+    _questionnaireMinimumSeconds: 0
+    _recenterSeconds: 7
+    _restSeconds: 3
+    _restEveryConditionCount: 3
   _intensityValues:
-    low: 0.2
-    medium: 0.5
-    high: 0.8
+    low: 0.15
+    medium: 0.4
+    high: 0.65
   _frequencyValues:
-    low: 0.2
-    medium: 0.5
-    high: 0.8
+    low: 0.15
+    medium: 0.4
+    high: 0.65
   _baselineIntensity: 0.01
   _baselineFrequency: 0
   _conditions:
@@ -99,6 +116,6 @@ MonoBehaviour:
   _writeCsv: 1
   _writeJsonLines: 1
   _logFolderName: water_lilies_vfx_experiment
-  _useExternalLogRoot: 0
-  _externalLogRootPath:
+  _useExternalLogRoot: 1
+  _externalLogRootPath: C:\Users\linki\amaster\data_collection_v2
   _sampleIntervalSeconds: 0.1

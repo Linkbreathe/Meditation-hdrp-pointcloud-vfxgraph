@@ -101,6 +101,82 @@ public sealed class WaterLiliesConditionDefinition
     }
 }
 
+[Serializable]
+public sealed class WaterLiliesDurationProfile
+{
+    [SerializeField, Min(1f)] float _baselineSeconds = 90f;
+    [SerializeField, Min(1f)] float _adaptationSeconds = 60f;
+    [SerializeField, Min(1f)] float _conditionSeconds = 90f;
+    [SerializeField, Min(0f)] float _questionnaireMinimumSeconds;
+    [SerializeField, Min(1f)] float _recenterSeconds = 7f;
+    [SerializeField, Min(0f)] float _restSeconds = 30f;
+    [SerializeField, Min(1)] int _restEveryConditionCount = 3;
+
+    public WaterLiliesDurationProfile()
+    {
+    }
+
+    public WaterLiliesDurationProfile(
+        float baselineSeconds,
+        float adaptationSeconds,
+        float conditionSeconds,
+        float questionnaireMinimumSeconds,
+        float recenterSeconds,
+        float restSeconds,
+        int restEveryConditionCount)
+    {
+        _baselineSeconds = baselineSeconds;
+        _adaptationSeconds = adaptationSeconds;
+        _conditionSeconds = conditionSeconds;
+        _questionnaireMinimumSeconds = questionnaireMinimumSeconds;
+        _recenterSeconds = recenterSeconds;
+        _restSeconds = restSeconds;
+        _restEveryConditionCount = restEveryConditionCount;
+        Normalize();
+    }
+
+    public float baselineSeconds => Mathf.Max(1f, _baselineSeconds);
+    public float adaptationSeconds => Mathf.Max(1f, _adaptationSeconds);
+    public float conditionSeconds => Mathf.Max(1f, _conditionSeconds);
+    public float questionnaireMinimumSeconds => Mathf.Max(0f, _questionnaireMinimumSeconds);
+    public float recenterSeconds => Mathf.Max(1f, _recenterSeconds);
+    public float restSeconds => Mathf.Max(0f, _restSeconds);
+    public int restEveryConditionCount => Mathf.Max(1, _restEveryConditionCount);
+
+    public static WaterLiliesDurationProfile CreateDefault()
+    {
+        return new WaterLiliesDurationProfile(90f, 60f, 90f, 0f, 7f, 30f, 3);
+    }
+
+    public void CopyFrom(WaterLiliesDurationProfile source)
+    {
+        if (source == null)
+        {
+            return;
+        }
+
+        _baselineSeconds = source.baselineSeconds;
+        _adaptationSeconds = source.adaptationSeconds;
+        _conditionSeconds = source.conditionSeconds;
+        _questionnaireMinimumSeconds = source.questionnaireMinimumSeconds;
+        _recenterSeconds = source.recenterSeconds;
+        _restSeconds = source.restSeconds;
+        _restEveryConditionCount = source.restEveryConditionCount;
+        Normalize();
+    }
+
+    public void Normalize()
+    {
+        _baselineSeconds = Mathf.Max(1f, _baselineSeconds);
+        _adaptationSeconds = Mathf.Max(1f, _adaptationSeconds);
+        _conditionSeconds = Mathf.Max(1f, _conditionSeconds);
+        _questionnaireMinimumSeconds = Mathf.Max(0f, _questionnaireMinimumSeconds);
+        _recenterSeconds = Mathf.Max(1f, _recenterSeconds);
+        _restSeconds = Mathf.Max(0f, _restSeconds);
+        _restEveryConditionCount = Mathf.Max(1, _restEveryConditionCount);
+    }
+}
+
 public struct WaterLiliesResolvedCondition
 {
     public string conditionId;
@@ -124,13 +200,16 @@ public sealed class WaterLiliesExperimentConfig : ScriptableObject
     [SerializeField] bool _disableLegacyPaintingControllers = true;
 
     [Header("Durations")]
-    [SerializeField, Min(1f)] float _baselineSeconds = 90f;
-    [SerializeField, Min(1f)] float _adaptationSeconds = 60f;
-    [SerializeField, Min(1f)] float _conditionSeconds = 90f;
-    [SerializeField, Min(0f)] float _questionnaireMinimumSeconds;
-    [SerializeField, Min(1f)] float _recenterSeconds = 7f;
-    [SerializeField, Min(0f)] float _restSeconds = 30f;
-    [SerializeField, Min(1)] int _restEveryConditionCount = 3;
+    [SerializeField, HideInInspector, Min(1f)] float _baselineSeconds = 90f;
+    [SerializeField, HideInInspector, Min(1f)] float _adaptationSeconds = 60f;
+    [SerializeField, HideInInspector, Min(1f)] float _conditionSeconds = 90f;
+    [SerializeField, HideInInspector, Min(0f)] float _questionnaireMinimumSeconds;
+    [SerializeField, HideInInspector, Min(1f)] float _recenterSeconds = 7f;
+    [SerializeField, HideInInspector, Min(0f)] float _restSeconds = 30f;
+    [SerializeField, HideInInspector, Min(1)] int _restEveryConditionCount = 3;
+    [SerializeField, HideInInspector] bool _durationProfilesMigrated;
+    [SerializeField] WaterLiliesDurationProfile _formalDurations = WaterLiliesDurationProfile.CreateDefault();
+    [SerializeField] WaterLiliesDurationProfile _pilotDurations = WaterLiliesDurationProfile.CreateDefault();
 
     [Header("Parameter Tables")]
     [SerializeField] WaterLiliesLevelValues _intensityValues = new WaterLiliesLevelValues(0.2f, 0.5f, 0.8f);
@@ -165,13 +244,40 @@ public sealed class WaterLiliesExperimentConfig : ScriptableObject
     public string targetPaintingObjectName => string.IsNullOrWhiteSpace(_targetPaintingObjectName) ? "5_Water_Lilies" : _targetPaintingObjectName.Trim();
     public bool isolateTargetPainting => _isolateTargetPainting;
     public bool disableLegacyPaintingControllers => _disableLegacyPaintingControllers;
-    public float baselineSeconds => Mathf.Max(1f, _baselineSeconds);
-    public float adaptationSeconds => Mathf.Max(1f, _adaptationSeconds);
-    public float conditionSeconds => Mathf.Max(1f, _conditionSeconds);
-    public float questionnaireMinimumSeconds => Mathf.Max(0f, _questionnaireMinimumSeconds);
-    public float recenterSeconds => Mathf.Max(1f, _recenterSeconds);
-    public float restSeconds => Mathf.Max(0f, _restSeconds);
-    public int restEveryConditionCount => Mathf.Max(1, _restEveryConditionCount);
+    public WaterLiliesDurationProfile formalDurations
+    {
+        get
+        {
+            EnsureDurationProfilesInitialized();
+            return _formalDurations;
+        }
+    }
+
+    public WaterLiliesDurationProfile pilotDurations
+    {
+        get
+        {
+            EnsureDurationProfilesInitialized();
+            return _pilotDurations;
+        }
+    }
+
+    public WaterLiliesDurationProfile activeDurations
+    {
+        get
+        {
+            EnsureDurationProfilesInitialized();
+            return _mode == WaterLiliesExperimentMode.Formal ? _formalDurations : _pilotDurations;
+        }
+    }
+
+    public float baselineSeconds => activeDurations.baselineSeconds;
+    public float adaptationSeconds => activeDurations.adaptationSeconds;
+    public float conditionSeconds => activeDurations.conditionSeconds;
+    public float questionnaireMinimumSeconds => activeDurations.questionnaireMinimumSeconds;
+    public float recenterSeconds => activeDurations.recenterSeconds;
+    public float restSeconds => activeDurations.restSeconds;
+    public int restEveryConditionCount => activeDurations.restEveryConditionCount;
     public WaterLiliesLevelValues intensityValues => _intensityValues;
     public WaterLiliesLevelValues frequencyValues => _frequencyValues;
     public float baselineIntensity => Mathf.Max(0f, _baselineIntensity);
@@ -212,13 +318,7 @@ public sealed class WaterLiliesExperimentConfig : ScriptableObject
 
     void OnValidate()
     {
-        _baselineSeconds = Mathf.Max(1f, _baselineSeconds);
-        _adaptationSeconds = Mathf.Max(1f, _adaptationSeconds);
-        _conditionSeconds = Mathf.Max(1f, _conditionSeconds);
-        _questionnaireMinimumSeconds = Mathf.Max(0f, _questionnaireMinimumSeconds);
-        _recenterSeconds = Mathf.Max(1f, _recenterSeconds);
-        _restSeconds = Mathf.Max(0f, _restSeconds);
-        _restEveryConditionCount = Mathf.Max(1, _restEveryConditionCount);
+        EnsureDurationProfilesInitialized();
         _sampleIntervalSeconds = Mathf.Max(0.02f, _sampleIntervalSeconds);
         _intensityValues.Normalize();
         _frequencyValues.Normalize();
@@ -301,5 +401,36 @@ public sealed class WaterLiliesExperimentConfig : ScriptableObject
         }
 
         return false;
+    }
+
+    void EnsureDurationProfilesInitialized()
+    {
+        if (_formalDurations == null)
+        {
+            _formalDurations = WaterLiliesDurationProfile.CreateDefault();
+        }
+
+        if (_pilotDurations == null)
+        {
+            _pilotDurations = WaterLiliesDurationProfile.CreateDefault();
+        }
+
+        if (!_durationProfilesMigrated)
+        {
+            var legacyDurations = new WaterLiliesDurationProfile(
+                _baselineSeconds,
+                _adaptationSeconds,
+                _conditionSeconds,
+                _questionnaireMinimumSeconds,
+                _recenterSeconds,
+                _restSeconds,
+                _restEveryConditionCount);
+            _formalDurations.CopyFrom(legacyDurations);
+            _pilotDurations.CopyFrom(legacyDurations);
+            _durationProfilesMigrated = true;
+        }
+
+        _formalDurations.Normalize();
+        _pilotDurations.Normalize();
     }
 }

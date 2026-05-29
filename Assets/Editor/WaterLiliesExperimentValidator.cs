@@ -87,7 +87,7 @@ public static class WaterLiliesExperimentValidator
         }
 
         var markers = WaterLiliesExperimentManager.RequiredEventMarkers;
-        if (markers.Length < 17)
+        if (markers.Length < 19)
         {
             report.AddError("Required event marker contract is incomplete.");
         }

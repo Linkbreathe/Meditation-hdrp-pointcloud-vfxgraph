@@ -29,6 +29,10 @@ When Play Mode starts, the manager previews the fixed `5_Water_Lilies` painting 
 
 The runtime overlay is intended as a researcher/operator status panel. It includes Start, Continue, Headset Removed, Headset Worn, and Skip buttons. Skip follows the same rule as `K`: it only works in Pilot mode when pilot skipping is enabled. The overlay uses a screen-space Unity Canvas for the desktop Game view, not a world-space VR instruction panel for the participant. Keep `Auto Create Runtime Ui` enabled for editor/operator runs, and disable it if a Quest build should show no experiment-control UI to the participant.
 
+## Mode-Specific Durations
+
+`Mode` selects the active duration profile at runtime. In the config Inspector, edit `Active Durations (Formal)` or `Active Durations (Pilot)` for the mode currently selected, and edit `Other Mode Durations (...)` when preparing the alternate mode. The manager reads only the selected mode's duration profile when the run starts.
+
 ## Condition Design
 
 The default config defines 9 fixed conditions:

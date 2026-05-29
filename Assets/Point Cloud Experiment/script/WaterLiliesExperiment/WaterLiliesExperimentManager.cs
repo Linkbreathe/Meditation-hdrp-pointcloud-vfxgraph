@@ -3,8 +3,6 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Text;
 using UnityEngine;
-using UnityEngine.EventSystems;
-using UnityEngine.UI;
 using UnityEngine.VFX;
 
 [DefaultExecutionOrder(300)]
@@ -33,9 +31,13 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
     public const string EventRestEnd = "rest_end";
     public const string EventExperimentAborted = "experiment_aborted";
     public const string EventExperimentEnd = "experiment_end";
+    public const string EventVideoRecordingStart = "video_recording_started";
+    public const string EventVideoRecordingStop = "video_recording_stopped";
+    public const string EventVideoRecordingFailed = "video_recording_failed";
 
     static readonly string[] RequiredEventMarkersBacking =
     {
+        EventVideoRecordingStart,
         EventExperimentStart,
         EventBaselineStart,
         EventBaselineEnd,
@@ -52,7 +54,8 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
         EventRecenterEnd,
         EventRestStart,
         EventRestEnd,
-        EventExperimentEnd
+        EventExperimentEnd,
+        EventVideoRecordingStop
     };
 
     public static string[] RequiredEventMarkers => (string[])RequiredEventMarkersBacking.Clone();
@@ -66,6 +69,16 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
     [SerializeField] WaterLiliesTrackingSampler _trackingSampler;
     [SerializeField] WaterLiliesLslMarkerOutlet _lslMarkerOutlet;
     [SerializeField] GameObject _targetPainting;
+
+    [Header("Recording")]
+    [SerializeField] bool _recordVideo = true;
+    [SerializeField] ExperimentVideoRecorder _videoRecorder;
+    [SerializeField] bool _autoCreateVideoRecorder = true;
+    [SerializeField, Min(0f)] float _videoRecorderFlushTimeoutSeconds = 5f;
+
+    [Header("Data Output")]
+    [SerializeField] bool _overrideConfigLogRoot;
+    [SerializeField] string _dataRootPath = "";
 
     [Header("LSL")]
     [SerializeField] bool _autoCreateLslMarkerOutlet = true;
@@ -92,7 +105,6 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
 
     readonly List<WaterLiliesResolvedCondition> _orderedConditions = new List<WaterLiliesResolvedCondition>();
     Coroutine _runRoutine;
-    Text _statusText;
     WaterLiliesExperimentPhase _phase = WaterLiliesExperimentPhase.Idle;
     WaterLiliesResolvedCondition _currentCondition;
     bool _hasCurrentCondition;
@@ -103,6 +115,7 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
     bool _continueRequested;
     bool _abortRequested;
     bool _pilotSkipRequested;
+    bool _sessionClosing;
     bool _headsetPresenceKnown;
     bool _lastHeadsetUserPresent;
     bool _headsetCurrentlyOff;
@@ -113,6 +126,11 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
 
     public WaterLiliesExperimentPhase phase => _phase;
     public bool isRunning => _runRoutine != null;
+    public string dataRootPath => ResolveDataRootOverride();
+    public bool operatorUiEnabled => _autoCreateRuntimeUi;
+    public string operatorPhaseText => BuildPhaseBadgeText();
+    public string operatorNextActionText => BuildNextActionText();
+    public string operatorStatusText => BuildStatusText();
 
     void Reset()
     {
@@ -142,13 +160,13 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
         HandleKeyboard();
         UpdateHeadsetPresenceMarkers();
         LogTrackingSampleIfDue();
-        UpdateRuntimeUi();
     }
 
     void OnDisable()
     {
         if (_logger != null && _logger.sessionActive)
         {
+            StopVideoRecording("component_disabled");
             _logger.CloseSession();
         }
     }
@@ -165,6 +183,7 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
         _abortRequested = false;
         _continueRequested = false;
         _pilotSkipRequested = false;
+        _sessionClosing = false;
         _runRoutine = StartCoroutine(RunExperimentRoutine());
     }
 
@@ -210,7 +229,8 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
             yield break;
         }
 
-        _logger.StartSession(_config);
+        _logger.StartSession(_config, ResolveDataRootOverride());
+        StartVideoRecording("experiment_start");
         LogEvent(EventExperimentStart, "Water Lilies Intensity x Frequency experiment started.");
 
         if (!PrepareFixedPainting())
@@ -406,7 +426,10 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
         }
 
         LogEvent(EventExperimentEnd, aborted ? "Experiment ended after abort." : "Experiment completed.");
+        _sessionClosing = true;
+        yield return StopVideoRecordingRoutine(aborted ? "experiment_aborted" : "experiment_completed");
         _logger.CloseSession();
+        _sessionClosing = false;
         _runRoutine = null;
         yield break;
     }
@@ -661,6 +684,93 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
         {
             _lslMarkerOutlet = gameObject.AddComponent<WaterLiliesLslMarkerOutlet>();
         }
+
+        ResolveVideoRecorder();
+    }
+
+    void ResolveVideoRecorder()
+    {
+        if (!_recordVideo || _videoRecorder != null)
+        {
+            return;
+        }
+
+        _videoRecorder = FindObjectOfType<ExperimentVideoRecorder>();
+        if (_videoRecorder == null && _autoCreateVideoRecorder)
+        {
+            _videoRecorder = ExperimentVideoRecorder.Instance;
+        }
+    }
+
+    string ResolveDataRootOverride()
+    {
+        return _overrideConfigLogRoot && !string.IsNullOrWhiteSpace(_dataRootPath)
+            ? _dataRootPath.Trim()
+            : string.Empty;
+    }
+
+    void StartVideoRecording(string reason)
+    {
+        if (!_recordVideo || _logger == null || !_logger.sessionActive)
+        {
+            return;
+        }
+
+        ResolveVideoRecorder();
+        if (_videoRecorder == null)
+        {
+            LogEvent(EventVideoRecordingFailed, "reason=no_recorder; source=" + reason);
+            return;
+        }
+
+        if (_videoRecorder.StartRecording(_logger, reason))
+        {
+            LogEvent(EventVideoRecordingStart, BuildVideoRecordingNotes(reason));
+            return;
+        }
+
+        LogEvent(EventVideoRecordingFailed, "reason=start_failed; source=" + reason);
+    }
+
+    void StopVideoRecording(string reason)
+    {
+        if (!_recordVideo || _videoRecorder == null || !_videoRecorder.isRecording)
+        {
+            return;
+        }
+
+        _videoRecorder.StopRecording(reason);
+        LogEvent(EventVideoRecordingStop, BuildVideoRecordingNotes(reason));
+    }
+
+    IEnumerator StopVideoRecordingRoutine(string reason)
+    {
+        StopVideoRecording(reason);
+        if (_videoRecorder == null || _videoRecorderFlushTimeoutSeconds <= 0f)
+        {
+            yield break;
+        }
+
+        var deadline = Time.realtimeSinceStartupAsDouble + _videoRecorderFlushTimeoutSeconds;
+        while (_videoRecorder.isFinalizingRecording && Time.realtimeSinceStartupAsDouble < deadline)
+        {
+            yield return null;
+        }
+    }
+
+    string BuildVideoRecordingNotes(string reason)
+    {
+        var builder = new StringBuilder();
+        builder.Append("reason=").Append(reason);
+        if (_videoRecorder != null)
+        {
+            builder
+                .Append("; frames=").Append(_videoRecorder.recordedFrameCount)
+                .Append("; dropped=").Append(_videoRecorder.droppedFrameCount)
+                .Append("; folder=").Append(_videoRecorder.framesFolderPath);
+        }
+
+        return builder.ToString();
     }
 
     void PrepareFixedPaintingPreview()
@@ -711,7 +821,7 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
 
     void UpdateHeadsetPresenceMarkers()
     {
-        if (_config == null || !_config.autoDetectHeadsetPresence || _trackingSampler == null || !_logger.sessionActive)
+        if (_sessionClosing || _config == null || !_config.autoDetectHeadsetPresence || _trackingSampler == null || !_logger.sessionActive)
         {
             return;
         }
@@ -779,7 +889,7 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
         LogEvent(EventHeadsetWorn, "source=" + source, intervalSeconds);
     }
 
-    void RequestPilotSkip()
+    public void RequestPilotSkip()
     {
         if (!CanPilotSkip())
         {
@@ -792,7 +902,7 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
 
     void LogTrackingSampleIfDue()
     {
-        if (_config == null || _logger == null || !_logger.sessionActive || _trackingSampler == null)
+        if (_sessionClosing || _config == null || _logger == null || !_logger.sessionActive || _trackingSampler == null)
         {
             return;
         }
@@ -914,102 +1024,13 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
 
     void EnsureRuntimeUi()
     {
-        if (!_autoCreateRuntimeUi || _statusText != null)
-        {
-            return;
-        }
-
-        EnsureEventSystem();
-
-        var canvasObject = new GameObject("Water Lilies Experiment Runtime UI");
-        canvasObject.transform.SetParent(transform, false);
-        var canvas = canvasObject.AddComponent<Canvas>();
-        canvas.renderMode = RenderMode.ScreenSpaceOverlay;
-        canvas.sortingOrder = 1000;
-        var scaler = canvasObject.AddComponent<CanvasScaler>();
-        scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
-        scaler.referenceResolution = new Vector2(1280f, 720f);
-        canvasObject.AddComponent<GraphicRaycaster>();
-
-        var panelObject = new GameObject("Panel");
-        panelObject.transform.SetParent(canvasObject.transform, false);
-        var panelImage = panelObject.AddComponent<Image>();
-        panelImage.color = new Color(0f, 0f, 0f, 0.78f);
-        var panelRect = panelImage.rectTransform;
-        panelRect.anchorMin = new Vector2(0f, 1f);
-        panelRect.anchorMax = new Vector2(0f, 1f);
-        panelRect.pivot = new Vector2(0f, 1f);
-        panelRect.anchoredPosition = new Vector2(24f, -24f);
-        panelRect.sizeDelta = _runtimeUiSize;
-
-        _statusText = CreateText(panelObject.transform, "Status", 18, TextAnchor.UpperLeft);
-        var textRect = _statusText.rectTransform;
-        textRect.anchorMin = new Vector2(0f, 0f);
-        textRect.anchorMax = new Vector2(1f, 1f);
-        textRect.offsetMin = new Vector2(20f, 86f);
-        textRect.offsetMax = new Vector2(-20f, -20f);
-
-        CreateButton(panelObject.transform, "Start", new Vector2(20f, 20f), 84f, StartExperiment);
-        CreateButton(panelObject.transform, "Continue", new Vector2(112f, 20f), 112f, ContinueCurrentBreak);
-        CreateButton(panelObject.transform, "Removed", new Vector2(232f, 20f), 104f, MarkHeadsetRemoved);
-        CreateButton(panelObject.transform, "Worn", new Vector2(344f, 20f), 84f, MarkHeadsetWorn);
-        CreateButton(panelObject.transform, "Skip", new Vector2(436f, 20f), 76f, RequestPilotSkip);
-    }
-
-    Text CreateText(Transform parent, string name, int fontSize, TextAnchor alignment)
-    {
-        var textObject = new GameObject(name);
-        textObject.transform.SetParent(parent, false);
-        var text = textObject.AddComponent<Text>();
-        text.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        text.fontSize = fontSize;
-        text.color = Color.white;
-        text.alignment = alignment;
-        text.horizontalOverflow = HorizontalWrapMode.Wrap;
-        text.verticalOverflow = VerticalWrapMode.Overflow;
-        return text;
-    }
-
-    void CreateButton(Transform parent, string label, Vector2 position, float width, UnityEngine.Events.UnityAction action)
-    {
-        var buttonObject = new GameObject(label + " Button");
-        buttonObject.transform.SetParent(parent, false);
-        var image = buttonObject.AddComponent<Image>();
-        image.color = new Color(0.15f, 0.18f, 0.22f, 0.95f);
-        var button = buttonObject.AddComponent<Button>();
-        button.onClick.AddListener(action);
-        var rect = image.rectTransform;
-        rect.anchorMin = new Vector2(0f, 0f);
-        rect.anchorMax = new Vector2(0f, 0f);
-        rect.pivot = new Vector2(0f, 0f);
-        rect.anchoredPosition = position;
-        rect.sizeDelta = new Vector2(width, 44f);
-
-        var text = CreateText(buttonObject.transform, "Text", 14, TextAnchor.MiddleCenter);
-        text.text = label;
-        text.rectTransform.anchorMin = Vector2.zero;
-        text.rectTransform.anchorMax = Vector2.one;
-        text.rectTransform.offsetMin = Vector2.zero;
-        text.rectTransform.offsetMax = Vector2.zero;
-    }
-
-    void UpdateRuntimeUi()
-    {
-        if (_statusText == null)
-        {
-            return;
-        }
-
-        _statusText.text = BuildStatusText();
     }
 
     string BuildStatusText()
     {
         var builder = new StringBuilder();
-        builder.AppendLine("Water Lilies VR-VFX Experiment");
         builder.AppendLine("Participant: " + (_config != null ? _config.participantId : "P001"));
         builder.AppendLine("Mode: " + (_config != null ? _config.mode.ToString() : "Unknown"));
-        builder.AppendLine("Phase: " + _phase);
 
         if (_hasCurrentCondition)
         {
@@ -1042,10 +1063,10 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
         }
 
         var elapsed = Time.realtimeSinceStartupAsDouble - _phaseStartedRealtime;
-        builder.AppendLine("Elapsed: " + elapsed.ToString("0.0") + "s");
+        builder.AppendLine("Elapsed: " + FormatWholeSeconds(elapsed));
         if (!double.IsNaN(_phasePlannedDurationSeconds) && _phasePlannedDurationSeconds > 0.0)
         {
-            builder.AppendLine("Remaining: " + Math.Max(0.0, _phasePlannedDurationSeconds - elapsed).ToString("0.0") + "s");
+            builder.AppendLine("Remaining: " + FormatWholeSeconds(Math.Max(0.0, _phasePlannedDurationSeconds - elapsed)));
         }
 
         builder.AppendLine("Formal viewing: " + (_formalViewingActive ? "YES" : "NO"));
@@ -1054,17 +1075,118 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
         return builder.ToString();
     }
 
-    void EnsureEventSystem()
+    string BuildPhaseBadgeText()
     {
-        if (EventSystem.current != null)
+        var text = "CURRENT PHASE: " + GetPhaseDisplayName(_phase);
+        if (_hasCurrentCondition && IsConditionRelatedPhase(_phase))
         {
-            return;
+            text += "  |  " + _currentCondition.conditionId + " (" + (_currentConditionIndex + 1) + "/" + _orderedConditions.Count + ")";
         }
 
-        var eventSystem = new GameObject("Water Lilies Experiment EventSystem");
-        eventSystem.transform.SetParent(transform, false);
-        eventSystem.AddComponent<EventSystem>();
-        eventSystem.AddComponent<StandaloneInputModule>();
+        return text;
+    }
+
+    string BuildNextActionText()
+    {
+        return "NEXT ACTION: " + GetNextActionForPhase();
+    }
+
+    string GetNextActionForPhase()
+    {
+        switch (_phase)
+        {
+            case WaterLiliesExperimentPhase.Idle:
+                return "Confirm Quest Link and recording, then press Start or S.";
+            case WaterLiliesExperimentPhase.Baseline:
+                return "Let the participant watch the baseline; next is adaptation.";
+            case WaterLiliesExperimentPhase.Adaptation:
+                return "Keep the participant watching; next is the first condition setup.";
+            case WaterLiliesExperimentPhase.ConditionPrepare:
+                return "Prepare " + CurrentConditionLabel() + "; next is re-wear stabilization.";
+            case WaterLiliesExperimentPhase.RecenterStabilization:
+                return "Keep the headset worn and stable; next is " + CurrentConditionLabel() + " viewing.";
+            case WaterLiliesExperimentPhase.ConditionViewing:
+                return "Let the participant watch; next they remove the headset and complete the form.";
+            case WaterLiliesExperimentPhase.QuestionnaireBreak:
+                return BuildQuestionnaireNextAction();
+            case WaterLiliesExperimentPhase.Rest:
+                return "Rest in progress; next is the following condition.";
+            case WaterLiliesExperimentPhase.Finished:
+                return "Experiment finished; verify logs and recording files.";
+            case WaterLiliesExperimentPhase.Aborted:
+                return "Experiment aborted; check logs before restarting.";
+            default:
+                return "Monitor the operator panel.";
+        }
+    }
+
+    string BuildQuestionnaireNextAction()
+    {
+        if (_config != null && _config.requireHeadsetCycleBeforeQuestionnaireContinue)
+        {
+            if (!_questionnaireHeadsetRemovedRecorded)
+            {
+                return "Remove headset and complete the form for " + CurrentConditionLabel() + ".";
+            }
+
+            if (!_questionnaireHeadsetWornRecorded || _headsetCurrentlyOff)
+            {
+                return "After the form, wear the headset again and wait for headset_worn.";
+            }
+        }
+        else if (_headsetCurrentlyOff && _config != null && _config.requireHeadsetWornBeforeQuestionnaireContinue)
+        {
+            return "Wear the headset again, then press Continue or Space.";
+        }
+
+        return "When the form is complete, press Continue or Space.";
+    }
+
+    string CurrentConditionLabel()
+    {
+        return _hasCurrentCondition ? _currentCondition.conditionId : "the current condition";
+    }
+
+    static bool IsConditionRelatedPhase(WaterLiliesExperimentPhase phase)
+    {
+        return phase == WaterLiliesExperimentPhase.ConditionPrepare ||
+               phase == WaterLiliesExperimentPhase.RecenterStabilization ||
+               phase == WaterLiliesExperimentPhase.ConditionViewing ||
+               phase == WaterLiliesExperimentPhase.QuestionnaireBreak;
+    }
+
+    static string GetPhaseDisplayName(WaterLiliesExperimentPhase phase)
+    {
+        switch (phase)
+        {
+            case WaterLiliesExperimentPhase.Idle:
+                return "Idle";
+            case WaterLiliesExperimentPhase.Baseline:
+                return "Baseline";
+            case WaterLiliesExperimentPhase.Adaptation:
+                return "Adaptation";
+            case WaterLiliesExperimentPhase.ConditionPrepare:
+                return "Condition Prepare";
+            case WaterLiliesExperimentPhase.RecenterStabilization:
+                return "Re-wear Stabilization";
+            case WaterLiliesExperimentPhase.ConditionViewing:
+                return "Condition Viewing";
+            case WaterLiliesExperimentPhase.QuestionnaireBreak:
+                return "Questionnaire Break";
+            case WaterLiliesExperimentPhase.Rest:
+                return "Rest";
+            case WaterLiliesExperimentPhase.Finished:
+                return "Finished";
+            case WaterLiliesExperimentPhase.Aborted:
+                return "Aborted";
+            default:
+                return phase.ToString();
+        }
+    }
+
+    static string FormatWholeSeconds(double seconds)
+    {
+        return Math.Max(0.0, seconds).ToString("0") + "s";
     }
 
     static GameObject FindSceneObjectByName(string objectName)

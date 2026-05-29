@@ -28,6 +28,7 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
     [Header("Session")]
     [SerializeField] bool _autoStartWithExperimentSession = true;
     [SerializeField] MeditationExperimentCsvLogger _experimentCsvLogger;
+    [SerializeField] WaterLiliesExperimentLogger _waterLiliesLogger;
 
     [Header("View")]
     [SerializeField] bool _autoFindReferences = true;
@@ -91,6 +92,9 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
     bool _encodeQueueWarningLogged;
     bool _workerWarningLogged;
     bool _stoppedManifestNeedsFinalWrite;
+    bool _recordingWaterLiliesSession;
+    bool _logLifecycleEventsToActiveLogger = true;
+    string _activeSessionId;
     string _captureMethodName = "XRDisplayRenderPass";
     string _lastStopReason;
     ConcurrentQueue<PendingFrameWork> _encodeQueue;
@@ -127,6 +131,11 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
     }
 
     public bool isRecording => _isRecording;
+    public bool isFinalizingRecording => _stoppedManifestNeedsFinalWrite ||
+                                        _pendingReadbacks > 0 ||
+                                        Volatile.Read(ref _pendingEncodeWrites) > 0 ||
+                                        Volatile.Read(ref _queuedEncodeFrames) > 0 ||
+                                        (_completedFrameQueue != null && !_completedFrameQueue.IsEmpty);
     public string framesFolderPath => _framesFolderPath;
     public int recordedFrameCount => _frameIndex;
     public int droppedFrameCount => _droppedFrames;
@@ -163,6 +172,16 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
 
         if (!_autoStartWithExperimentSession)
         {
+            return;
+        }
+
+        if (_recordingWaterLiliesSession)
+        {
+            if (_isRecording && (_waterLiliesLogger == null || !_waterLiliesLogger.sessionActive))
+            {
+                StopRecording("session_inactive");
+            }
+
             return;
         }
 
@@ -234,6 +253,47 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
 
     public bool StartRecording(MeditationExperimentCsvLogger logger, string reason = "")
     {
+        _experimentCsvLogger = logger != null ? logger : ResolveExperimentCsvLogger(false);
+        if (_experimentCsvLogger == null || !_experimentCsvLogger.sessionActive)
+        {
+            Debug.LogWarning("[ExperimentVideoRecorder] Cannot start recording because there is no active experiment session.", this);
+            return false;
+        }
+
+        return StartRecordingForSession(
+            _experimentCsvLogger.sessionFolderPath,
+            _experimentCsvLogger.sessionId,
+            reason,
+            _experimentCsvLogger,
+            null,
+            true);
+    }
+
+    public bool StartRecording(WaterLiliesExperimentLogger logger, string reason = "")
+    {
+        if (logger == null || !logger.sessionActive)
+        {
+            Debug.LogWarning("[ExperimentVideoRecorder] Cannot start recording because there is no active Water Lilies session.", this);
+            return false;
+        }
+
+        return StartRecordingForSession(
+            logger.sessionFolderPath,
+            logger.sessionId,
+            reason,
+            null,
+            logger,
+            false);
+    }
+
+    bool StartRecordingForSession(
+        string sessionFolderPath,
+        string sessionId,
+        string reason,
+        MeditationExperimentCsvLogger meditationLogger,
+        WaterLiliesExperimentLogger waterLiliesLogger,
+        bool logLifecycleEventsToActiveLogger)
+    {
         if (!isActiveAndEnabled)
         {
             Debug.LogWarning("[ExperimentVideoRecorder] Cannot start recording because the recorder component is disabled.", this);
@@ -242,13 +302,17 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
 
         if (_isRecording)
         {
-            return true;
+            if (string.Equals(_activeSessionId, sessionId, StringComparison.Ordinal))
+            {
+                return true;
+            }
+
+            StopRecording("switch_session");
         }
 
-        _experimentCsvLogger = logger != null ? logger : ResolveExperimentCsvLogger(false);
-        if (_experimentCsvLogger == null || !_experimentCsvLogger.sessionActive)
+        if (string.IsNullOrEmpty(sessionFolderPath))
         {
-            Debug.LogWarning("[ExperimentVideoRecorder] Cannot start recording because there is no active experiment session.", this);
+            Debug.LogWarning("[ExperimentVideoRecorder] Cannot start recording because the active session has no folder path.", this);
             return false;
         }
 
@@ -275,7 +339,12 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
             return false;
         }
 
-        _sessionFolderPath = _experimentCsvLogger.sessionFolderPath;
+        _experimentCsvLogger = meditationLogger;
+        _waterLiliesLogger = waterLiliesLogger;
+        _recordingWaterLiliesSession = waterLiliesLogger != null;
+        _logLifecycleEventsToActiveLogger = logLifecycleEventsToActiveLogger;
+        _activeSessionId = string.IsNullOrEmpty(sessionId) ? string.Empty : sessionId;
+        _sessionFolderPath = sessionFolderPath;
         _framesFolderPath = Path.Combine(_sessionFolderPath, FramesFolderName);
         Directory.CreateDirectory(_framesFolderPath);
 
@@ -320,12 +389,16 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
         if (!RegisterCaptureAction())
         {
             _isRecording = false;
+            _recordingWaterLiliesSession = false;
             Debug.LogWarning("[ExperimentVideoRecorder] Cannot start recording because the camera capture action could not be registered.", this);
             return false;
         }
 
         WriteManifest("started", reason);
-        LogExperimentEvent("video_recording_started", reason);
+        if (_logLifecycleEventsToActiveLogger)
+        {
+            LogExperimentEvent("video_recording_started", reason);
+        }
 
         if (_logLifecycle)
         {
@@ -356,10 +429,16 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
         UnregisterCaptureAction();
         DrainCompletedFrameWork(int.MaxValue);
 
-        LogExperimentEvent("video_recording_stopped", reason);
+        if (_logLifecycleEventsToActiveLogger)
+        {
+            LogExperimentEvent("video_recording_stopped", reason);
+        }
+
         WriteManifest("stopped", reason);
         _lastStopReason = reason;
         _stoppedManifestNeedsFinalWrite = true;
+        _recordingWaterLiliesSession = false;
+        _logLifecycleEventsToActiveLogger = true;
 
         if (_pendingReadbacks > 0)
         {
@@ -880,6 +959,37 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
                     : completed.frame.notes + "; encodeWorker=" + _encodeAndWriteOnWorkerThread
             });
         }
+
+        var waterLiliesLogger = _waterLiliesLogger;
+        if (waterLiliesLogger != null && waterLiliesLogger.sessionActive)
+        {
+            waterLiliesLogger.TryLogVideoFrame(new WaterLiliesVideoFrameLogRow
+            {
+                realtime_since_startup_seconds = completed.frame.sampleRealtime,
+                frame_index = completed.frame.frameIndex,
+                unity_frame = completed.frame.unityFrame,
+                width = completed.frame.width,
+                height = completed.frame.height,
+                capture_fps = completed.captureFps,
+                image_format = completed.imageFormatName,
+                jpeg_quality = completed.jpegQuality,
+                relative_path = completed.frame.relativePath,
+                absolute_path = completed.frame.absolutePath,
+                source_camera_name = completed.frame.sourceCameraName,
+                capture_camera_name = completed.frame.captureCameraName,
+                camera_position = completed.frame.cameraPosition,
+                camera_rotation = completed.frame.cameraRotation,
+                camera_forward = completed.frame.cameraForward,
+                camera_up = completed.frame.cameraUp,
+                encoded_bytes = completed.encodedBytes,
+                readback_latency_ms = completed.readbackLatencyMs,
+                encode_write_latency_ms = completed.encodeWriteLatencyMs,
+                dropped_frames = _droppedFrames,
+                notes = completed.blackFrameDetected
+                    ? completed.frame.notes + "; blackFrameDetected=True; encodeWorker=" + _encodeAndWriteOnWorkerThread
+                    : completed.frame.notes + "; encodeWorker=" + _encodeAndWriteOnWorkerThread
+            });
+        }
     }
 
     static CompletedFrameWork EncodeFrameWork(PendingFrameWork work)
@@ -1293,46 +1403,63 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
 
     void LogExperimentEvent(string eventType, string reason)
     {
-        if (_experimentCsvLogger == null || !_experimentCsvLogger.sessionActive)
+        var notes = BuildLifecycleNotes(reason);
+        if (_experimentCsvLogger != null && _experimentCsvLogger.sessionActive)
+        {
+            _experimentCsvLogger.LogEvent(new MeditationExperimentCsvLogger.Row
+            {
+                eventType = eventType,
+                eventRealtime = Time.realtimeSinceStartupAsDouble,
+                notes = notes
+            });
+            return;
+        }
+
+        if (_waterLiliesLogger == null || !_waterLiliesLogger.sessionActive)
         {
             return;
         }
 
-        _experimentCsvLogger.LogEvent(new MeditationExperimentCsvLogger.Row
+        _waterLiliesLogger.LogEvent(new WaterLiliesExperimentLogRow
         {
-            eventType = eventType,
-            eventRealtime = Time.realtimeSinceStartupAsDouble,
-            notes = string.Format(
-                CultureInfo.InvariantCulture,
-                "reason={0}; captureMethod={1}; sourceCamera={2}; size={3}x{4}; sourceSize={5}x{6}; sourceSlice={7}; preserveSourceAspect={8}; cropToFill={9}; flipVertically={10}; fps={11:0.##}; imageFormat={12}; colorSpace={13}; xrEnabled={14}; xrEyeTexture={15}x{16}; frames={17}; encoded={18}; dropped={19}; pendingReadbacks={20}; pendingEncodeWrites={21}; encodeWorker={22}; maxQueuedEncodeFrames={23}; submitXrCaptureCommandBuffer={24}; writeFailures={25}; folder={26}",
-                reason,
-                _captureMethodName,
-                _sourceCamera != null ? _sourceCamera.name : string.Empty,
-                _activeCaptureWidth,
-                _activeCaptureHeight,
-                _activeSourceWidth,
-                _activeSourceHeight,
-                _activeSourceSlice,
-                _preserveSourceAspect,
-                _cropToFillOutput,
-                _flipVertically,
-                _captureFps,
-                GetImageFormatName(),
-                QualitySettings.activeColorSpace,
-                XRSettings.enabled,
-                XRSettings.eyeTextureWidth,
-                XRSettings.eyeTextureHeight,
-                _frameIndex,
-                _encodedFrameCount,
-                _droppedFrames,
-                _pendingReadbacks,
-                Volatile.Read(ref _pendingEncodeWrites),
-                _encodeAndWriteOnWorkerThread,
-                _maxQueuedEncodeFrames,
-                _submitXrCaptureCommandBuffer,
-                _writeFailedFrames,
-                _framesFolderPath)
+            event_type = eventType,
+            realtime_since_startup_seconds = Time.realtimeSinceStartupAsDouble,
+            notes = notes
         });
+    }
+
+    string BuildLifecycleNotes(string reason)
+    {
+        return string.Format(
+            CultureInfo.InvariantCulture,
+            "reason={0}; captureMethod={1}; sourceCamera={2}; size={3}x{4}; sourceSize={5}x{6}; sourceSlice={7}; preserveSourceAspect={8}; cropToFill={9}; flipVertically={10}; fps={11:0.##}; imageFormat={12}; colorSpace={13}; xrEnabled={14}; xrEyeTexture={15}x{16}; frames={17}; encoded={18}; dropped={19}; pendingReadbacks={20}; pendingEncodeWrites={21}; encodeWorker={22}; maxQueuedEncodeFrames={23}; submitXrCaptureCommandBuffer={24}; writeFailures={25}; folder={26}",
+            reason,
+            _captureMethodName,
+            _sourceCamera != null ? _sourceCamera.name : string.Empty,
+            _activeCaptureWidth,
+            _activeCaptureHeight,
+            _activeSourceWidth,
+            _activeSourceHeight,
+            _activeSourceSlice,
+            _preserveSourceAspect,
+            _cropToFillOutput,
+            _flipVertically,
+            _captureFps,
+            GetImageFormatName(),
+            QualitySettings.activeColorSpace,
+            XRSettings.enabled,
+            XRSettings.eyeTextureWidth,
+            XRSettings.eyeTextureHeight,
+            _frameIndex,
+            _encodedFrameCount,
+            _droppedFrames,
+            _pendingReadbacks,
+            Volatile.Read(ref _pendingEncodeWrites),
+            _encodeAndWriteOnWorkerThread,
+            _maxQueuedEncodeFrames,
+            _submitXrCaptureCommandBuffer,
+            _writeFailedFrames,
+            _framesFolderPath);
     }
 
     void LogXrRenderPassWarning(string reason)
@@ -1356,7 +1483,7 @@ public sealed class ExperimentVideoRecorder : MonoBehaviour
         var path = Path.Combine(_sessionFolderPath, ManifestFileName);
         var content = string.Join(Environment.NewLine,
             "{",
-            "  \"sessionId\": " + JsonString(_experimentCsvLogger != null ? _experimentCsvLogger.sessionId : string.Empty) + ",",
+            "  \"sessionId\": " + JsonString(_activeSessionId) + ",",
             "  \"state\": " + JsonString(state) + ",",
             "  \"reason\": " + JsonString(reason) + ",",
             "  \"captureMethod\": " + JsonString(_captureMethodName) + ",",
