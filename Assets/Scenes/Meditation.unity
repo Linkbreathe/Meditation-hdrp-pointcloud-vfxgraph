@@ -13776,7 +13776,7 @@ MonoBehaviour:
   _writeExcelSeparatorDirective: 1
   _logInvalidSamplesToConsole: 1
   _csvFilePrefix: eye_tracking_log
-  _drawDebugRays: 1
+  _drawDebugRays: 0
   _debugRayLength: 3
   _leftRayColor: {r: 0.25, g: 0.65, b: 1, a: 1}
   _rightRayColor: {r: 0.1, g: 1, b: 0.7, a: 1}

@@ -56,7 +56,7 @@ Package versions are declared in `Packages/manifest.json`. The Unity editor vers
 - `StarryNightRhoneVfxAutoAnimator` animates particle intensity and frequency over staged random ranges. Each run shuffles the stage preset order and emits stage start/value/completion events.
 - `VfxAutoAnimatorGroupController` applies shared animation settings to child `StarryNightRhoneVfxAutoAnimator` components.
 - `MeditationChoiceEyeGazeFeedback` handles gaze-based orb selection, sustained hover feedback, selection bursts, and choice-prompt breathing visuals.
-- `EyeTrackingDataLogger` requests/starts eye tracking when configured, samples eye gaze data, draws optional debug rays, and can write samples into the active experiment session.
+- `EyeTrackingDataLogger` requests/starts eye tracking when configured, samples eye gaze data, and can write samples into the active experiment session. Optional left/right gaze debug rays are disabled by default.
 - `MeditationExperimentCsvLogger` creates the experiment session folder and writes the seven CSV tables.
 - `WaterLiliesExperimentManager`, `WaterLiliesExperimentLogger`, and `WaterLiliesTrackingSampler` run the fixed Water Lilies Intensity x Frequency prototype and write separated event, head-pose sample, gaze, and video-frame logs.
 - `CalmnessFeedbackCollector` and `CalmnessFeedbackLogger` support optional post-painting calmness feedback. Feedback is written as JSON Lines under `Application.persistentDataPath`.
@@ -78,6 +78,8 @@ The scene is configured for XR/OpenXR and Meta XR packages. For the intended exp
 - Right controller A button starts the meditation session.
 - Eye-tracking-dependent gaze selection requires a device/runtime that supports and grants eye tracking.
 - `EyeTrackingDataLogger` can request permission and retry startup when configured.
+
+For participant-facing runs, keep `EyeTrackingDiagnostics > Draw Debug Rays` disabled. Enable it only when an operator needs to inspect the left/right gaze vectors in the Editor/Game view.
 
 If eye tracking is required before starting, `PaintingRotationController` can gate the start flow until eye tracking becomes ready or a timeout is reached.
 

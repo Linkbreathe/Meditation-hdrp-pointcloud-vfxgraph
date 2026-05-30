@@ -44,7 +44,8 @@ public sealed class EyeTrackingDataLogger : MonoBehaviour
     [SerializeField] string _csvFilePrefix = "eye_tracking_log";
 
     [Header("Debug Ray")]
-    [SerializeField] bool _drawDebugRays = true;
+    [SerializeField, Tooltip("Draws left/right gaze debug rays in the Game view when Gizmos are enabled. Keep disabled for participant-facing runs.")]
+    bool _drawDebugRays;
     [SerializeField, Min(0.01f)] float _debugRayLength = 3f;
     [SerializeField] Color _leftRayColor = new Color(0.25f, 0.65f, 1f, 1f);
     [SerializeField] Color _rightRayColor = new Color(0.1f, 1f, 0.7f, 1f);
