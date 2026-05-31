@@ -28,10 +28,10 @@ MonoBehaviour:
   _formalDurations:
     _baselineSeconds: 5
     _adaptationSeconds: 6
-    _conditionSeconds: 9
+    _conditionSeconds: 10
     _questionnaireMinimumSeconds: 0
-    _recenterSeconds: 7
-    _restSeconds: 3
+    _recenterSeconds: 3
+    _restSeconds: 10
     _restEveryConditionCount: 3
   _pilotDurations:
     _baselineSeconds: 5
@@ -43,12 +43,12 @@ MonoBehaviour:
     _restEveryConditionCount: 3
   _intensityValues:
     low: 0.15
-    medium: 0.4
-    high: 0.65
+    medium: 0.35
+    high: 0.55
   _frequencyValues:
-    low: 0.15
-    medium: 0.4
-    high: 0.65
+    low: 0.12
+    medium: 0.26
+    high: 0.4
   _baselineIntensity: 0.01
   _baselineFrequency: 0
   _conditions:

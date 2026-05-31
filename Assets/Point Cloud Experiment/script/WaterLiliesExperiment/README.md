@@ -27,6 +27,8 @@ The manager uses `Assets/Resources/WaterLiliesExperimentConfig.asset`. When Play
 
 The runtime overlay is a researcher/operator status panel in the desktop Game view. It is not a world-space VR instruction panel for the participant. Keep `Auto Create Runtime Ui` enabled for editor/operator runs, and disable it for builds that should show no experiment-control UI to the participant.
 
+The `Window > Water Lilies > Operator Panel` editor window shows the live VFX intensity and frequency values currently applied to the painting, so researchers can confirm baseline, adaptation, condition, and frozen/rest states without opening the logs.
+
 ## Current Parameter Table
 
 Both intensity and frequency use the same level values:

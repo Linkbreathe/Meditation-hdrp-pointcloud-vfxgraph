@@ -15,6 +15,7 @@ public sealed class WaterLiliesExperimentOperatorWindow : EditorWindow
     Vector2 _scroll;
     GUIStyle _phaseStyle;
     GUIStyle _nextActionStyle;
+    GUIStyle _parameterValueStyle;
     GUIStyle _statusStyle;
 
     [MenuItem("Window/Water Lilies/Operator Panel")]
@@ -73,6 +74,7 @@ public sealed class WaterLiliesExperimentOperatorWindow : EditorWindow
         }
 
         DrawPhaseHeader();
+        DrawLiveParameters();
         DrawControls();
         DrawStatus();
     }
@@ -105,6 +107,28 @@ public sealed class WaterLiliesExperimentOperatorWindow : EditorWindow
         EditorGUI.DrawRect(phaseRect, new Color(0.02f, 0.18f, 0.22f, 1f));
         EditorGUI.LabelField(new Rect(phaseRect.x + 12f, phaseRect.y + 8f, phaseRect.width - 24f, 26f), _manager.operatorPhaseText, _phaseStyle);
         EditorGUI.LabelField(new Rect(phaseRect.x + 12f, phaseRect.y + 36f, phaseRect.width - 24f, 22f), _manager.operatorNextActionText, _nextActionStyle);
+    }
+
+    void DrawLiveParameters()
+    {
+        using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+        {
+            EditorGUILayout.LabelField("Current VFX Parameters", EditorStyles.boldLabel);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                DrawLiveParameter("Intensity", _manager.operatorCurrentIntensityText);
+                DrawLiveParameter("Frequency", _manager.operatorCurrentFrequencyText);
+            }
+        }
+    }
+
+    void DrawLiveParameter(string label, string value)
+    {
+        using (new EditorGUILayout.HorizontalScope(GUILayout.Width(230f)))
+        {
+            GUILayout.Label(label, GUILayout.Width(72f));
+            GUILayout.Label(value, _parameterValueStyle, GUILayout.Width(120f));
+        }
     }
 
     void DrawControls()
@@ -177,6 +201,12 @@ public sealed class WaterLiliesExperimentOperatorWindow : EditorWindow
             fontSize = 13,
             wordWrap = true,
             normal = { textColor = new Color(1f, 0.92f, 0.42f, 1f) }
+        };
+
+        _parameterValueStyle = new GUIStyle(EditorStyles.boldLabel)
+        {
+            fontSize = 16,
+            normal = { textColor = new Color(0.02f, 0.18f, 0.22f, 1f) }
         };
 
         _statusStyle = new GUIStyle(EditorStyles.textArea)

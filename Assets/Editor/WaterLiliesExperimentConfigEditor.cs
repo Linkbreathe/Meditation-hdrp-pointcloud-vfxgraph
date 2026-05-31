@@ -98,6 +98,10 @@ public sealed class WaterLiliesExperimentConfigEditor : Editor
         DrawSection("Conditions");
         EditorGUILayout.PropertyField(_conditions, true);
         EditorGUILayout.PropertyField(_conditionOrder, true);
+        if (GUILayout.Button("Reset Condition Order to C1-C9"))
+        {
+            ResetConditionOrderToDefault(_conditionOrder);
+        }
 
         DrawSection("Control");
         EditorGUILayout.PropertyField(_autoStart);
@@ -136,6 +140,16 @@ public sealed class WaterLiliesExperimentConfigEditor : Editor
             EditorGUILayout.PropertyField(profile.FindPropertyRelative("_recenterSeconds"), new GUIContent("Recenter Seconds"));
             EditorGUILayout.PropertyField(profile.FindPropertyRelative("_restSeconds"), new GUIContent("Rest Seconds"));
             EditorGUILayout.PropertyField(profile.FindPropertyRelative("_restEveryConditionCount"), new GUIContent("Rest Every Condition Count"));
+        }
+    }
+
+    static void ResetConditionOrderToDefault(SerializedProperty conditionOrder)
+    {
+        var defaultOrder = WaterLiliesExperimentConfig.CreateDefaultConditionOrder();
+        conditionOrder.arraySize = defaultOrder.Length;
+        for (var i = 0; i < defaultOrder.Length; i++)
+        {
+            conditionOrder.GetArrayElementAtIndex(i).stringValue = defaultOrder[i];
         }
     }
 }

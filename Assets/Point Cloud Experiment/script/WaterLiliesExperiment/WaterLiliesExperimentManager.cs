@@ -130,7 +130,11 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
     public bool operatorUiEnabled => _autoCreateRuntimeUi;
     public string operatorPhaseText => BuildPhaseBadgeText();
     public string operatorNextActionText => BuildNextActionText();
+    public string operatorCurrentIntensityText => FormatCurrentVfxParameter(currentVfxIntensity);
+    public string operatorCurrentFrequencyText => FormatCurrentVfxParameter(currentVfxFrequency);
     public string operatorStatusText => BuildStatusText();
+    public float currentVfxIntensity => _vfxController != null ? _vfxController.currentIntensity : float.NaN;
+    public float currentVfxFrequency => _vfxController != null ? _vfxController.currentFrequency : float.NaN;
 
     void Reset()
     {
@@ -1031,12 +1035,14 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
         var builder = new StringBuilder();
         builder.AppendLine("Participant: " + (_config != null ? _config.participantId : "P001"));
         builder.AppendLine("Mode: " + (_config != null ? _config.mode.ToString() : "Unknown"));
+        builder.AppendLine("Current VFX intensity: " + operatorCurrentIntensityText);
+        builder.AppendLine("Current VFX frequency: " + operatorCurrentFrequencyText);
 
         if (_hasCurrentCondition)
         {
             builder.AppendLine("Condition: " + _currentCondition.conditionId + " (" + (_currentConditionIndex + 1) + "/" + _orderedConditions.Count + ")");
-            builder.AppendLine("Intensity: " + _currentCondition.intensityLevel + " = " + _currentCondition.intensityValue.ToString("0.###"));
-            builder.AppendLine("Frequency: " + _currentCondition.frequencyLevel + " = " + _currentCondition.frequencyValue.ToString("0.###"));
+            builder.AppendLine("Condition target intensity: " + _currentCondition.intensityLevel + " = " + _currentCondition.intensityValue.ToString("0.###"));
+            builder.AppendLine("Condition target frequency: " + _currentCondition.frequencyLevel + " = " + _currentCondition.frequencyValue.ToString("0.###"));
             if (_phase == WaterLiliesExperimentPhase.QuestionnaireBreak)
             {
                 builder.AppendLine(_currentCondition.conditionId + " completed. Please complete Google Form for " + _currentCondition.conditionId + ".");
@@ -1153,6 +1159,11 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
                phase == WaterLiliesExperimentPhase.RecenterStabilization ||
                phase == WaterLiliesExperimentPhase.ConditionViewing ||
                phase == WaterLiliesExperimentPhase.QuestionnaireBreak;
+    }
+
+    static string FormatCurrentVfxParameter(float value)
+    {
+        return float.IsNaN(value) ? "not bound" : value.ToString("0.###");
     }
 
     static string GetPhaseDisplayName(WaterLiliesExperimentPhase phase)
