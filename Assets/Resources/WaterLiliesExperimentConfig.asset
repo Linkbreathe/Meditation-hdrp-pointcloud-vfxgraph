@@ -20,6 +20,8 @@ MonoBehaviour:
   _baselineSeconds: 50
   _adaptationSeconds: 60
   _conditionSeconds: 90
+  _preConditionBaselineSeconds: 12
+  _preConditionBaselineAnalysisSeconds: 6
   _questionnaireMinimumSeconds: 0
   _recenterSeconds: 7
   _restSeconds: 30
@@ -29,6 +31,8 @@ MonoBehaviour:
     _baselineSeconds: 5
     _adaptationSeconds: 6
     _conditionSeconds: 10
+    _preConditionBaselineSeconds: 12
+    _preConditionBaselineAnalysisSeconds: 6
     _questionnaireMinimumSeconds: 0
     _recenterSeconds: 3
     _restSeconds: 10
@@ -37,6 +41,8 @@ MonoBehaviour:
     _baselineSeconds: 5
     _adaptationSeconds: 6
     _conditionSeconds: 9
+    _preConditionBaselineSeconds: 2
+    _preConditionBaselineAnalysisSeconds: 1
     _questionnaireMinimumSeconds: 0
     _recenterSeconds: 7
     _restSeconds: 3

@@ -29,13 +29,17 @@ The runtime overlay is a researcher/operator status panel in the desktop Game vi
 
 The `Window > Water Lilies > Operator Panel` editor window shows the live VFX intensity and frequency values currently applied to the painting, so researchers can confirm baseline, adaptation, condition, and frozen/rest states without opening the logs.
 
+During each `RecenterStabilization` phase, the participant sees a small high-contrast fixation cross at the center of their view. It is created by `WaterLiliesRecenterFixationCue` and hidden automatically before `PreConditionBaseline` and `ConditionViewing`, so the formal stimulus remains unmarked. Disable `Show Recenter Fixation Cross` on the manager only if the recenter cue should not be participant-facing.
+
+After each `PreConditionBaseline` ends, the manager can play a short participant-facing ding before formal viewing starts. This is logged as `condition_start_cue` and runs as a separate `ConditionStartCue` phase, so the audio marker is not counted as `formal_viewing=true`. If no custom clip is assigned, the manager generates a brief soft ding at runtime. Disable `Play Condition Start Ding` on the manager if auditory cues should be removed.
+
 ## Optional Natural Vortex Texture
 
 `WaterLiliesNaturalVortexModulator` is an optional pilot layer for making the existing Water Lilies motion feel more like water texture and less like fixed experimental targets. It does not replace the Intensity x Frequency condition table. Instead, each condition still supplies the target intensity and frequency, and the modulator applies a small, slow, multi-scale Perlin envelope around those target values.
 
 The `2d_paintings/5_Water_Lilies` scene object is pre-wired with `WaterLiliesVfxController` and `WaterLiliesNaturalVortexModulator`, with `Natural Texture Modulation` enabled for pilot viewing. In Play Mode, when the experiment applies baseline, adaptation, or a condition, the controller gently animates the active intensity/frequency around the configured target values. If this layer is used in a formal run, it should be described as a preregistered deterministic stimulus-generation template rather than as a separate independent variable.
 
-Formal condition viewing uses a condition-locked template: every `ConditionViewing` phase resets the natural texture template to elapsed time `0`, using the same seed, modulation depths, and scale timings for every condition. This keeps the temporal envelope identical across C1-C9; only the condition's base intensity and frequency values change.
+Formal condition viewing uses a condition-locked template: every `ConditionViewing` phase resets the natural texture template to elapsed time `0`, using the same seed, modulation depths, and scale timings for every condition. Each `PreConditionBaseline` phase also resets the template at baseline onset. This keeps the temporal envelope identical across C1-C9; only the condition's base intensity and frequency values change during formal viewing.
 
 The default modulation depths are intentionally small (`0.12` for intensity and `0.08` for frequency). During freeze/recenter/rest phases where frequency is `0`, the layer returns to the base values instead of continuing to breathe.
 
@@ -69,6 +73,11 @@ The default 3 x 3 condition grid is:
 
 `Mode` selects the active duration profile at runtime. In the config Inspector, edit `Active Durations (Formal)` for Formal mode and `Active Durations (Pilot)` for Pilot mode. The manager reads only the selected profile when the run starts.
 
+Each duration profile also contains:
+
+- `Pre-condition Baseline Seconds`: neutral Water Lilies baseline shown after questionnaire/recenter and before each formal condition. Set to `0` to disable.
+- `Baseline Analysis Window Seconds`: recommended window at the end of each pre-condition baseline for offline baseline comparison.
+
 ## Formal Flow
 
 1. `video_recording_started`
@@ -78,6 +87,8 @@ The default 3 x 3 condition grid is:
 5. For each condition:
    - `condition_prepare`
    - `recenter_start` / `recenter_end`
+   - `pre_condition_baseline_start` / `pre_condition_baseline_end`
+   - `condition_start_cue`
    - `condition_start` / `condition_end`
    - `questionnaire_break_start`
    - `headset_removed`
@@ -122,9 +133,9 @@ Generated files:
 | `video_manifest.json` | Recording settings, final frame counts, dropped-frame counters by cause, and an ffmpeg example. |
 | `video_frames/` | Encoded image sequence. |
 
-Use `formal_viewing=true` and `condition_start` / `condition_end` markers to extract valid VFX exposure windows. Questionnaire breaks, headset-off intervals, re-centering, and rest intervals are explicitly marked so they can be excluded from condition-level physiology analysis.
+Use `formal_viewing=true` and `condition_start` / `condition_end` markers to extract valid VFX exposure windows. Use `pre_condition_baseline_start` / `pre_condition_baseline_end` markers to extract the neutral baseline immediately preceding each condition; the event notes include the configured analysis window length. The `condition_start_cue` marker identifies the optional ding between baseline and formal viewing. Questionnaire breaks, headset-off intervals, re-centering, condition-start cues, and rest intervals are explicitly marked so they can be excluded from condition-level physiology analysis.
 
-Natural texture template fields are logged in the regular event/sample/gaze rows: `applied_intensity_value`, `applied_frequency_value`, `natural_modulation_enabled`, `natural_modulation_seed`, `natural_modulation_template_elapsed_seconds`, and the modulation depth/scale columns. For scheme A, `condition_start` rows should show the template elapsed time close to `0` for every condition.
+Natural texture template fields are logged in the regular event/sample/gaze rows: `applied_intensity_value`, `applied_frequency_value`, `natural_modulation_enabled`, `natural_modulation_seed`, `natural_modulation_template_elapsed_seconds`, and the modulation depth/scale columns. For scheme A, `pre_condition_baseline_start` and `condition_start` rows should show the template elapsed time close to `0` for every condition.
 
 ## Video Drop Diagnostics
 

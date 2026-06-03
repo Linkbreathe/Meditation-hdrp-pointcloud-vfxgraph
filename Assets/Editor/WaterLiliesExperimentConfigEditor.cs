@@ -136,6 +136,12 @@ public sealed class WaterLiliesExperimentConfigEditor : Editor
             EditorGUILayout.PropertyField(profile.FindPropertyRelative("_baselineSeconds"), new GUIContent("Baseline Seconds"));
             EditorGUILayout.PropertyField(profile.FindPropertyRelative("_adaptationSeconds"), new GUIContent("Adaptation Seconds"));
             EditorGUILayout.PropertyField(profile.FindPropertyRelative("_conditionSeconds"), new GUIContent("Condition Seconds"));
+            EditorGUILayout.PropertyField(
+                profile.FindPropertyRelative("_preConditionBaselineSeconds"),
+                new GUIContent("Pre-condition Baseline Seconds", "Neutral baseline shown after questionnaire/recenter and before each formal condition. Set to 0 to disable."));
+            EditorGUILayout.PropertyField(
+                profile.FindPropertyRelative("_preConditionBaselineAnalysisSeconds"),
+                new GUIContent("Baseline Analysis Window Seconds", "Recommended analysis window at the end of each pre-condition baseline phase."));
             EditorGUILayout.PropertyField(profile.FindPropertyRelative("_questionnaireMinimumSeconds"), new GUIContent("Questionnaire Minimum Seconds"));
             EditorGUILayout.PropertyField(profile.FindPropertyRelative("_recenterSeconds"), new GUIContent("Recenter Seconds"));
             EditorGUILayout.PropertyField(profile.FindPropertyRelative("_restSeconds"), new GUIContent("Rest Seconds"));

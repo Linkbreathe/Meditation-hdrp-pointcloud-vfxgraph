@@ -22,6 +22,8 @@ public enum WaterLiliesExperimentPhase
     Adaptation,
     ConditionPrepare,
     RecenterStabilization,
+    PreConditionBaseline,
+    ConditionStartCue,
     ConditionViewing,
     QuestionnaireBreak,
     Rest,
@@ -116,6 +118,8 @@ public sealed class WaterLiliesDurationProfile
     [SerializeField, Min(1f)] float _baselineSeconds = 90f;
     [SerializeField, Min(1f)] float _adaptationSeconds = 60f;
     [SerializeField, Min(1f)] float _conditionSeconds = 90f;
+    [SerializeField, Min(0f)] float _preConditionBaselineSeconds = 12f;
+    [SerializeField, Min(0f)] float _preConditionBaselineAnalysisSeconds = 6f;
     [SerializeField, Min(0f)] float _questionnaireMinimumSeconds;
     [SerializeField, Min(1f)] float _recenterSeconds = 7f;
     [SerializeField, Min(0f)] float _restSeconds = 30f;
@@ -132,11 +136,15 @@ public sealed class WaterLiliesDurationProfile
         float questionnaireMinimumSeconds,
         float recenterSeconds,
         float restSeconds,
-        int restEveryConditionCount)
+        int restEveryConditionCount,
+        float preConditionBaselineSeconds = 12f,
+        float preConditionBaselineAnalysisSeconds = 6f)
     {
         _baselineSeconds = baselineSeconds;
         _adaptationSeconds = adaptationSeconds;
         _conditionSeconds = conditionSeconds;
+        _preConditionBaselineSeconds = preConditionBaselineSeconds;
+        _preConditionBaselineAnalysisSeconds = preConditionBaselineAnalysisSeconds;
         _questionnaireMinimumSeconds = questionnaireMinimumSeconds;
         _recenterSeconds = recenterSeconds;
         _restSeconds = restSeconds;
@@ -147,6 +155,10 @@ public sealed class WaterLiliesDurationProfile
     public float baselineSeconds => Mathf.Max(1f, _baselineSeconds);
     public float adaptationSeconds => Mathf.Max(1f, _adaptationSeconds);
     public float conditionSeconds => Mathf.Max(1f, _conditionSeconds);
+    public float preConditionBaselineSeconds => Mathf.Max(0f, _preConditionBaselineSeconds);
+    public float preConditionBaselineAnalysisSeconds => Mathf.Min(
+        preConditionBaselineSeconds,
+        Mathf.Max(0f, _preConditionBaselineAnalysisSeconds));
     public float questionnaireMinimumSeconds => Mathf.Max(0f, _questionnaireMinimumSeconds);
     public float recenterSeconds => Mathf.Max(1f, _recenterSeconds);
     public float restSeconds => Mathf.Max(0f, _restSeconds);
@@ -167,6 +179,8 @@ public sealed class WaterLiliesDurationProfile
         _baselineSeconds = source.baselineSeconds;
         _adaptationSeconds = source.adaptationSeconds;
         _conditionSeconds = source.conditionSeconds;
+        _preConditionBaselineSeconds = source.preConditionBaselineSeconds;
+        _preConditionBaselineAnalysisSeconds = source.preConditionBaselineAnalysisSeconds;
         _questionnaireMinimumSeconds = source.questionnaireMinimumSeconds;
         _recenterSeconds = source.recenterSeconds;
         _restSeconds = source.restSeconds;
@@ -179,6 +193,10 @@ public sealed class WaterLiliesDurationProfile
         _baselineSeconds = Mathf.Max(1f, _baselineSeconds);
         _adaptationSeconds = Mathf.Max(1f, _adaptationSeconds);
         _conditionSeconds = Mathf.Max(1f, _conditionSeconds);
+        _preConditionBaselineSeconds = Mathf.Max(0f, _preConditionBaselineSeconds);
+        _preConditionBaselineAnalysisSeconds = Mathf.Min(
+            _preConditionBaselineSeconds,
+            Mathf.Max(0f, _preConditionBaselineAnalysisSeconds));
         _questionnaireMinimumSeconds = Mathf.Max(0f, _questionnaireMinimumSeconds);
         _recenterSeconds = Mathf.Max(1f, _recenterSeconds);
         _restSeconds = Mathf.Max(0f, _restSeconds);
@@ -212,6 +230,8 @@ public sealed class WaterLiliesExperimentConfig : ScriptableObject
     [SerializeField, HideInInspector, Min(1f)] float _baselineSeconds = 90f;
     [SerializeField, HideInInspector, Min(1f)] float _adaptationSeconds = 60f;
     [SerializeField, HideInInspector, Min(1f)] float _conditionSeconds = 90f;
+    [SerializeField, HideInInspector, Min(0f)] float _preConditionBaselineSeconds = 12f;
+    [SerializeField, HideInInspector, Min(0f)] float _preConditionBaselineAnalysisSeconds = 6f;
     [SerializeField, HideInInspector, Min(0f)] float _questionnaireMinimumSeconds;
     [SerializeField, HideInInspector, Min(1f)] float _recenterSeconds = 7f;
     [SerializeField, HideInInspector, Min(0f)] float _restSeconds = 30f;
@@ -283,6 +303,8 @@ public sealed class WaterLiliesExperimentConfig : ScriptableObject
     public float baselineSeconds => activeDurations.baselineSeconds;
     public float adaptationSeconds => activeDurations.adaptationSeconds;
     public float conditionSeconds => activeDurations.conditionSeconds;
+    public float preConditionBaselineSeconds => activeDurations.preConditionBaselineSeconds;
+    public float preConditionBaselineAnalysisSeconds => activeDurations.preConditionBaselineAnalysisSeconds;
     public float questionnaireMinimumSeconds => activeDurations.questionnaireMinimumSeconds;
     public float recenterSeconds => activeDurations.recenterSeconds;
     public float restSeconds => activeDurations.restSeconds;
@@ -433,7 +455,9 @@ public sealed class WaterLiliesExperimentConfig : ScriptableObject
                 _questionnaireMinimumSeconds,
                 _recenterSeconds,
                 _restSeconds,
-                _restEveryConditionCount);
+                _restEveryConditionCount,
+                _preConditionBaselineSeconds,
+                _preConditionBaselineAnalysisSeconds);
             _formalDurations.CopyFrom(legacyDurations);
             _pilotDurations.CopyFrom(legacyDurations);
             _durationProfilesMigrated = true;

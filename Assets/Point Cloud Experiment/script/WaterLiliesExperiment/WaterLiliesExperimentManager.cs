@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 using UnityEngine;
 using UnityEngine.VFX;
@@ -19,6 +20,9 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
     public const string EventAdaptationStart = "adaptation_start";
     public const string EventAdaptationEnd = "adaptation_end";
     public const string EventConditionPrepare = "condition_prepare";
+    public const string EventPreConditionBaselineStart = "pre_condition_baseline_start";
+    public const string EventPreConditionBaselineEnd = "pre_condition_baseline_end";
+    public const string EventConditionStartCue = "condition_start_cue";
     public const string EventConditionStart = "condition_start";
     public const string EventConditionEnd = "condition_end";
     public const string EventQuestionnaireBreakStart = "questionnaire_break_start";
@@ -44,6 +48,9 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
         EventAdaptationStart,
         EventAdaptationEnd,
         EventConditionPrepare,
+        EventPreConditionBaselineStart,
+        EventPreConditionBaselineEnd,
+        EventConditionStartCue,
         EventConditionStart,
         EventConditionEnd,
         EventQuestionnaireBreakStart,
@@ -96,6 +103,19 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
     [SerializeField] bool _autoCreateRuntimeUi = true;
     [SerializeField] Vector2 _runtimeUiSize = new Vector2(560f, 360f);
 
+    [Header("Participant Recenter Cue")]
+    [SerializeField] bool _showRecenterFixationCross = true;
+    [SerializeField] WaterLiliesRecenterFixationCue _recenterFixationCue;
+
+    [Header("Participant Condition Start Cue")]
+    [SerializeField] bool _playConditionStartDing = true;
+    [SerializeField] AudioClip _conditionStartDingClip;
+    [SerializeField, Range(0f, 1f)] float _conditionStartDingVolume = 0.55f;
+    [SerializeField, Min(0f)] float _conditionStartDingLeadInSeconds = 0.35f;
+    [SerializeField, Min(0.05f)] float _generatedDingDurationSeconds = 0.24f;
+    [SerializeField, Min(100f)] float _generatedDingFrequencyHz = 880f;
+    [SerializeField] AudioSource _conditionStartAudioSource;
+
     [Header("Runtime Painting Placement")]
     [Tooltip("When enabled, Play Mode moves the painting in front of the current MainCamera/CenterEyeAnchor. Disable this when positioning the painting manually in the scene.")]
     [SerializeField] bool _placePaintingInFrontOfViewer;
@@ -123,6 +143,9 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
     bool _questionnaireHeadsetWornRecorded;
     double _headsetRemovedStartedRealtime = double.NaN;
     double _nextSampleRealtime;
+    AudioClip _generatedConditionStartDingClip;
+    float _generatedConditionStartDingDurationSeconds = float.NaN;
+    float _generatedConditionStartDingFrequencyHz = float.NaN;
 
     public WaterLiliesExperimentPhase phase => _phase;
     public bool isRunning => _runRoutine != null;
@@ -141,6 +164,7 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
         _logger = GetComponent<WaterLiliesExperimentLogger>();
         _trackingSampler = GetComponent<WaterLiliesTrackingSampler>();
         _lslMarkerOutlet = GetComponent<WaterLiliesLslMarkerOutlet>();
+        _recenterFixationCue = GetComponent<WaterLiliesRecenterFixationCue>();
     }
 
     void Awake()
@@ -163,6 +187,7 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
     {
         HandleKeyboard();
         UpdateHeadsetPresenceMarkers();
+        UpdateRecenterFixationCue();
         LogTrackingSampleIfDue();
     }
 
@@ -172,6 +197,11 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
         {
             StopVideoRecording("component_disabled");
             _logger.CloseSession();
+        }
+
+        if (_recenterFixationCue != null)
+        {
+            _recenterFixationCue.SetVisible(false);
         }
     }
 
@@ -277,7 +307,7 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
             _currentConditionIndex = i;
             _hasCurrentCondition = true;
             SetPhase(WaterLiliesExperimentPhase.ConditionPrepare, 0.0);
-            _vfxController.FreezeFormalStimulus();
+            _vfxController.ApplyBaseline(_config);
             LogEvent(EventConditionPrepare, "Preparing " + _currentCondition.conditionId + ".");
 
             yield return RunTimedPhase(
@@ -292,6 +322,18 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
                 break;
             }
 
+            yield return RunPreConditionBaseline();
+            if (_abortRequested)
+            {
+                break;
+            }
+
+            yield return RunConditionStartCue();
+            if (_abortRequested)
+            {
+                break;
+            }
+
             _vfxController.ApplyCondition(_currentCondition);
             yield return RunTimedPhase(
                 WaterLiliesExperimentPhase.ConditionViewing,
@@ -301,7 +343,7 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
                 true);
 
             _formalViewingActive = false;
-            _vfxController.FreezeFormalStimulus();
+            _vfxController.ApplyBaseline(_config);
 
             if (_abortRequested)
             {
@@ -338,16 +380,18 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
         double durationSeconds,
         string startEvent,
         string endEvent,
-        bool formalViewing)
+        bool formalViewing,
+        string startNotes = "",
+        string endNotes = "")
     {
         SetPhase(nextPhase, durationSeconds);
         _formalViewingActive = formalViewing;
-        if (formalViewing && nextPhase == WaterLiliesExperimentPhase.ConditionViewing && _vfxController != null)
+        if (ShouldResetNaturalTextureTemplateAtPhaseStart(nextPhase, formalViewing) && _vfxController != null)
         {
             _vfxController.ResetNaturalTextureTemplate();
         }
 
-        LogEvent(startEvent);
+        LogEvent(startEvent, startNotes);
 
         var endRealtime = Time.realtimeSinceStartupAsDouble + Math.Max(0.0, durationSeconds);
         while (!_abortRequested && Time.realtimeSinceStartupAsDouble < endRealtime)
@@ -361,13 +405,139 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
             yield return null;
         }
 
-        LogEvent(endEvent);
+        LogEvent(endEvent, endNotes);
         if (formalViewing)
         {
             _formalViewingActive = false;
         }
     }
 
+    IEnumerator RunPreConditionBaseline()
+    {
+        if (_config == null || _config.preConditionBaselineSeconds <= 0f)
+        {
+            yield break;
+        }
+
+        _vfxController.ApplyBaseline(_config);
+        var notes = "condition_id=" + _currentCondition.conditionId +
+                    "; analysis_window_seconds=" + _config.preConditionBaselineAnalysisSeconds.ToString("0.###", CultureInfo.InvariantCulture);
+        yield return RunTimedPhase(
+            WaterLiliesExperimentPhase.PreConditionBaseline,
+            _config.preConditionBaselineSeconds,
+            EventPreConditionBaselineStart,
+            EventPreConditionBaselineEnd,
+            false,
+            notes);
+    }
+
+    IEnumerator RunConditionStartCue()
+    {
+        if (!_playConditionStartDing)
+        {
+            yield break;
+        }
+
+        EnsureConditionStartAudioSource();
+        var clip = ResolveConditionStartDingClip();
+        if (_conditionStartAudioSource == null || clip == null)
+        {
+            yield break;
+        }
+
+        var durationSeconds = Mathf.Max(0f, _conditionStartDingLeadInSeconds, clip.length);
+        SetPhase(WaterLiliesExperimentPhase.ConditionStartCue, durationSeconds);
+        _formalViewingActive = false;
+
+        var notes = "condition_id=" + _currentCondition.conditionId +
+                    "; volume=" + Mathf.Clamp01(_conditionStartDingVolume).ToString("0.###", CultureInfo.InvariantCulture) +
+                    "; lead_in_seconds=" + durationSeconds.ToString("0.###", CultureInfo.InvariantCulture) +
+                    "; source=" + (_conditionStartDingClip != null ? "assigned_clip" : "generated_ding");
+        LogEvent(EventConditionStartCue, notes);
+        _conditionStartAudioSource.PlayOneShot(clip, Mathf.Clamp01(_conditionStartDingVolume));
+
+        var endRealtime = Time.realtimeSinceStartupAsDouble + durationSeconds;
+        while (!_abortRequested && Time.realtimeSinceStartupAsDouble < endRealtime)
+        {
+            if (CanPilotSkip() && _pilotSkipRequested)
+            {
+                _pilotSkipRequested = false;
+                break;
+            }
+
+            yield return null;
+        }
+    }
+
+    void EnsureConditionStartAudioSource()
+    {
+        if (_conditionStartAudioSource == null)
+        {
+            var audioObject = new GameObject("WaterLilies_ConditionStartCueAudio");
+            audioObject.transform.SetParent(transform, false);
+            _conditionStartAudioSource = audioObject.AddComponent<AudioSource>();
+        }
+
+        _conditionStartAudioSource.playOnAwake = false;
+        _conditionStartAudioSource.loop = false;
+        _conditionStartAudioSource.spatialBlend = 0f;
+        _conditionStartAudioSource.volume = 1f;
+    }
+
+    AudioClip ResolveConditionStartDingClip()
+    {
+        if (_conditionStartDingClip != null)
+        {
+            return _conditionStartDingClip;
+        }
+
+        var durationSeconds = Mathf.Max(0.05f, _generatedDingDurationSeconds);
+        var frequencyHz = Mathf.Max(100f, _generatedDingFrequencyHz);
+        if (_generatedConditionStartDingClip != null &&
+            Mathf.Approximately(_generatedConditionStartDingDurationSeconds, durationSeconds) &&
+            Mathf.Approximately(_generatedConditionStartDingFrequencyHz, frequencyHz))
+        {
+            return _generatedConditionStartDingClip;
+        }
+
+        _generatedConditionStartDingClip = CreateConditionStartDingClip(
+            durationSeconds,
+            frequencyHz);
+        _generatedConditionStartDingDurationSeconds = durationSeconds;
+        _generatedConditionStartDingFrequencyHz = frequencyHz;
+        return _generatedConditionStartDingClip;
+    }
+
+    static AudioClip CreateConditionStartDingClip(float durationSeconds, float frequencyHz)
+    {
+        const int sampleRate = 48000;
+        var sampleCount = Mathf.Max(1, Mathf.CeilToInt(durationSeconds * sampleRate));
+        var data = new float[sampleCount];
+        var attackSeconds = Mathf.Min(0.025f, durationSeconds * 0.25f);
+        var releaseSeconds = Mathf.Min(0.18f, durationSeconds * 0.75f);
+
+        for (var i = 0; i < sampleCount; i++)
+        {
+            var t = i / (float)sampleRate;
+            var attack = attackSeconds <= 0f ? 1f : Mathf.Clamp01(t / attackSeconds);
+            var release = releaseSeconds <= 0f ? 1f : Mathf.Clamp01((durationSeconds - t) / releaseSeconds);
+            var envelope = Mathf.SmoothStep(0f, 1f, Mathf.Min(attack, release));
+            var fundamental = Mathf.Sin(2f * Mathf.PI * frequencyHz * t);
+            var harmonic = Mathf.Sin(2f * Mathf.PI * frequencyHz * 2f * t) * 0.18f;
+            data[i] = (fundamental + harmonic) * envelope * 0.36f;
+        }
+
+        var clip = AudioClip.Create("WaterLiliesConditionStartDing", sampleCount, 1, sampleRate, false);
+        clip.SetData(data, 0);
+        return clip;
+    }
+
+    static bool ShouldResetNaturalTextureTemplateAtPhaseStart(WaterLiliesExperimentPhase nextPhase, bool formalViewing)
+    {
+        return nextPhase == WaterLiliesExperimentPhase.Baseline ||
+               nextPhase == WaterLiliesExperimentPhase.PreConditionBaseline ||
+               (formalViewing && nextPhase == WaterLiliesExperimentPhase.ConditionViewing);
+    }
     IEnumerator RunQuestionnaireBreak()
     {
         SetPhase(WaterLiliesExperimentPhase.QuestionnaireBreak, 0.0);
@@ -1036,6 +1206,7 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
         _phase = nextPhase;
         _phaseStartedRealtime = Time.realtimeSinceStartupAsDouble;
         _phasePlannedDurationSeconds = plannedDurationSeconds > 0.0 ? plannedDurationSeconds : double.NaN;
+        UpdateRecenterFixationCue();
     }
 
     bool CanPilotSkip()
@@ -1047,6 +1218,28 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
 
     void EnsureRuntimeUi()
     {
+    }
+
+    void UpdateRecenterFixationCue()
+    {
+        var shouldShow = _showRecenterFixationCross &&
+                         _phase == WaterLiliesExperimentPhase.RecenterStabilization;
+        if (_recenterFixationCue == null && shouldShow)
+        {
+            _recenterFixationCue = GetComponent<WaterLiliesRecenterFixationCue>();
+            if (_recenterFixationCue == null)
+            {
+                _recenterFixationCue = gameObject.AddComponent<WaterLiliesRecenterFixationCue>();
+            }
+        }
+
+        if (_recenterFixationCue == null)
+        {
+            return;
+        }
+
+        _recenterFixationCue.SetViewer(ResolveViewerTransform());
+        _recenterFixationCue.SetVisible(shouldShow);
     }
 
     string BuildStatusText()
@@ -1065,6 +1258,7 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
             if (_phase == WaterLiliesExperimentPhase.QuestionnaireBreak)
             {
                 builder.AppendLine(_currentCondition.conditionId + " completed. Please complete Google Form for " + _currentCondition.conditionId + ".");
+                builder.AppendLine("After continue: " + BuildAfterQuestionnairePath());
                 if (_config != null && _config.requireHeadsetCycleBeforeQuestionnaireContinue)
                 {
                     if (!_questionnaireHeadsetRemovedRecorded)
@@ -1084,6 +1278,26 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
             else if (_phase == WaterLiliesExperimentPhase.RecenterStabilization)
             {
                 builder.AppendLine("Re-wear stabilization before " + _currentCondition.conditionId + ".");
+                builder.AppendLine(_showRecenterFixationCross
+                    ? "Participant fixation cross is visible at the center of view."
+                    : "Participant fixation cross is disabled.");
+            }
+            else if (_phase == WaterLiliesExperimentPhase.PreConditionBaseline)
+            {
+                builder.AppendLine("Pre-condition baseline before " + _currentCondition.conditionId + ".");
+                builder.AppendLine("Stimulus is fixed to baseline intensity/frequency.");
+                builder.AppendLine(_playConditionStartDing
+                    ? "A short ding will play before condition viewing starts."
+                    : "Condition start ding is disabled.");
+                if (_config != null && _config.preConditionBaselineAnalysisSeconds > 0f)
+                {
+                    builder.AppendLine("Analysis window: final " + FormatWholeSeconds(_config.preConditionBaselineAnalysisSeconds) + " of this phase.");
+                }
+            }
+            else if (_phase == WaterLiliesExperimentPhase.ConditionStartCue)
+            {
+                builder.AppendLine("Condition start ding before " + _currentCondition.conditionId + ".");
+                builder.AppendLine("Formal viewing has not started yet.");
             }
         }
 
@@ -1127,9 +1341,22 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
             case WaterLiliesExperimentPhase.Adaptation:
                 return "Keep the participant watching; next is the first condition setup.";
             case WaterLiliesExperimentPhase.ConditionPrepare:
-                return "Prepare " + CurrentConditionLabel() + "; next is re-wear stabilization.";
+                return _config != null && _config.preConditionBaselineSeconds > 0f
+                    ? "Prepare " + CurrentConditionLabel() + "; next is recenter, then pre-condition baseline."
+                    : "Prepare " + CurrentConditionLabel() + "; next is recenter.";
             case WaterLiliesExperimentPhase.RecenterStabilization:
-                return "Keep the headset worn and stable; next is " + CurrentConditionLabel() + " viewing.";
+                var recenterAction = _showRecenterFixationCross
+                    ? "Ask the participant to look at the center cross"
+                    : "Keep the headset worn and stable";
+                return _config != null && _config.preConditionBaselineSeconds > 0f
+                    ? recenterAction + "; next is pre-condition baseline."
+                    : recenterAction + "; next is " + CurrentConditionLabel() + " viewing.";
+            case WaterLiliesExperimentPhase.PreConditionBaseline:
+                return _playConditionStartDing
+                    ? "Let the participant watch the neutral baseline; next is the start ding, then " + CurrentConditionLabel() + " viewing."
+                    : "Let the participant watch the neutral baseline; next is " + CurrentConditionLabel() + " viewing.";
+            case WaterLiliesExperimentPhase.ConditionStartCue:
+                return "Ding cue is playing; next is " + CurrentConditionLabel() + " viewing.";
             case WaterLiliesExperimentPhase.ConditionViewing:
                 return "Let the participant watch; next they remove the headset and complete the form.";
             case WaterLiliesExperimentPhase.QuestionnaireBreak:
@@ -1164,7 +1391,27 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
             return "Wear the headset again, then press Continue or Space.";
         }
 
-        return "When the form is complete, press Continue or Space.";
+        return "When the form is complete, press Continue or Space; " + BuildAfterQuestionnairePath();
+    }
+
+    string BuildAfterQuestionnairePath()
+    {
+        if (!_hasCurrentCondition || _currentConditionIndex + 1 >= _orderedConditions.Count)
+        {
+            return "next is experiment completion.";
+        }
+
+        var nextCondition = _orderedConditions[_currentConditionIndex + 1].conditionId;
+        var completedCount = _currentConditionIndex + 1;
+        var shouldRest = _config != null &&
+                         _config.restSeconds > 0f &&
+                         completedCount < _orderedConditions.Count &&
+                         completedCount % _config.restEveryConditionCount == 0;
+        var conditionPath = _config != null && _config.preConditionBaselineSeconds > 0f
+            ? "recenter -> pre-condition baseline -> " + nextCondition + " viewing."
+            : "recenter -> " + nextCondition + " viewing.";
+
+        return shouldRest ? "next is rest, then " + conditionPath : "next is " + conditionPath;
     }
 
     string CurrentConditionLabel()
@@ -1176,6 +1423,8 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
     {
         return phase == WaterLiliesExperimentPhase.ConditionPrepare ||
                phase == WaterLiliesExperimentPhase.RecenterStabilization ||
+               phase == WaterLiliesExperimentPhase.PreConditionBaseline ||
+               phase == WaterLiliesExperimentPhase.ConditionStartCue ||
                phase == WaterLiliesExperimentPhase.ConditionViewing ||
                phase == WaterLiliesExperimentPhase.QuestionnaireBreak;
     }
@@ -1199,6 +1448,10 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
                 return "Condition Prepare";
             case WaterLiliesExperimentPhase.RecenterStabilization:
                 return "Re-wear Stabilization";
+            case WaterLiliesExperimentPhase.PreConditionBaseline:
+                return "Pre-condition Baseline";
+            case WaterLiliesExperimentPhase.ConditionStartCue:
+                return "Condition Start Cue";
             case WaterLiliesExperimentPhase.ConditionViewing:
                 return "Condition Viewing";
             case WaterLiliesExperimentPhase.QuestionnaireBreak:

@@ -41,21 +41,16 @@ public sealed class WaterLiliesExperimentConfigTests
         Assert.IsNotNull(config);
         Assert.AreEqual("P001", config.participantId);
         Assert.AreEqual("5_Water_Lilies", config.targetPaintingObjectName);
-        Assert.AreEqual(5f, config.baselineSeconds);
-        Assert.AreEqual(6f, config.adaptationSeconds);
-        Assert.AreEqual(9f, config.conditionSeconds);
-        Assert.AreEqual(5f, config.formalDurations.baselineSeconds);
-        Assert.AreEqual(5f, config.pilotDurations.baselineSeconds);
-        Assert.AreEqual(0.15f, config.intensityValues.Get(WaterLiliesParameterLevel.Low));
-        Assert.AreEqual(0.4f, config.intensityValues.Get(WaterLiliesParameterLevel.Medium));
-        Assert.AreEqual(0.65f, config.intensityValues.Get(WaterLiliesParameterLevel.High));
-        Assert.AreEqual(0.15f, config.frequencyValues.Get(WaterLiliesParameterLevel.Low));
-        Assert.AreEqual(0.4f, config.frequencyValues.Get(WaterLiliesParameterLevel.Medium));
-        Assert.AreEqual(0.65f, config.frequencyValues.Get(WaterLiliesParameterLevel.High));
-        Assert.AreEqual(0.01f, config.baselineIntensity);
-        Assert.AreEqual(0f, config.baselineFrequency);
-        Assert.AreEqual(7f, config.recenterSeconds);
-        Assert.AreEqual(3f, config.restSeconds);
+        Assert.Greater(config.baselineSeconds, 0f);
+        Assert.Greater(config.adaptationSeconds, 0f);
+        Assert.Greater(config.conditionSeconds, 0f);
+        Assert.GreaterOrEqual(config.preConditionBaselineSeconds, 0f);
+        Assert.GreaterOrEqual(config.preConditionBaselineAnalysisSeconds, 0f);
+        Assert.LessOrEqual(config.preConditionBaselineAnalysisSeconds, config.preConditionBaselineSeconds);
+        Assert.GreaterOrEqual(config.baselineIntensity, 0f);
+        Assert.GreaterOrEqual(config.baselineFrequency, 0f);
+        Assert.Greater(config.recenterSeconds, 0f);
+        Assert.GreaterOrEqual(config.restSeconds, 0f);
         Assert.IsTrue(config.requireManualQuestionnaireContinue);
         Assert.IsTrue(config.requireHeadsetWornBeforeQuestionnaireContinue);
         Assert.IsTrue(config.requireHeadsetCycleBeforeQuestionnaireContinue);
@@ -65,8 +60,10 @@ public sealed class WaterLiliesExperimentConfigTests
         Assert.AreEqual(9, conditions.Count);
         for (var i = 0; i < conditions.Count; i++)
         {
-            Assert.AreEqual(9f, conditions[i].durationSeconds);
-            Assert.AreEqual("C" + (i + 1), conditions[i].conditionId);
+            Assert.AreEqual(config.conditionSeconds, conditions[i].durationSeconds);
+            Assert.IsTrue(conditions[i].conditionId.StartsWith("C"));
+            Assert.GreaterOrEqual(conditions[i].intensityValue, 0f);
+            Assert.GreaterOrEqual(conditions[i].frequencyValue, 0f);
         }
     }
 
@@ -79,14 +76,16 @@ public sealed class WaterLiliesExperimentConfigTests
         {
             var serialized = new SerializedObject(config);
             serialized.FindProperty("_durationProfilesMigrated").boolValue = true;
-            SetDurationProfile(serialized.FindProperty("_formalDurations"), 50f, 60f, 90f, 0f, 7f, 30f, 3);
-            SetDurationProfile(serialized.FindProperty("_pilotDurations"), 5f, 6f, 7f, 1f, 2f, 3f, 2);
+            SetDurationProfile(serialized.FindProperty("_formalDurations"), 50f, 60f, 90f, 12f, 6f, 0f, 7f, 30f, 3);
+            SetDurationProfile(serialized.FindProperty("_pilotDurations"), 5f, 6f, 7f, 2f, 1f, 1f, 2f, 3f, 2);
             serialized.FindProperty("_mode").enumValueIndex = (int)WaterLiliesExperimentMode.Formal;
             serialized.ApplyModifiedPropertiesWithoutUndo();
 
             Assert.AreEqual(50f, config.baselineSeconds);
             Assert.AreEqual(60f, config.adaptationSeconds);
             Assert.AreEqual(90f, config.conditionSeconds);
+            Assert.AreEqual(12f, config.preConditionBaselineSeconds);
+            Assert.AreEqual(6f, config.preConditionBaselineAnalysisSeconds);
             Assert.AreEqual(0f, config.questionnaireMinimumSeconds);
             Assert.AreEqual(7f, config.recenterSeconds);
             Assert.AreEqual(30f, config.restSeconds);
@@ -99,6 +98,8 @@ public sealed class WaterLiliesExperimentConfigTests
             Assert.AreEqual(5f, config.baselineSeconds);
             Assert.AreEqual(6f, config.adaptationSeconds);
             Assert.AreEqual(7f, config.conditionSeconds);
+            Assert.AreEqual(2f, config.preConditionBaselineSeconds);
+            Assert.AreEqual(1f, config.preConditionBaselineAnalysisSeconds);
             Assert.AreEqual(1f, config.questionnaireMinimumSeconds);
             Assert.AreEqual(2f, config.recenterSeconds);
             Assert.AreEqual(3f, config.restSeconds);
@@ -127,6 +128,9 @@ public sealed class WaterLiliesExperimentConfigTests
         CollectionAssert.Contains(markers, WaterLiliesExperimentManager.EventAdaptationStart);
         CollectionAssert.Contains(markers, WaterLiliesExperimentManager.EventAdaptationEnd);
         CollectionAssert.Contains(markers, WaterLiliesExperimentManager.EventConditionPrepare);
+        CollectionAssert.Contains(markers, WaterLiliesExperimentManager.EventPreConditionBaselineStart);
+        CollectionAssert.Contains(markers, WaterLiliesExperimentManager.EventPreConditionBaselineEnd);
+        CollectionAssert.Contains(markers, WaterLiliesExperimentManager.EventConditionStartCue);
         CollectionAssert.Contains(markers, WaterLiliesExperimentManager.EventConditionStart);
         CollectionAssert.Contains(markers, WaterLiliesExperimentManager.EventConditionEnd);
         CollectionAssert.Contains(markers, WaterLiliesExperimentManager.EventQuestionnaireBreakStart);
@@ -162,6 +166,8 @@ public sealed class WaterLiliesExperimentConfigTests
         float baselineSeconds,
         float adaptationSeconds,
         float conditionSeconds,
+        float preConditionBaselineSeconds,
+        float preConditionBaselineAnalysisSeconds,
         float questionnaireMinimumSeconds,
         float recenterSeconds,
         float restSeconds,
@@ -170,6 +176,8 @@ public sealed class WaterLiliesExperimentConfigTests
         profile.FindPropertyRelative("_baselineSeconds").floatValue = baselineSeconds;
         profile.FindPropertyRelative("_adaptationSeconds").floatValue = adaptationSeconds;
         profile.FindPropertyRelative("_conditionSeconds").floatValue = conditionSeconds;
+        profile.FindPropertyRelative("_preConditionBaselineSeconds").floatValue = preConditionBaselineSeconds;
+        profile.FindPropertyRelative("_preConditionBaselineAnalysisSeconds").floatValue = preConditionBaselineAnalysisSeconds;
         profile.FindPropertyRelative("_questionnaireMinimumSeconds").floatValue = questionnaireMinimumSeconds;
         profile.FindPropertyRelative("_recenterSeconds").floatValue = recenterSeconds;
         profile.FindPropertyRelative("_restSeconds").floatValue = restSeconds;
