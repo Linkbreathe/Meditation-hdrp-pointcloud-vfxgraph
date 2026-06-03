@@ -342,6 +342,11 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
     {
         SetPhase(nextPhase, durationSeconds);
         _formalViewingActive = formalViewing;
+        if (formalViewing && nextPhase == WaterLiliesExperimentPhase.ConditionViewing && _vfxController != null)
+        {
+            _vfxController.ResetNaturalTextureTemplate();
+        }
+
         LogEvent(startEvent);
 
         var endRealtime = Time.realtimeSinceStartupAsDouble + Math.Max(0.0, durationSeconds);
@@ -964,6 +969,20 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
         if (!double.IsNaN(_phasePlannedDurationSeconds) && _phasePlannedDurationSeconds > 0.0)
         {
             row.phase_remaining_seconds = Math.Max(0.0, _phasePlannedDurationSeconds - phaseElapsed);
+        }
+
+        if (_vfxController != null)
+        {
+            row.applied_intensity_value = _vfxController.currentIntensity;
+            row.applied_frequency_value = _vfxController.currentFrequency;
+            row.natural_modulation_enabled = _vfxController.naturalTextureModulationEnabled;
+            row.natural_modulation_seed = _vfxController.naturalTextureSeed;
+            row.natural_modulation_template_elapsed_seconds = _vfxController.naturalTextureTemplateElapsedSeconds;
+            row.natural_modulation_intensity_depth = _vfxController.naturalTextureIntensityDepth;
+            row.natural_modulation_frequency_depth = _vfxController.naturalTextureFrequencyDepth;
+            row.natural_modulation_large_scale_seconds = _vfxController.naturalTextureLargeScaleSeconds;
+            row.natural_modulation_medium_scale_seconds = _vfxController.naturalTextureMediumScaleSeconds;
+            row.natural_modulation_fine_scale_seconds = _vfxController.naturalTextureFineScaleSeconds;
         }
 
         if (_hasCurrentCondition)

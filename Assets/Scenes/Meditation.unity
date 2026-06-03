@@ -5960,6 +5960,8 @@ GameObject:
   - component: {fileID: 2000000034}
   - component: {fileID: 2000000033}
   - component: {fileID: 2000000032}
+  - component: {fileID: 2000000036}
+  - component: {fileID: 2000000037}
   m_Layer: 0
   m_Name: 5_Water_Lilies
   m_TagString: Untagged
@@ -6138,6 +6140,54 @@ VisualEffect:
       m_Array: []
     m_Bool:
       m_Array: []
+--- !u!114 &2000000036
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2000000030}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 5a7ad2160ad7435787d1118cc6a2c3bd, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _visualEffect: {fileID: 2000000035}
+  _legacyVfxController: {fileID: 2000000033}
+  _naturalModulator: {fileID: 2000000037}
+  _intensityProperty: System update particle - intensity
+  _frequencyProperty: System update particle - frequency
+  _enableNaturalTextureModulation: 1
+  _autoCreateNaturalTextureModulator: 1
+  _freezeFrequency: 0
+  _stopVisualEffectWhenFrozen: 0
+  _disableLegacyAutoAnimators: 1
+  _logMissingProperties: 1
+--- !u!114 &2000000037
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2000000030}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b31a70bd0957403eb3f7f1803b3eac74, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _visualEffect: {fileID: 2000000035}
+  _legacyVfxController: {fileID: 2000000033}
+  _modulationEnabled: 1
+  _intensityDepth: 0.12
+  _frequencyDepth: 0.08
+  _largeScaleSeconds: 17
+  _mediumScaleSeconds: 7
+  _fineScaleSeconds: 2.5
+  _smoothingSeconds: 1.2
+  _seed: 1439
+  _intensityProperty: System update particle - intensity
+  _frequencyProperty: System update particle - frequency
+  _logMissingProperties: 1
 --- !u!1 &2000000040
 GameObject:
   m_ObjectHideFlags: 0

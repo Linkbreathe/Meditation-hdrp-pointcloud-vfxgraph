@@ -29,6 +29,16 @@ The runtime overlay is a researcher/operator status panel in the desktop Game vi
 
 The `Window > Water Lilies > Operator Panel` editor window shows the live VFX intensity and frequency values currently applied to the painting, so researchers can confirm baseline, adaptation, condition, and frozen/rest states without opening the logs.
 
+## Optional Natural Vortex Texture
+
+`WaterLiliesNaturalVortexModulator` is an optional pilot layer for making the existing Water Lilies motion feel more like water texture and less like fixed experimental targets. It does not replace the Intensity x Frequency condition table. Instead, each condition still supplies the target intensity and frequency, and the modulator applies a small, slow, multi-scale Perlin envelope around those target values.
+
+The `2d_paintings/5_Water_Lilies` scene object is pre-wired with `WaterLiliesVfxController` and `WaterLiliesNaturalVortexModulator`, with `Natural Texture Modulation` enabled for pilot viewing. In Play Mode, when the experiment applies baseline, adaptation, or a condition, the controller gently animates the active intensity/frequency around the configured target values. If this layer is used in a formal run, it should be described as a preregistered deterministic stimulus-generation template rather than as a separate independent variable.
+
+Formal condition viewing uses a condition-locked template: every `ConditionViewing` phase resets the natural texture template to elapsed time `0`, using the same seed, modulation depths, and scale timings for every condition. This keeps the temporal envelope identical across C1-C9; only the condition's base intensity and frequency values change.
+
+The default modulation depths are intentionally small (`0.12` for intensity and `0.08` for frequency). During freeze/recenter/rest phases where frequency is `0`, the layer returns to the base values instead of continuing to breathe.
+
 ## Current Parameter Table
 
 Both intensity and frequency use the same level values:
@@ -113,6 +123,8 @@ Generated files:
 | `video_frames/` | Encoded image sequence. |
 
 Use `formal_viewing=true` and `condition_start` / `condition_end` markers to extract valid VFX exposure windows. Questionnaire breaks, headset-off intervals, re-centering, and rest intervals are explicitly marked so they can be excluded from condition-level physiology analysis.
+
+Natural texture template fields are logged in the regular event/sample/gaze rows: `applied_intensity_value`, `applied_frequency_value`, `natural_modulation_enabled`, `natural_modulation_seed`, `natural_modulation_template_elapsed_seconds`, and the modulation depth/scale columns. For scheme A, `condition_start` rows should show the template elapsed time close to `0` for every condition.
 
 ## Video Drop Diagnostics
 

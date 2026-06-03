@@ -20,6 +20,16 @@ public sealed class WaterLiliesExperimentLogRow
     public string frequency_level = "";
     public double intensity_value = double.NaN;
     public double frequency_value = double.NaN;
+    public double applied_intensity_value = double.NaN;
+    public double applied_frequency_value = double.NaN;
+    public bool natural_modulation_enabled;
+    public int natural_modulation_seed = -1;
+    public double natural_modulation_template_elapsed_seconds = double.NaN;
+    public float natural_modulation_intensity_depth = float.NaN;
+    public float natural_modulation_frequency_depth = float.NaN;
+    public float natural_modulation_large_scale_seconds = float.NaN;
+    public float natural_modulation_medium_scale_seconds = float.NaN;
+    public float natural_modulation_fine_scale_seconds = float.NaN;
     public double planned_duration_seconds = double.NaN;
     public double phase_elapsed_seconds = double.NaN;
     public double phase_remaining_seconds = double.NaN;
@@ -111,6 +121,16 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         "frequency_level",
         "intensity_value",
         "frequency_value",
+        "applied_intensity_value",
+        "applied_frequency_value",
+        "natural_modulation_enabled",
+        "natural_modulation_seed",
+        "natural_modulation_template_elapsed_seconds",
+        "natural_modulation_intensity_depth",
+        "natural_modulation_frequency_depth",
+        "natural_modulation_large_scale_seconds",
+        "natural_modulation_medium_scale_seconds",
+        "natural_modulation_fine_scale_seconds",
         "planned_duration_seconds",
         "phase_elapsed_seconds",
         "phase_remaining_seconds",
@@ -164,6 +184,16 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         "frequency_level",
         "intensity_value",
         "frequency_value",
+        "applied_intensity_value",
+        "applied_frequency_value",
+        "natural_modulation_enabled",
+        "natural_modulation_seed",
+        "natural_modulation_template_elapsed_seconds",
+        "natural_modulation_intensity_depth",
+        "natural_modulation_frequency_depth",
+        "natural_modulation_large_scale_seconds",
+        "natural_modulation_medium_scale_seconds",
+        "natural_modulation_fine_scale_seconds",
         "planned_duration_seconds",
         "phase_elapsed_seconds",
         "phase_remaining_seconds",
@@ -205,6 +235,16 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         "frequency_level",
         "intensity_value",
         "frequency_value",
+        "applied_intensity_value",
+        "applied_frequency_value",
+        "natural_modulation_enabled",
+        "natural_modulation_seed",
+        "natural_modulation_template_elapsed_seconds",
+        "natural_modulation_intensity_depth",
+        "natural_modulation_frequency_depth",
+        "natural_modulation_large_scale_seconds",
+        "natural_modulation_medium_scale_seconds",
+        "natural_modulation_fine_scale_seconds",
         "planned_duration_seconds",
         "phase_elapsed_seconds",
         "phase_remaining_seconds",
@@ -557,6 +597,16 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
             row.frequency_level,
             FormatDouble(row.intensity_value),
             FormatDouble(row.frequency_value),
+            FormatDouble(row.applied_intensity_value),
+            FormatDouble(row.applied_frequency_value),
+            FormatBool(row.natural_modulation_enabled),
+            FormatInt(row.natural_modulation_seed),
+            FormatDouble(row.natural_modulation_template_elapsed_seconds),
+            FormatFloat(row.natural_modulation_intensity_depth),
+            FormatFloat(row.natural_modulation_frequency_depth),
+            FormatFloat(row.natural_modulation_large_scale_seconds),
+            FormatFloat(row.natural_modulation_medium_scale_seconds),
+            FormatFloat(row.natural_modulation_fine_scale_seconds),
             FormatDouble(row.planned_duration_seconds),
             FormatDouble(row.phase_elapsed_seconds),
             FormatDouble(row.phase_remaining_seconds),
@@ -615,6 +665,16 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
             row.frequency_level,
             FormatDouble(row.intensity_value),
             FormatDouble(row.frequency_value),
+            FormatDouble(row.applied_intensity_value),
+            FormatDouble(row.applied_frequency_value),
+            FormatBool(row.natural_modulation_enabled),
+            FormatInt(row.natural_modulation_seed),
+            FormatDouble(row.natural_modulation_template_elapsed_seconds),
+            FormatFloat(row.natural_modulation_intensity_depth),
+            FormatFloat(row.natural_modulation_frequency_depth),
+            FormatFloat(row.natural_modulation_large_scale_seconds),
+            FormatFloat(row.natural_modulation_medium_scale_seconds),
+            FormatFloat(row.natural_modulation_fine_scale_seconds),
             FormatDouble(row.planned_duration_seconds),
             FormatDouble(row.phase_elapsed_seconds),
             FormatDouble(row.phase_remaining_seconds),
@@ -661,6 +721,16 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
             row.frequency_level,
             FormatDouble(row.intensity_value),
             FormatDouble(row.frequency_value),
+            FormatDouble(row.applied_intensity_value),
+            FormatDouble(row.applied_frequency_value),
+            FormatBool(row.natural_modulation_enabled),
+            FormatInt(row.natural_modulation_seed),
+            FormatDouble(row.natural_modulation_template_elapsed_seconds),
+            FormatFloat(row.natural_modulation_intensity_depth),
+            FormatFloat(row.natural_modulation_frequency_depth),
+            FormatFloat(row.natural_modulation_large_scale_seconds),
+            FormatFloat(row.natural_modulation_medium_scale_seconds),
+            FormatFloat(row.natural_modulation_fine_scale_seconds),
             FormatDouble(row.planned_duration_seconds),
             FormatDouble(row.phase_elapsed_seconds),
             FormatDouble(row.phase_remaining_seconds),
@@ -766,6 +836,16 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         AppendJson(builder, ref first, "frequency_level", row.frequency_level);
         AppendJson(builder, ref first, "intensity_value", row.intensity_value);
         AppendJson(builder, ref first, "frequency_value", row.frequency_value);
+        AppendJson(builder, ref first, "applied_intensity_value", row.applied_intensity_value);
+        AppendJson(builder, ref first, "applied_frequency_value", row.applied_frequency_value);
+        AppendJson(builder, ref first, "natural_modulation_enabled", row.natural_modulation_enabled);
+        AppendJson(builder, ref first, "natural_modulation_seed", row.natural_modulation_seed);
+        AppendJson(builder, ref first, "natural_modulation_template_elapsed_seconds", row.natural_modulation_template_elapsed_seconds);
+        AppendJson(builder, ref first, "natural_modulation_intensity_depth", row.natural_modulation_intensity_depth);
+        AppendJson(builder, ref first, "natural_modulation_frequency_depth", row.natural_modulation_frequency_depth);
+        AppendJson(builder, ref first, "natural_modulation_large_scale_seconds", row.natural_modulation_large_scale_seconds);
+        AppendJson(builder, ref first, "natural_modulation_medium_scale_seconds", row.natural_modulation_medium_scale_seconds);
+        AppendJson(builder, ref first, "natural_modulation_fine_scale_seconds", row.natural_modulation_fine_scale_seconds);
         AppendJson(builder, ref first, "planned_duration_seconds", row.planned_duration_seconds);
         AppendJson(builder, ref first, "phase_elapsed_seconds", row.phase_elapsed_seconds);
         AppendJson(builder, ref first, "phase_remaining_seconds", row.phase_remaining_seconds);
@@ -870,6 +950,16 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         AppendJson(builder, ref first, "frequency_level", row.frequency_level);
         AppendJson(builder, ref first, "intensity_value", row.intensity_value);
         AppendJson(builder, ref first, "frequency_value", row.frequency_value);
+        AppendJson(builder, ref first, "applied_intensity_value", row.applied_intensity_value);
+        AppendJson(builder, ref first, "applied_frequency_value", row.applied_frequency_value);
+        AppendJson(builder, ref first, "natural_modulation_enabled", row.natural_modulation_enabled);
+        AppendJson(builder, ref first, "natural_modulation_seed", row.natural_modulation_seed);
+        AppendJson(builder, ref first, "natural_modulation_template_elapsed_seconds", row.natural_modulation_template_elapsed_seconds);
+        AppendJson(builder, ref first, "natural_modulation_intensity_depth", row.natural_modulation_intensity_depth);
+        AppendJson(builder, ref first, "natural_modulation_frequency_depth", row.natural_modulation_frequency_depth);
+        AppendJson(builder, ref first, "natural_modulation_large_scale_seconds", row.natural_modulation_large_scale_seconds);
+        AppendJson(builder, ref first, "natural_modulation_medium_scale_seconds", row.natural_modulation_medium_scale_seconds);
+        AppendJson(builder, ref first, "natural_modulation_fine_scale_seconds", row.natural_modulation_fine_scale_seconds);
         AppendJson(builder, ref first, "planned_duration_seconds", row.planned_duration_seconds);
         AppendJson(builder, ref first, "phase_elapsed_seconds", row.phase_elapsed_seconds);
         AppendJson(builder, ref first, "phase_remaining_seconds", row.phase_remaining_seconds);
