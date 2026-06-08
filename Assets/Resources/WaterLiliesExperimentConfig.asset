@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b86f8421508f439a9ab688b80f2b9e63, type: 3}
   m_Name: WaterLiliesExperimentConfig
   m_EditorClassIdentifier: 
-  _participantId: P001
+  _participantId: P008
   _mode: 1
   _targetPaintingObjectName: 5_Water_Lilies
   _isolateTargetPainting: 1
@@ -28,15 +28,15 @@ MonoBehaviour:
   _restEveryConditionCount: 3
   _durationProfilesMigrated: 1
   _formalDurations:
-    _baselineSeconds: 5
-    _adaptationSeconds: 6
-    _conditionSeconds: 10
-    _preConditionBaselineSeconds: 12
-    _preConditionBaselineAnalysisSeconds: 6
+    _baselineSeconds: 45
+    _adaptationSeconds: 10
+    _conditionSeconds: 70
+    _preConditionBaselineSeconds: 20
+    _preConditionBaselineAnalysisSeconds: 15
     _questionnaireMinimumSeconds: 0
-    _recenterSeconds: 3
+    _recenterSeconds: 1
     _restSeconds: 10
-    _restEveryConditionCount: 3
+    _restEveryConditionCount: 10
   _pilotDurations:
     _baselineSeconds: 5
     _adaptationSeconds: 6
@@ -48,15 +48,15 @@ MonoBehaviour:
     _restSeconds: 3
     _restEveryConditionCount: 3
   _intensityValues:
-    low: 0.15
-    medium: 0.35
-    high: 0.55
+    low: 0.08
+    medium: 0.16
+    high: 0.25
   _frequencyValues:
     low: 0.12
     medium: 0.26
-    high: 0.4
-  _baselineIntensity: 0.01
-  _baselineFrequency: 0
+    high: 0.41
+  _baselineIntensity: 0.23
+  _baselineFrequency: 0.46
   _conditions:
   - conditionId: C1
     intensityLevel: 0
@@ -78,14 +78,14 @@ MonoBehaviour:
     frequencyLevel: 0
     overrideDurationSeconds: 0
     durationSeconds: 90
-  - conditionId: C5
-    intensityLevel: 1
-    frequencyLevel: 1
-    overrideDurationSeconds: 0
-    durationSeconds: 90
   - conditionId: C6
     intensityLevel: 1
     frequencyLevel: 2
+    overrideDurationSeconds: 0
+    durationSeconds: 90
+  - conditionId: C5
+    intensityLevel: 1
+    frequencyLevel: 1
     overrideDurationSeconds: 0
     durationSeconds: 90
   - conditionId: C7
@@ -104,15 +104,15 @@ MonoBehaviour:
     overrideDurationSeconds: 0
     durationSeconds: 90
   _conditionOrder:
-  - C1
+  - C6
   - C2
   - C3
-  - C4
-  - C5
-  - C6
+  - C1
   - C7
-  - C8
+  - C5
   - C9
+  - C4
+  - C8
   _autoStart: 0
   _requireManualQuestionnaireContinue: 1
   _requireHeadsetWornBeforeQuestionnaireContinue: 1
@@ -123,5 +123,5 @@ MonoBehaviour:
   _writeJsonLines: 1
   _logFolderName: water_lilies_vfx_experiment
   _useExternalLogRoot: 1
-  _externalLogRootPath: C:\Users\linki\amaster\data_collection_v2
+  _externalLogRootPath: C:\Users\linki\amaster\data_collection_v3
   _sampleIntervalSeconds: 0.1

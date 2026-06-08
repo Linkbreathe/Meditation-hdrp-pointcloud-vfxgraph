@@ -74,6 +74,7 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
     [SerializeField] WaterLiliesVfxController _vfxController;
     [SerializeField] WaterLiliesExperimentLogger _logger;
     [SerializeField] WaterLiliesTrackingSampler _trackingSampler;
+    [SerializeField] WaterLiliesFaceTrackingSampler _faceTrackingSampler;
     [SerializeField] WaterLiliesLslMarkerOutlet _lslMarkerOutlet;
     [SerializeField] GameObject _targetPainting;
 
@@ -143,6 +144,8 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
     bool _questionnaireHeadsetWornRecorded;
     double _headsetRemovedStartedRealtime = double.NaN;
     double _nextSampleRealtime;
+    string _lastEyeTrackingCheckText = "Eye tracking check not run.";
+    string _lastFaceTrackingCheckText = "Face tracking check not run.";
     AudioClip _generatedConditionStartDingClip;
     float _generatedConditionStartDingDurationSeconds = float.NaN;
     float _generatedConditionStartDingFrequencyHz = float.NaN;
@@ -156,6 +159,7 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
     public string operatorCurrentIntensityText => FormatCurrentVfxParameter(currentVfxIntensity);
     public string operatorCurrentFrequencyText => FormatCurrentVfxParameter(currentVfxFrequency);
     public string operatorStatusText => BuildStatusText();
+    public string operatorTrackingDiagnosticsText => BuildTrackingDiagnosticsText();
     public float currentVfxIntensity => _vfxController != null ? _vfxController.currentIntensity : float.NaN;
     public float currentVfxFrequency => _vfxController != null ? _vfxController.currentFrequency : float.NaN;
 
@@ -163,6 +167,7 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
     {
         _logger = GetComponent<WaterLiliesExperimentLogger>();
         _trackingSampler = GetComponent<WaterLiliesTrackingSampler>();
+        _faceTrackingSampler = GetComponent<WaterLiliesFaceTrackingSampler>();
         _lslMarkerOutlet = GetComponent<WaterLiliesLslMarkerOutlet>();
         _recenterFixationCue = GetComponent<WaterLiliesRecenterFixationCue>();
     }
@@ -538,6 +543,7 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
                nextPhase == WaterLiliesExperimentPhase.PreConditionBaseline ||
                (formalViewing && nextPhase == WaterLiliesExperimentPhase.ConditionViewing);
     }
+
     IEnumerator RunQuestionnaireBreak()
     {
         SetPhase(WaterLiliesExperimentPhase.QuestionnaireBreak, 0.0);
@@ -854,6 +860,8 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
             _trackingSampler = gameObject.AddComponent<WaterLiliesTrackingSampler>();
         }
 
+        ResolveFaceTrackingSampler();
+
         if (_lslMarkerOutlet == null)
         {
             _lslMarkerOutlet = GetComponent<WaterLiliesLslMarkerOutlet>();
@@ -865,6 +873,19 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
         }
 
         ResolveVideoRecorder();
+    }
+
+    void ResolveFaceTrackingSampler()
+    {
+        if (_faceTrackingSampler == null)
+        {
+            _faceTrackingSampler = GetComponent<WaterLiliesFaceTrackingSampler>();
+        }
+
+        if (_faceTrackingSampler == null)
+        {
+            _faceTrackingSampler = gameObject.AddComponent<WaterLiliesFaceTrackingSampler>();
+        }
     }
 
     void ResolveVideoRecorder()
@@ -1079,6 +1100,30 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
         _pilotSkipRequested = true;
     }
 
+    public string CheckEyeTrackingNow()
+    {
+        var result = MetaQuestTrackingDiagnostics.CheckEyeTracking();
+        _lastEyeTrackingCheckText = result.ToDisplayText();
+        Debug.Log("[WaterLiliesExperimentManager] Eye tracking check: " + _lastEyeTrackingCheckText, this);
+        return _lastEyeTrackingCheckText;
+    }
+
+    public string CheckFaceTrackingNow()
+    {
+        ResolveFaceTrackingSampler();
+        if (_faceTrackingSampler == null)
+        {
+            _lastFaceTrackingCheckText = "FAIL: Face tracking sampler is missing.";
+            Debug.LogWarning("[WaterLiliesExperimentManager] Face tracking check: " + _lastFaceTrackingCheckText, this);
+            return _lastFaceTrackingCheckText;
+        }
+
+        var result = _faceTrackingSampler.CheckFaceTracking();
+        _lastFaceTrackingCheckText = result.ToDisplayText();
+        Debug.Log("[WaterLiliesExperimentManager] Face tracking check: " + _lastFaceTrackingCheckText, this);
+        return _lastFaceTrackingCheckText;
+    }
+
     void LogTrackingSampleIfDue()
     {
         if (_sessionClosing || _config == null || _logger == null || !_logger.sessionActive || _trackingSampler == null)
@@ -1095,6 +1140,11 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
         _nextSampleRealtime = now + _config.sampleIntervalSeconds;
         var row = CreateLogRow("tracking_sample", string.Empty);
         PopulateTracking(row, _trackingSampler.Capture());
+        if (_faceTrackingSampler != null)
+        {
+            PopulateFaceTracking(row, _faceTrackingSampler.Capture());
+        }
+
         _logger.LogSample(row);
     }
 
@@ -1199,6 +1249,82 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
         row.gaze_hit_y = sample.gazeHitPoint.y;
         row.gaze_hit_z = sample.gazeHitPoint.z;
         row.gaze_on_painting = sample.gazeOnPainting;
+    }
+
+    static void PopulateFaceTracking(WaterLiliesExperimentLogRow row, WaterLiliesFaceTrackingSample sample)
+    {
+        row.face_sample_available = sample.sampleAvailable;
+        row.face_permission_granted = sample.permissionGranted;
+        row.face_tracking_supported = sample.faceTrackingSupported;
+        row.face_tracking_enabled = sample.faceTrackingEnabled;
+        row.face_expressions_found = sample.faceExpressionsFound;
+        row.face_expressions_enabled = sample.faceExpressionsEnabled;
+        row.face_state_available = sample.faceStateAvailable;
+        row.face_valid = sample.validExpressions;
+        row.eye_following_blendshapes_valid = sample.eyeFollowingBlendshapesValid;
+        row.face_data_source = sample.faceDataSource;
+        row.face_state_time_seconds = sample.faceStateTimeSeconds;
+        row.face_region_confidences_available = sample.faceRegionConfidencesAvailable;
+        row.face_lower_region_confidence = sample.faceLowerRegionConfidence;
+        row.face_upper_region_confidence = sample.faceUpperRegionConfidence;
+        row.face_visemes_valid = sample.visemesValid;
+        row.face_expression_count = sample.faceExpressionCount;
+        row.eyes_closed_weights_available = sample.eyesClosedWeightsAvailable;
+        row.eyes_closed_l_raw = sample.eyesClosedLeftRaw;
+        row.eyes_closed_r_raw = sample.eyesClosedRightRaw;
+        row.eyes_look_down_l = sample.eyesLookDownLeft;
+        row.eyes_look_down_r = sample.eyesLookDownRight;
+        row.eyes_look_left_l = sample.eyesLookLeftLeft;
+        row.eyes_look_left_r = sample.eyesLookLeftRight;
+        row.eyes_look_right_l = sample.eyesLookRightLeft;
+        row.eyes_look_right_r = sample.eyesLookRightRight;
+        row.eyes_look_up_l = sample.eyesLookUpLeft;
+        row.eyes_look_up_r = sample.eyesLookUpRight;
+        row.upper_lid_raiser_l = sample.upperLidRaiserLeft;
+        row.upper_lid_raiser_r = sample.upperLidRaiserRight;
+        row.lid_tightener_l = sample.lidTightenerLeft;
+        row.lid_tightener_r = sample.lidTightenerRight;
+        row.brow_lowerer_l = sample.browLowererLeft;
+        row.brow_lowerer_r = sample.browLowererRight;
+        row.inner_brow_raiser_l = sample.innerBrowRaiserLeft;
+        row.inner_brow_raiser_r = sample.innerBrowRaiserRight;
+        row.outer_brow_raiser_l = sample.outerBrowRaiserLeft;
+        row.outer_brow_raiser_r = sample.outerBrowRaiserRight;
+        row.cheek_raiser_l = sample.cheekRaiserLeft;
+        row.cheek_raiser_r = sample.cheekRaiserRight;
+        row.eyes_closed_l = sample.eyesClosedLeft;
+        row.eyes_closed_r = sample.eyesClosedRight;
+        row.eye_closure_mean = sample.eyeClosureMean;
+        row.eye_closure_difference = sample.eyeClosureDifference;
+        row.eye_closed_signal_min = sample.eyeClosedSignalMin;
+        row.eye_closed_signal_max = sample.eyeClosedSignalMax;
+        row.eye_closed_signal_range = sample.eyeClosedSignalRange;
+        row.eye_closed_signal_responsive = sample.eyeClosedSignalResponsive;
+        row.left_eye_closed_candidate = sample.leftEyeClosedCandidate;
+        row.right_eye_closed_candidate = sample.rightEyeClosedCandidate;
+        row.both_eyes_closed_candidate = sample.bothEyesClosedCandidate;
+        row.left_eye_open_candidate = sample.leftEyeOpenCandidate;
+        row.right_eye_open_candidate = sample.rightEyeOpenCandidate;
+        row.both_eyes_open_candidate = sample.bothEyesOpenCandidate;
+        row.eye_state_label_available = sample.eyeStateLabelAvailable;
+        row.eye_state_label = sample.eyeStateLabel;
+        row.eye_state_confidence = sample.eyeStateConfidence;
+        row.left_eye_closed = sample.leftEyeClosed;
+        row.right_eye_closed = sample.rightEyeClosed;
+        row.both_eyes_closed = sample.bothEyesClosed;
+        row.left_eye_open = sample.leftEyeOpen;
+        row.right_eye_open = sample.rightEyeOpen;
+        row.both_eyes_open = sample.bothEyesOpen;
+        row.eye_tracking_supported = sample.eyeTrackingSupported;
+        row.eye_tracking_enabled = sample.eyeTrackingEnabled;
+        row.eye_gazes_state_available = sample.eyeGazesStateAvailable;
+        row.eye_gazes_state_time_seconds = sample.eyeGazesStateTimeSeconds;
+        row.left_eye_gaze_valid = sample.leftEyeGazeValid;
+        row.right_eye_gaze_valid = sample.rightEyeGazeValid;
+        row.left_eye_gaze_confidence = sample.leftEyeGazeConfidence;
+        row.right_eye_gaze_confidence = sample.rightEyeGazeConfidence;
+        row.face_expression_weights = sample.faceExpressionWeights;
+        row.face_diagnostic = sample.diagnostic;
     }
 
     void SetPhase(WaterLiliesExperimentPhase nextPhase, double plannedDurationSeconds)
@@ -1311,6 +1437,17 @@ public sealed class WaterLiliesExperimentManager : MonoBehaviour
         builder.AppendLine("Formal viewing: " + (_formalViewingActive ? "YES" : "NO"));
         builder.AppendLine("Headset off: " + (_headsetCurrentlyOff ? "YES" : "NO"));
         builder.AppendLine("Keys: S start | Space continue | H removed | J worn | K skip pilot | Esc abort");
+        builder.AppendLine();
+        builder.Append(BuildTrackingDiagnosticsText());
+        return builder.ToString();
+    }
+
+    string BuildTrackingDiagnosticsText()
+    {
+        var builder = new StringBuilder();
+        builder.AppendLine("Tracking checks:");
+        builder.AppendLine(_lastEyeTrackingCheckText);
+        builder.AppendLine(_lastFaceTrackingCheckText);
         return builder.ToString();
     }
 

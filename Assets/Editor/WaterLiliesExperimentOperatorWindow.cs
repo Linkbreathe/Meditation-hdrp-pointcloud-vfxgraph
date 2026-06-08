@@ -163,6 +163,19 @@ public sealed class WaterLiliesExperimentOperatorWindow : EditorWindow
                 }
             }
 
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("Check Eye Tracking", GUILayout.Height(28f)))
+                {
+                    _manager.CheckEyeTrackingNow();
+                }
+
+                if (GUILayout.Button("Check Face Tracking", GUILayout.Height(28f)))
+                {
+                    _manager.CheckFaceTrackingNow();
+                }
+            }
+
             if (GUILayout.Button("Abort Experiment", GUILayout.Height(28f)))
             {
                 _manager.AbortExperiment();

@@ -65,6 +65,78 @@ public sealed class WaterLiliesExperimentLogRow
     public float gaze_hit_y;
     public float gaze_hit_z;
     public bool gaze_on_painting;
+    public bool face_sample_available;
+    public bool face_permission_granted;
+    public bool face_tracking_supported;
+    public bool face_tracking_enabled;
+    public bool face_expressions_found;
+    public bool face_expressions_enabled;
+    public bool face_state_available;
+    public bool face_valid;
+    public bool eye_following_blendshapes_valid;
+    public string face_data_source = "";
+    public double face_state_time_seconds = double.NaN;
+    public bool face_region_confidences_available;
+    public float face_lower_region_confidence = float.NaN;
+    public float face_upper_region_confidence = float.NaN;
+    public bool face_visemes_valid;
+    public int face_expression_count = -1;
+    public bool eyes_closed_weights_available;
+    public float eyes_closed_l_raw = float.NaN;
+    public float eyes_closed_r_raw = float.NaN;
+    public float eyes_look_down_l = float.NaN;
+    public float eyes_look_down_r = float.NaN;
+    public float eyes_look_left_l = float.NaN;
+    public float eyes_look_left_r = float.NaN;
+    public float eyes_look_right_l = float.NaN;
+    public float eyes_look_right_r = float.NaN;
+    public float eyes_look_up_l = float.NaN;
+    public float eyes_look_up_r = float.NaN;
+    public float upper_lid_raiser_l = float.NaN;
+    public float upper_lid_raiser_r = float.NaN;
+    public float lid_tightener_l = float.NaN;
+    public float lid_tightener_r = float.NaN;
+    public float brow_lowerer_l = float.NaN;
+    public float brow_lowerer_r = float.NaN;
+    public float inner_brow_raiser_l = float.NaN;
+    public float inner_brow_raiser_r = float.NaN;
+    public float outer_brow_raiser_l = float.NaN;
+    public float outer_brow_raiser_r = float.NaN;
+    public float cheek_raiser_l = float.NaN;
+    public float cheek_raiser_r = float.NaN;
+    public float eyes_closed_l = float.NaN;
+    public float eyes_closed_r = float.NaN;
+    public float eye_closure_mean = float.NaN;
+    public float eye_closure_difference = float.NaN;
+    public float eye_closed_signal_min = float.NaN;
+    public float eye_closed_signal_max = float.NaN;
+    public float eye_closed_signal_range = float.NaN;
+    public bool eye_closed_signal_responsive;
+    public bool left_eye_closed_candidate;
+    public bool right_eye_closed_candidate;
+    public bool both_eyes_closed_candidate;
+    public bool left_eye_open_candidate;
+    public bool right_eye_open_candidate;
+    public bool both_eyes_open_candidate;
+    public bool eye_state_label_available;
+    public string eye_state_label = "";
+    public float eye_state_confidence = float.NaN;
+    public bool left_eye_closed;
+    public bool right_eye_closed;
+    public bool both_eyes_closed;
+    public bool left_eye_open;
+    public bool right_eye_open;
+    public bool both_eyes_open;
+    public bool eye_tracking_supported;
+    public bool eye_tracking_enabled;
+    public bool eye_gazes_state_available;
+    public double eye_gazes_state_time_seconds = double.NaN;
+    public bool left_eye_gaze_valid;
+    public bool right_eye_gaze_valid;
+    public float left_eye_gaze_confidence = float.NaN;
+    public float right_eye_gaze_confidence = float.NaN;
+    public string face_expression_weights = "";
+    public string face_diagnostic = "";
     public string notes = "";
 }
 
@@ -268,6 +340,114 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         "notes"
     };
 
+    static readonly string[] FaceTrackingColumns =
+    {
+        "row_type",
+        "event_type",
+        "session_id",
+        "participant_id",
+        "experiment_mode",
+        "phase",
+        "condition_id",
+        "condition_order_index",
+        "condition_order_total",
+        "intensity_level",
+        "frequency_level",
+        "intensity_value",
+        "frequency_value",
+        "applied_intensity_value",
+        "applied_frequency_value",
+        "natural_modulation_enabled",
+        "natural_modulation_seed",
+        "natural_modulation_template_elapsed_seconds",
+        "natural_modulation_intensity_depth",
+        "natural_modulation_frequency_depth",
+        "natural_modulation_large_scale_seconds",
+        "natural_modulation_medium_scale_seconds",
+        "natural_modulation_fine_scale_seconds",
+        "planned_duration_seconds",
+        "phase_elapsed_seconds",
+        "phase_remaining_seconds",
+        "formal_viewing",
+        "utc_timestamp_iso",
+        "unix_time_ms",
+        "realtime_since_startup_seconds",
+        "session_elapsed_seconds",
+        "face_sample_available",
+        "face_permission_granted",
+        "face_tracking_supported",
+        "face_tracking_enabled",
+        "face_expressions_found",
+        "face_expressions_enabled",
+        "face_state_available",
+        "face_valid",
+        "eye_following_blendshapes_valid",
+        "face_data_source",
+        "face_state_time_seconds",
+        "face_region_confidences_available",
+        "face_lower_region_confidence",
+        "face_upper_region_confidence",
+        "face_visemes_valid",
+        "face_expression_count",
+        "eyes_closed_weights_available",
+        "eyes_closed_l_raw",
+        "eyes_closed_r_raw",
+        "eyes_look_down_l",
+        "eyes_look_down_r",
+        "eyes_look_left_l",
+        "eyes_look_left_r",
+        "eyes_look_right_l",
+        "eyes_look_right_r",
+        "eyes_look_up_l",
+        "eyes_look_up_r",
+        "upper_lid_raiser_l",
+        "upper_lid_raiser_r",
+        "lid_tightener_l",
+        "lid_tightener_r",
+        "brow_lowerer_l",
+        "brow_lowerer_r",
+        "inner_brow_raiser_l",
+        "inner_brow_raiser_r",
+        "outer_brow_raiser_l",
+        "outer_brow_raiser_r",
+        "cheek_raiser_l",
+        "cheek_raiser_r",
+        "eyes_closed_l",
+        "eyes_closed_r",
+        "eye_closure_mean",
+        "eye_closure_difference",
+        "eye_closed_signal_min",
+        "eye_closed_signal_max",
+        "eye_closed_signal_range",
+        "eye_closed_signal_responsive",
+        "left_eye_closed_candidate",
+        "right_eye_closed_candidate",
+        "both_eyes_closed_candidate",
+        "left_eye_open_candidate",
+        "right_eye_open_candidate",
+        "both_eyes_open_candidate",
+        "eye_state_label_available",
+        "eye_state_label",
+        "eye_state_confidence",
+        "left_eye_closed",
+        "right_eye_closed",
+        "both_eyes_closed",
+        "left_eye_open",
+        "right_eye_open",
+        "both_eyes_open",
+        "eye_tracking_supported",
+        "eye_tracking_enabled",
+        "eye_gazes_state_available",
+        "eye_gazes_state_time_seconds",
+        "left_eye_gaze_valid",
+        "right_eye_gaze_valid",
+        "left_eye_gaze_confidence",
+        "right_eye_gaze_confidence",
+        "face_expression_weights",
+        "face_diagnostic",
+        "notes"
+    };
+
     static readonly string[] VideoFrameColumns =
     {
         "session_id",
@@ -318,6 +498,8 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
     StreamWriter _samplesJsonlWriter;
     StreamWriter _eyeTrackingCsvWriter;
     StreamWriter _eyeTrackingJsonlWriter;
+    StreamWriter _faceTrackingCsvWriter;
+    StreamWriter _faceTrackingJsonlWriter;
     StreamWriter _videoFramesCsvWriter;
     StreamWriter _videoFramesJsonlWriter;
     string _sessionId;
@@ -361,6 +543,7 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
             _eventsCsvWriter = OpenCsvWriter("events.csv", EventColumns);
             _samplesCsvWriter = OpenCsvWriter("samples.csv", SampleColumns);
             _eyeTrackingCsvWriter = OpenCsvWriter("eye_tracking.csv", EyeTrackingColumns);
+            _faceTrackingCsvWriter = OpenCsvWriter("face_tracking.csv", FaceTrackingColumns);
             _videoFramesCsvWriter = OpenCsvWriter("video_frames.csv", VideoFrameColumns);
         }
 
@@ -369,6 +552,7 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
             _eventsJsonlWriter = new StreamWriter(Path.Combine(_sessionFolderPath, "events.jsonl"), false, Encoding.UTF8);
             _samplesJsonlWriter = new StreamWriter(Path.Combine(_sessionFolderPath, "samples.jsonl"), false, Encoding.UTF8);
             _eyeTrackingJsonlWriter = new StreamWriter(Path.Combine(_sessionFolderPath, "eye_tracking.jsonl"), false, Encoding.UTF8);
+            _faceTrackingJsonlWriter = new StreamWriter(Path.Combine(_sessionFolderPath, "face_tracking.jsonl"), false, Encoding.UTF8);
             _videoFramesJsonlWriter = new StreamWriter(Path.Combine(_sessionFolderPath, "video_frames.jsonl"), false, Encoding.UTF8);
         }
 
@@ -385,6 +569,8 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         CloseWriter(ref _samplesJsonlWriter);
         CloseWriter(ref _eyeTrackingCsvWriter);
         CloseWriter(ref _eyeTrackingJsonlWriter);
+        CloseWriter(ref _faceTrackingCsvWriter);
+        CloseWriter(ref _faceTrackingJsonlWriter);
         CloseWriter(ref _videoFramesCsvWriter);
         CloseWriter(ref _videoFramesJsonlWriter);
         _sessionActive = false;
@@ -408,6 +594,12 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
 
         row.row_type = "eye_tracking_sample";
         WritePreparedEyeTrackingRow(row);
+
+        if (row.face_sample_available)
+        {
+            row.row_type = "face_tracking_sample";
+            WritePreparedFaceTrackingRow(row);
+        }
     }
 
     public bool TryLogVideoFrame(WaterLiliesVideoFrameLogRow row)
@@ -549,6 +741,26 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         {
             _eyeTrackingJsonlWriter.WriteLine(ToEyeTrackingJsonLine(row));
             FlushIfNeeded(_eyeTrackingJsonlWriter);
+        }
+    }
+
+    void WritePreparedFaceTrackingRow(WaterLiliesExperimentLogRow row)
+    {
+        if (!_sessionActive)
+        {
+            return;
+        }
+
+        if (_writeCsv && _faceTrackingCsvWriter != null)
+        {
+            _faceTrackingCsvWriter.WriteLine(ToFaceTrackingCsv(row));
+            FlushIfNeeded(_faceTrackingCsvWriter);
+        }
+
+        if (_writeJsonLines && _faceTrackingJsonlWriter != null)
+        {
+            _faceTrackingJsonlWriter.WriteLine(ToFaceTrackingJsonLine(row));
+            FlushIfNeeded(_faceTrackingJsonlWriter);
         }
     }
 
@@ -757,6 +969,119 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         return ToCsvLine(values);
     }
 
+    static string ToFaceTrackingCsv(WaterLiliesExperimentLogRow row)
+    {
+        var values = new[]
+        {
+            row.row_type,
+            row.event_type,
+            row.session_id,
+            row.participant_id,
+            row.experiment_mode,
+            row.phase,
+            row.condition_id,
+            FormatInt(row.condition_order_index),
+            FormatInt(row.condition_order_total),
+            row.intensity_level,
+            row.frequency_level,
+            FormatDouble(row.intensity_value),
+            FormatDouble(row.frequency_value),
+            FormatDouble(row.applied_intensity_value),
+            FormatDouble(row.applied_frequency_value),
+            FormatBool(row.natural_modulation_enabled),
+            FormatInt(row.natural_modulation_seed),
+            FormatDouble(row.natural_modulation_template_elapsed_seconds),
+            FormatFloat(row.natural_modulation_intensity_depth),
+            FormatFloat(row.natural_modulation_frequency_depth),
+            FormatFloat(row.natural_modulation_large_scale_seconds),
+            FormatFloat(row.natural_modulation_medium_scale_seconds),
+            FormatFloat(row.natural_modulation_fine_scale_seconds),
+            FormatDouble(row.planned_duration_seconds),
+            FormatDouble(row.phase_elapsed_seconds),
+            FormatDouble(row.phase_remaining_seconds),
+            FormatBool(row.formal_viewing),
+            row.utc_timestamp_iso,
+            row.unix_time_ms.ToString(CultureInfo.InvariantCulture),
+            FormatDouble(row.realtime_since_startup_seconds),
+            FormatDouble(row.session_elapsed_seconds),
+            FormatBool(row.face_sample_available),
+            FormatBool(row.face_permission_granted),
+            FormatBool(row.face_tracking_supported),
+            FormatBool(row.face_tracking_enabled),
+            FormatBool(row.face_expressions_found),
+            FormatBool(row.face_expressions_enabled),
+            FormatBool(row.face_state_available),
+            FormatBool(row.face_valid),
+            FormatBool(row.eye_following_blendshapes_valid),
+            row.face_data_source,
+            FormatDouble(row.face_state_time_seconds),
+            FormatBool(row.face_region_confidences_available),
+            FormatFloat(row.face_lower_region_confidence),
+            FormatFloat(row.face_upper_region_confidence),
+            FormatBool(row.face_visemes_valid),
+            FormatInt(row.face_expression_count),
+            FormatBool(row.eyes_closed_weights_available),
+            FormatFloat(row.eyes_closed_l_raw),
+            FormatFloat(row.eyes_closed_r_raw),
+            FormatFloat(row.eyes_look_down_l),
+            FormatFloat(row.eyes_look_down_r),
+            FormatFloat(row.eyes_look_left_l),
+            FormatFloat(row.eyes_look_left_r),
+            FormatFloat(row.eyes_look_right_l),
+            FormatFloat(row.eyes_look_right_r),
+            FormatFloat(row.eyes_look_up_l),
+            FormatFloat(row.eyes_look_up_r),
+            FormatFloat(row.upper_lid_raiser_l),
+            FormatFloat(row.upper_lid_raiser_r),
+            FormatFloat(row.lid_tightener_l),
+            FormatFloat(row.lid_tightener_r),
+            FormatFloat(row.brow_lowerer_l),
+            FormatFloat(row.brow_lowerer_r),
+            FormatFloat(row.inner_brow_raiser_l),
+            FormatFloat(row.inner_brow_raiser_r),
+            FormatFloat(row.outer_brow_raiser_l),
+            FormatFloat(row.outer_brow_raiser_r),
+            FormatFloat(row.cheek_raiser_l),
+            FormatFloat(row.cheek_raiser_r),
+            FormatFloat(row.eyes_closed_l),
+            FormatFloat(row.eyes_closed_r),
+            FormatFloat(row.eye_closure_mean),
+            FormatFloat(row.eye_closure_difference),
+            FormatFloat(row.eye_closed_signal_min),
+            FormatFloat(row.eye_closed_signal_max),
+            FormatFloat(row.eye_closed_signal_range),
+            FormatBool(row.eye_closed_signal_responsive),
+            FormatBool(row.left_eye_closed_candidate),
+            FormatBool(row.right_eye_closed_candidate),
+            FormatBool(row.both_eyes_closed_candidate),
+            FormatBool(row.left_eye_open_candidate),
+            FormatBool(row.right_eye_open_candidate),
+            FormatBool(row.both_eyes_open_candidate),
+            FormatBool(row.eye_state_label_available),
+            row.eye_state_label,
+            FormatFloat(row.eye_state_confidence),
+            FormatBool(row.left_eye_closed),
+            FormatBool(row.right_eye_closed),
+            FormatBool(row.both_eyes_closed),
+            FormatBool(row.left_eye_open),
+            FormatBool(row.right_eye_open),
+            FormatBool(row.both_eyes_open),
+            FormatBool(row.eye_tracking_supported),
+            FormatBool(row.eye_tracking_enabled),
+            FormatBool(row.eye_gazes_state_available),
+            FormatDouble(row.eye_gazes_state_time_seconds),
+            FormatBool(row.left_eye_gaze_valid),
+            FormatBool(row.right_eye_gaze_valid),
+            FormatFloat(row.left_eye_gaze_confidence),
+            FormatFloat(row.right_eye_gaze_confidence),
+            row.face_expression_weights,
+            row.face_diagnostic,
+            row.notes
+        };
+
+        return ToCsvLine(values);
+    }
+
     static string ToVideoFrameCsv(WaterLiliesVideoFrameLogRow row)
     {
         var values = new[]
@@ -930,6 +1255,89 @@ public sealed class WaterLiliesExperimentLogger : MonoBehaviour
         AppendJson(builder, ref first, "gaze_hit_y", row.gaze_hit_y);
         AppendJson(builder, ref first, "gaze_hit_z", row.gaze_hit_z);
         AppendJson(builder, ref first, "gaze_on_painting", row.gaze_on_painting);
+        AppendJson(builder, ref first, "notes", row.notes);
+        builder.Append('}');
+        return builder.ToString();
+    }
+
+    static string ToFaceTrackingJsonLine(WaterLiliesExperimentLogRow row)
+    {
+        var builder = new StringBuilder();
+        builder.Append('{');
+        var first = true;
+        AppendCommonSampleJson(builder, ref first, row);
+        AppendJson(builder, ref first, "face_sample_available", row.face_sample_available);
+        AppendJson(builder, ref first, "face_permission_granted", row.face_permission_granted);
+        AppendJson(builder, ref first, "face_tracking_supported", row.face_tracking_supported);
+        AppendJson(builder, ref first, "face_tracking_enabled", row.face_tracking_enabled);
+        AppendJson(builder, ref first, "face_expressions_found", row.face_expressions_found);
+        AppendJson(builder, ref first, "face_expressions_enabled", row.face_expressions_enabled);
+        AppendJson(builder, ref first, "face_state_available", row.face_state_available);
+        AppendJson(builder, ref first, "face_valid", row.face_valid);
+        AppendJson(builder, ref first, "eye_following_blendshapes_valid", row.eye_following_blendshapes_valid);
+        AppendJson(builder, ref first, "face_data_source", row.face_data_source);
+        AppendJson(builder, ref first, "face_state_time_seconds", row.face_state_time_seconds);
+        AppendJson(builder, ref first, "face_region_confidences_available", row.face_region_confidences_available);
+        AppendJson(builder, ref first, "face_lower_region_confidence", row.face_lower_region_confidence);
+        AppendJson(builder, ref first, "face_upper_region_confidence", row.face_upper_region_confidence);
+        AppendJson(builder, ref first, "face_visemes_valid", row.face_visemes_valid);
+        AppendJson(builder, ref first, "face_expression_count", row.face_expression_count);
+        AppendJson(builder, ref first, "eyes_closed_weights_available", row.eyes_closed_weights_available);
+        AppendJson(builder, ref first, "eyes_closed_l_raw", row.eyes_closed_l_raw);
+        AppendJson(builder, ref first, "eyes_closed_r_raw", row.eyes_closed_r_raw);
+        AppendJson(builder, ref first, "eyes_look_down_l", row.eyes_look_down_l);
+        AppendJson(builder, ref first, "eyes_look_down_r", row.eyes_look_down_r);
+        AppendJson(builder, ref first, "eyes_look_left_l", row.eyes_look_left_l);
+        AppendJson(builder, ref first, "eyes_look_left_r", row.eyes_look_left_r);
+        AppendJson(builder, ref first, "eyes_look_right_l", row.eyes_look_right_l);
+        AppendJson(builder, ref first, "eyes_look_right_r", row.eyes_look_right_r);
+        AppendJson(builder, ref first, "eyes_look_up_l", row.eyes_look_up_l);
+        AppendJson(builder, ref first, "eyes_look_up_r", row.eyes_look_up_r);
+        AppendJson(builder, ref first, "upper_lid_raiser_l", row.upper_lid_raiser_l);
+        AppendJson(builder, ref first, "upper_lid_raiser_r", row.upper_lid_raiser_r);
+        AppendJson(builder, ref first, "lid_tightener_l", row.lid_tightener_l);
+        AppendJson(builder, ref first, "lid_tightener_r", row.lid_tightener_r);
+        AppendJson(builder, ref first, "brow_lowerer_l", row.brow_lowerer_l);
+        AppendJson(builder, ref first, "brow_lowerer_r", row.brow_lowerer_r);
+        AppendJson(builder, ref first, "inner_brow_raiser_l", row.inner_brow_raiser_l);
+        AppendJson(builder, ref first, "inner_brow_raiser_r", row.inner_brow_raiser_r);
+        AppendJson(builder, ref first, "outer_brow_raiser_l", row.outer_brow_raiser_l);
+        AppendJson(builder, ref first, "outer_brow_raiser_r", row.outer_brow_raiser_r);
+        AppendJson(builder, ref first, "cheek_raiser_l", row.cheek_raiser_l);
+        AppendJson(builder, ref first, "cheek_raiser_r", row.cheek_raiser_r);
+        AppendJson(builder, ref first, "eyes_closed_l", row.eyes_closed_l);
+        AppendJson(builder, ref first, "eyes_closed_r", row.eyes_closed_r);
+        AppendJson(builder, ref first, "eye_closure_mean", row.eye_closure_mean);
+        AppendJson(builder, ref first, "eye_closure_difference", row.eye_closure_difference);
+        AppendJson(builder, ref first, "eye_closed_signal_min", row.eye_closed_signal_min);
+        AppendJson(builder, ref first, "eye_closed_signal_max", row.eye_closed_signal_max);
+        AppendJson(builder, ref first, "eye_closed_signal_range", row.eye_closed_signal_range);
+        AppendJson(builder, ref first, "eye_closed_signal_responsive", row.eye_closed_signal_responsive);
+        AppendJson(builder, ref first, "left_eye_closed_candidate", row.left_eye_closed_candidate);
+        AppendJson(builder, ref first, "right_eye_closed_candidate", row.right_eye_closed_candidate);
+        AppendJson(builder, ref first, "both_eyes_closed_candidate", row.both_eyes_closed_candidate);
+        AppendJson(builder, ref first, "left_eye_open_candidate", row.left_eye_open_candidate);
+        AppendJson(builder, ref first, "right_eye_open_candidate", row.right_eye_open_candidate);
+        AppendJson(builder, ref first, "both_eyes_open_candidate", row.both_eyes_open_candidate);
+        AppendJson(builder, ref first, "eye_state_label_available", row.eye_state_label_available);
+        AppendJson(builder, ref first, "eye_state_label", row.eye_state_label);
+        AppendJson(builder, ref first, "eye_state_confidence", row.eye_state_confidence);
+        AppendJson(builder, ref first, "left_eye_closed", row.left_eye_closed);
+        AppendJson(builder, ref first, "right_eye_closed", row.right_eye_closed);
+        AppendJson(builder, ref first, "both_eyes_closed", row.both_eyes_closed);
+        AppendJson(builder, ref first, "left_eye_open", row.left_eye_open);
+        AppendJson(builder, ref first, "right_eye_open", row.right_eye_open);
+        AppendJson(builder, ref first, "both_eyes_open", row.both_eyes_open);
+        AppendJson(builder, ref first, "eye_tracking_supported", row.eye_tracking_supported);
+        AppendJson(builder, ref first, "eye_tracking_enabled", row.eye_tracking_enabled);
+        AppendJson(builder, ref first, "eye_gazes_state_available", row.eye_gazes_state_available);
+        AppendJson(builder, ref first, "eye_gazes_state_time_seconds", row.eye_gazes_state_time_seconds);
+        AppendJson(builder, ref first, "left_eye_gaze_valid", row.left_eye_gaze_valid);
+        AppendJson(builder, ref first, "right_eye_gaze_valid", row.right_eye_gaze_valid);
+        AppendJson(builder, ref first, "left_eye_gaze_confidence", row.left_eye_gaze_confidence);
+        AppendJson(builder, ref first, "right_eye_gaze_confidence", row.right_eye_gaze_confidence);
+        AppendJson(builder, ref first, "face_expression_weights", row.face_expression_weights);
+        AppendJson(builder, ref first, "face_diagnostic", row.face_diagnostic);
         AppendJson(builder, ref first, "notes", row.notes);
         builder.Append('}');
         return builder.ToString();

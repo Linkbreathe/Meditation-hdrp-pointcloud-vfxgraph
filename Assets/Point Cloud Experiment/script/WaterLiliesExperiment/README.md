@@ -108,6 +108,19 @@ For Meta Quest Pro, gaze sampling first tries Unity XR `Eyes` data and then fall
 
 `WaterLiliesTrackingSampler` can fall back to head-forward gaze when eye data and gaze transforms are unavailable. When analyzing eye tracking, use `gaze_available`, `gaze_hit`, and `gaze_on_painting` to separate usable gaze samples from fallback or missing data.
 
+## Face / Eye-Closed Sampling
+
+`WaterLiliesFaceTrackingSampler` records Meta face-expression samples alongside the regular Water Lilies samples. Use `eyes_closed_l`, `eyes_closed_r`, and `eye_state_label` for closed-eye analysis, not gaze confidence. The sampler keeps the raw `EyesClosedL/R` values, the look-down-corrected values, and threshold candidate columns such as `both_eyes_closed_candidate` and `both_eyes_open_candidate`.
+
+The default thresholds are `0.65` for closed and `0.25` for open. The final convenience labels (`left_eye_closed`, `both_eyes_open`, etc.) are now conservative: by default they are only set after the eyelid channel has shown a usable open/closed range during the run. If Quest Pro reports `EyesClosedL/R` as a flat value, `eye_state_label` stays in an unvalidated state rather than falsely claiming the eyes are open.
+
+For debugging and offline retuning, `face_tracking.csv` also records upper/lower face confidence, face data source, raw eye-gaze validity/confidence, eye-look directions, upper-lid/brow/cheek expression weights, and a `face_expression_weights` payload containing all Meta face expression weights. Check `face_upper_region_confidence`, `eye_closed_signal_range`, and `face_expression_weights` when deciding whether a session's eye-open/closed labels are trustworthy.
+
+The operator panel has two diagnostics buttons:
+
+- `Check Eye Tracking` verifies permission, support, runtime enablement, and at least one valid gaze sample.
+- `Check Face Tracking` verifies face-tracking permission/runtime state and whether the `EyesClosedL/R` channel has shown a responsive open/closed range. Ask the participant to blink or close/open eyes once, then run this check.
+
 ## Logs
 
 Each session writes to the configured log root:
@@ -129,13 +142,14 @@ Generated files:
 | `events.csv` / `events.jsonl` | Event markers plus the tracking snapshot captured at each event time. |
 | `samples.csv` / `samples.jsonl` | Regular session samples: phase, condition, parameter values, headset presence, and head pose. Gaze columns are intentionally excluded. |
 | `eye_tracking.csv` / `eye_tracking.jsonl` | Regular gaze samples: phase/condition context plus gaze origin, direction, hit point, and painting-hit flags. Head-pose columns are intentionally excluded. |
+| `face_tracking.csv` / `face_tracking.jsonl` | Regular face-expression samples: face-tracking runtime state, upper/lower face confidence, `EyesClosedL/R`, look-down correction values, eye-state labels/candidates, raw eye-gaze validity/confidence, selected upper-face weights, and all Meta expression weights. |
 | `video_frames.csv` / `video_frames.jsonl` | One row per encoded video frame, including camera pose, output path, latency, and cumulative dropped frame count. |
 | `video_manifest.json` | Recording settings, final frame counts, dropped-frame counters by cause, and an ffmpeg example. |
 | `video_frames/` | Encoded image sequence. |
 
 Use `formal_viewing=true` and `condition_start` / `condition_end` markers to extract valid VFX exposure windows. Use `pre_condition_baseline_start` / `pre_condition_baseline_end` markers to extract the neutral baseline immediately preceding each condition; the event notes include the configured analysis window length. The `condition_start_cue` marker identifies the optional ding between baseline and formal viewing. Questionnaire breaks, headset-off intervals, re-centering, condition-start cues, and rest intervals are explicitly marked so they can be excluded from condition-level physiology analysis.
 
-Natural texture template fields are logged in the regular event/sample/gaze rows: `applied_intensity_value`, `applied_frequency_value`, `natural_modulation_enabled`, `natural_modulation_seed`, `natural_modulation_template_elapsed_seconds`, and the modulation depth/scale columns. For scheme A, `pre_condition_baseline_start` and `condition_start` rows should show the template elapsed time close to `0` for every condition.
+Natural texture template fields are logged in the regular event/sample/gaze/face rows: `applied_intensity_value`, `applied_frequency_value`, `natural_modulation_enabled`, `natural_modulation_seed`, `natural_modulation_template_elapsed_seconds`, and the modulation depth/scale columns. For scheme A, `pre_condition_baseline_start` and `condition_start` rows should show the template elapsed time close to `0` for every condition.
 
 ## Video Drop Diagnostics
 
