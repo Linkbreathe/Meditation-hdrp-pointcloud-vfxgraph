@@ -12,7 +12,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b86f8421508f439a9ab688b80f2b9e63, type: 3}
   m_Name: WaterLiliesExperimentConfig
   m_EditorClassIdentifier: 
-  _participantId: P008
+  _participantId: P016
   _mode: 1
   _targetPaintingObjectName: 5_Water_Lilies
   _isolateTargetPainting: 1
@@ -104,15 +104,15 @@ MonoBehaviour:
     overrideDurationSeconds: 0
     durationSeconds: 90
   _conditionOrder:
-  - C6
-  - C2
-  - C3
-  - C1
   - C7
-  - C5
-  - C9
+  - C2
   - C4
+  - C3
   - C8
+  - C9
+  - C5
+  - C1
+  - C6
   _autoStart: 0
   _requireManualQuestionnaireContinue: 1
   _requireHeadsetWornBeforeQuestionnaireContinue: 1
