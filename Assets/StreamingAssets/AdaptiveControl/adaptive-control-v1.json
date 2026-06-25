@@ -1,0 +1,19 @@
+{
+  "profile_id": "adaptive-control-v1",
+  "schema_version": "1",
+  "baseline": {
+    "intensity": 0.01,
+    "frequency": 0.0
+  },
+  "conditions": [
+    { "condition_id": "C1", "intensity": 0.08, "frequency": 0.12 },
+    { "condition_id": "C2", "intensity": 0.08, "frequency": 0.26 },
+    { "condition_id": "C3", "intensity": 0.08, "frequency": 0.41 },
+    { "condition_id": "C4", "intensity": 0.16, "frequency": 0.12 },
+    { "condition_id": "C5", "intensity": 0.16, "frequency": 0.26 },
+    { "condition_id": "C6", "intensity": 0.16, "frequency": 0.41 },
+    { "condition_id": "C7", "intensity": 0.25, "frequency": 0.12 },
+    { "condition_id": "C8", "intensity": 0.25, "frequency": 0.26 },
+    { "condition_id": "C9", "intensity": 0.25, "frequency": 0.41 }
+  ]
+}

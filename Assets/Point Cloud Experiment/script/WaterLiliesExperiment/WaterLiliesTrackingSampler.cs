@@ -12,6 +12,8 @@ public struct WaterLiliesTrackingSample
     public Vector3 headVelocity;
     public float headAngularVelocityDegPerSecond;
     public bool gazeAvailable;
+    public bool eyeTrackingAvailable;
+    public string gazeSource;
     public Vector3 gazeOrigin;
     public Vector3 gazeDirection;
     public bool gazeHit;
@@ -157,6 +159,8 @@ public sealed class WaterLiliesTrackingSampler : MonoBehaviour
         if (_useXrEyesData && TryGetXrEyeGaze(sample.headPosition, out var origin, out var direction, out var fixationPoint))
         {
             sample.gazeAvailable = true;
+            sample.eyeTrackingAvailable = true;
+            sample.gazeSource = "xr_eyes";
             sample.gazeOrigin = origin;
             sample.gazeDirection = direction;
             sample.gazeHit = true;
@@ -168,6 +172,8 @@ public sealed class WaterLiliesTrackingSampler : MonoBehaviour
         if (_useGazeTransforms && TryGetTransformGaze(out origin, out direction))
         {
             sample.gazeAvailable = true;
+            sample.eyeTrackingAvailable = true;
+            sample.gazeSource = "gaze_transform";
             sample.gazeOrigin = origin;
             sample.gazeDirection = direction;
             sample.gazeOnPainting = RayHitsPainting(origin, direction, out var transformHitPoint);
@@ -182,6 +188,8 @@ public sealed class WaterLiliesTrackingSampler : MonoBehaviour
         }
 
         sample.gazeAvailable = true;
+        sample.eyeTrackingAvailable = false;
+        sample.gazeSource = "head_forward_fallback";
         sample.gazeOrigin = _headTransform.position;
         sample.gazeDirection = _headTransform.forward.normalized;
         sample.gazeOnPainting = RayHitsPainting(sample.gazeOrigin, sample.gazeDirection, out var headForwardHitPoint);

@@ -227,8 +227,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 28dd40a6d175d01498e0477360d6c070, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   Eye: 1
   ConfidenceThreshold: 0.5
   ApplyPosition: 0
@@ -245,13 +245,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5b023183069df224080314a560e6e1ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   blockId: f92445a7-db19-452c-8d3d-96820f6c8972
   instanceId: 8e66cee6-5548-423f-b86e-28fb3be7927b
   version: 1
   installationRoutineCheckpoint:
-    _installationRoutineId: 
+    _installationRoutineId:
     _installationVariants: []
 --- !u!1 &83643165
 GameObject:
@@ -298,8 +298,8 @@ MonoBehaviour:
   m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _vfxEntityName: 20_bright_to_dark_Monet_Wildenstein_1506
   _visualEffect: {fileID: 83643170}
   _vfxController: {fileID: 83643168}
@@ -331,8 +331,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _visualEffect: {fileID: 83643170}
   _spawnRate: 910629
   _particleIntensity: 0.01
@@ -489,8 +489,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _vfxEntityName: 12_bright_to_dark_Monet_w1705
   _visualEffect: {fileID: 124908943}
   _vfxController: {fileID: 124908941}
@@ -522,8 +522,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _visualEffect: {fileID: 124908943}
   _spawnRate: 815331
   _particleIntensity: 0.01
@@ -846,6 +846,32 @@ Transform:
   - {fileID: 2054954818}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &475345276
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2000000030}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a9da6bd3f8574a5e91f6bfcc34de30ed, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _vfxController: {fileID: 2000000036}
+  _formalExperimentManager: {fileID: 4100000002}
+  _trackingSampler: {fileID: 4100000004}
+  _participantId: DEMO
+  _autoStart: 0
+  _initialCondition: C5
+  _profileRelativePath: AdaptiveControl/adaptive-control-v1.json
+  _pythonHost: 127.0.0.1
+  _unityToPythonPort: 5055
+  _pythonToUnityPort: 5056
+  _commandTimeoutSeconds: 25
+  _defaultTransitionSeconds: 2
+  _readinessTimeoutSeconds: 2.5
+  _readinessFreshSeconds: 15
 --- !u!1 &621079945
 GameObject:
   m_ObjectHideFlags: 0
@@ -874,8 +900,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d0ef8dc2c2eabfa4e8cb77be57a837c0, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_ProbeSettings:
     frustum:
       fieldOfViewMode: 1
@@ -1364,8 +1390,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _vfxEntityName: 13_bright_to_dark_Claude_Monet_Water_Lilies_Bridgestone_Museum
   _visualEffect: {fileID: 621915682}
   _vfxController: {fileID: 621915680}
@@ -1397,8 +1423,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _visualEffect: {fileID: 621915682}
   _spawnRate: 841725
   _particleIntensity: 0.01
@@ -1591,8 +1617,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 28dd40a6d175d01498e0477360d6c070, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   Eye: 0
   ConfidenceThreshold: 0.5
   ApplyPosition: 0
@@ -1609,13 +1635,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5b023183069df224080314a560e6e1ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   blockId: f92445a7-db19-452c-8d3d-96820f6c8972
   instanceId: 91b2bff2-0c0f-4c26-a031-44586df5cd8c
   version: 1
   installationRoutineCheckpoint:
-    _installationRoutineId: 
+    _installationRoutineId:
     _installationVariants: []
 --- !u!1 &679986085
 GameObject:
@@ -1745,8 +1771,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 172515602e62fb746b5d573b38a5fe58, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_IsGlobal: 1
   priority: 0
   blendDistance: 0
@@ -1870,8 +1896,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 23c1ce4fb46143f46bc5cb5224c934f6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   clearColorMode: 0
   backgroundColorHDR: {r: 0.025, g: 0.07, b: 0.19, a: 0}
   clearDepth: 1
@@ -2016,8 +2042,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d8f6fd535518f5540b4bcc3099582f77, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   surfaceType: 0
   geometryType: 2
   mesh: {fileID: 0}
@@ -2258,8 +2284,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _vfxEntityName: Starry_Night_Over_the_Rhone
   _visualEffect: {fileID: 993492450}
   _vfxController: {fileID: 993492448}
@@ -2291,8 +2317,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _visualEffect: {fileID: 993492450}
   _spawnRate: 1079040
   _particleIntensity: 0.01
@@ -2432,8 +2458,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7a68c43fe1f2a47cfa234b5eeaa98012, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_Intensity: 2600
   m_EnableSpotReflector: 0
   m_LuxAtDistance: 1
@@ -2716,8 +2742,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 23c1ce4fb46143f46bc5cb5224c934f6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   clearColorMode: 0
   backgroundColorHDR: {r: 0.025, g: 0.07, b: 0.19, a: 0}
   clearDepth: 1
@@ -2985,7 +3011,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: 6598815579406187026, guid: 18ddb545287c546e19cc77dc9fbb2189, type: 3}
       propertyPath: m_CameraTransform
-      value: 
+      value:
       objectReference: {fileID: 0}
     - target: {fileID: 6598815579406187027, guid: 18ddb545287c546e19cc77dc9fbb2189, type: 3}
       propertyPath: m_LocalPosition.x
@@ -3314,8 +3340,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _vfxEntityName: 03_bright_to_dark_Claude_Monet_Waterlilies_Google_Art_Project_hg
   _visualEffect: {fileID: 1276049667}
   _vfxController: {fileID: 1276049665}
@@ -3347,8 +3373,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _visualEffect: {fileID: 1276049667}
   _spawnRate: 534300
   _particleIntensity: 0.01
@@ -3540,8 +3566,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1f3e9281f97f4a349a1d9d937a4fb1c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _paintingsRoot: {fileID: 1374266473}
   _preferActiveChildOnStart: 1
   _startIndex: 0
@@ -3676,8 +3702,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 83e4e6cca11330d4088d729ab4fc9d9f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_StartingHoverFilters: []
   m_StartingSelectFilters: []
 --- !u!4 &1401575344
@@ -3722,8 +3748,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 172515602e62fb746b5d573b38a5fe58, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_IsGlobal: 1
   priority: 0
   blendDistance: 0
@@ -4121,8 +4147,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _vfxEntityName: 18_bright_to_dark_Monet_w1678
   _visualEffect: {fileID: 1499324780}
   _vfxController: {fileID: 1499324778}
@@ -4154,8 +4180,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _visualEffect: {fileID: 1499324780}
   _spawnRate: 170500
   _particleIntensity: 0.01
@@ -4362,8 +4388,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 513fd78f1e3b44c3ad99f2207caa40c3, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _showPreviewOnStart: 0
   _previewTimeoutSeconds: 120
   _previewPaintingId: calmness_feedback_preview
@@ -4387,8 +4413,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1f3e9281f97f4a349a1d9d937a4fb1c2, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _paintingsRoot: {fileID: 1577724482}
   _preferActiveChildOnStart: 1
   _startIndex: 0
@@ -4499,8 +4525,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: a71d3e55c5ab4f0bba4169f84feeca61, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _includeInactiveChildren: 1
   _autoRefreshTargets: 1
   _applyOnEnable: 1
@@ -4832,8 +4858,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _vfxEntityName: 01_bright_to_dark_Claude_Monet_044
   _visualEffect: {fileID: 1738309515}
   _vfxController: {fileID: 1738309513}
@@ -4869,8 +4895,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _visualEffect: {fileID: 1738309515}
   _spawnRate: 429567
   _particleIntensity: 0.01
@@ -5027,8 +5053,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _vfxEntityName: 08_bright_to_dark_Monet_Waterlilies_NMW_A_2484
   _visualEffect: {fileID: 1764600242}
   _vfxController: {fileID: 1764600240}
@@ -5060,8 +5086,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _visualEffect: {fileID: 1764600242}
   _spawnRate: 286080
   _particleIntensity: 0.01
@@ -5216,8 +5242,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7a68c43fe1f2a47cfa234b5eeaa98012, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   m_Intensity: 130000
   m_EnableSpotReflector: 0
   m_LuxAtDistance: 1
@@ -5451,8 +5477,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5178bc8574ce2bf4388e787a2e2af326, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   opMode: 1
   resetHmdPoseOnRelease: 1
   resetHmdPoseByMiddleMouseButton: 1
@@ -5476,8 +5502,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 7e933e81d3c20c74ea6fdc708a67e3a5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _monoscopic: 0
   _sharpenType: 0
   _disableRecording: 0
@@ -5567,8 +5593,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: df9f338034892c44ebb62d97894772f1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   usePerEyeCameras: 0
   useFixedUpdateForTracking: 0
   disableEyeAnchorCameras: 0
@@ -5582,13 +5608,13 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5b023183069df224080314a560e6e1ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   blockId: e47682b9-c270-40b1-b16d-90b627a5ce1b
   instanceId: 67cd9e83-6982-4d46-a8ca-19d52bdb3f05
   version: 1
   installationRoutineCheckpoint:
-    _installationRoutineId: 
+    _installationRoutineId:
     _installationVariants: []
 --- !u!4 &1915049602
 Transform:
@@ -5683,8 +5709,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _vfxEntityName: 02_bright_to_dark_Claude_Monet_Waterlilies_Google_Art_Project
   _visualEffect: {fileID: 1976752923}
   _vfxController: {fileID: 1976752921}
@@ -5716,8 +5742,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _visualEffect: {fileID: 1976752923}
   _spawnRate: 782000
   _particleIntensity: 0.01
@@ -5907,8 +5933,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _vfxEntityName: 1_Mona_Lisa
   _visualEffect: {fileID: 2000000005}
   _vfxController: {fileID: 2000000003}
@@ -5940,8 +5966,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _visualEffect: {fileID: 2000000005}
   _spawnRate: 816220
   _particleIntensity: 0.01
@@ -6098,8 +6124,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _vfxEntityName: 3_Almond_blossom
   _visualEffect: {fileID: 2000000015}
   _vfxController: {fileID: 2000000013}
@@ -6131,8 +6157,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _visualEffect: {fileID: 2000000015}
   _spawnRate: 728640
   _particleIntensity: 0.01
@@ -6289,8 +6315,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _vfxEntityName: 4_Woman_with_a_Parasol
   _visualEffect: {fileID: 2000000025}
   _vfxController: {fileID: 2000000023}
@@ -6322,8 +6348,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _visualEffect: {fileID: 2000000025}
   _spawnRate: 1145280
   _particleIntensity: 0.01
@@ -6450,6 +6476,9 @@ GameObject:
   - component: {fileID: 2000000032}
   - component: {fileID: 2000000036}
   - component: {fileID: 2000000037}
+  - component: {fileID: 475345276}
+  - component: {fileID: 2000000039}
+  - component: {fileID: 2000000038}
   m_Layer: 0
   m_Name: 5_Water_Lilies
   m_TagString: Untagged
@@ -6482,8 +6511,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _vfxEntityName: 5_Water_Lilies
   _visualEffect: {fileID: 2000000035}
   _vfxController: {fileID: 2000000033}
@@ -6515,8 +6544,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _visualEffect: {fileID: 2000000035}
   _spawnRate: 778500
   _particleIntensity: 0.01
@@ -6676,6 +6705,37 @@ MonoBehaviour:
   _intensityProperty: System update particle - intensity
   _frequencyProperty: System update particle - frequency
   _logMissingProperties: 1
+--- !u!114 &2000000038
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2000000030}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 44bfd4cfc79b47b5a05d8ea34d576d05, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _controller: {fileID: 475345276}
+  _visible: 0
+  _panelWidth: 520
+  _margin: 16
+--- !u!114 &2000000039
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2000000030}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 9c274eac60494f0abf50044af2f14681, type: 3}
+  m_Name:
+  m_EditorClassIdentifier:
+  _controller: {fileID: 475345276}
+  _trackingSampler: {fileID: 4100000004}
+  _sampleHz: 10
 --- !u!1 &2000000040
 GameObject:
   m_ObjectHideFlags: 0
@@ -6721,8 +6781,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _vfxEntityName: 6_Impression_soleil_levant
   _visualEffect: {fileID: 2000000045}
   _vfxController: {fileID: 2000000043}
@@ -6754,8 +6814,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _visualEffect: {fileID: 2000000045}
   _spawnRate: 630000
   _particleIntensity: 0.01
@@ -6912,8 +6972,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _vfxEntityName: 7_Starry_Night_Over_the_Rhone
   _visualEffect: {fileID: 2000000055}
   _vfxController: {fileID: 2000000053}
@@ -6945,8 +7005,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _visualEffect: {fileID: 2000000055}
   _spawnRate: 628200
   _particleIntensity: 0.01
@@ -7103,8 +7163,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _vfxEntityName: 8_Starry_Night
   _visualEffect: {fileID: 2000000065}
   _vfxController: {fileID: 2000000063}
@@ -7136,8 +7196,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _visualEffect: {fileID: 2000000065}
   _spawnRate: 729600
   _particleIntensity: 0.01
@@ -7360,8 +7420,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 1ead446936cc56f40a62fb0b5e2043a6, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _autoFindReferences: 1
   _leftEyeGaze: {fileID: 651002235}
   _rightEyeGaze: {fileID: 77291493}
@@ -7446,8 +7506,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _vfxEntityName: 05_bright_to_dark_Monet_w1673
   _visualEffect: {fileID: 2041468018}
   _vfxController: {fileID: 2041468016}
@@ -7479,8 +7539,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _visualEffect: {fileID: 2041468018}
   _spawnRate: 237056
   _particleIntensity: 0.01
@@ -7806,8 +7866,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 83c440ffd0b7afb48b0c90609b35ed1e, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _vfxEntityName: 04_bright_to_dark_Monet_Water_Lilies_1907_19_170
   _visualEffect: {fileID: 2102065721}
   _vfxController: {fileID: 2102065719}
@@ -7839,8 +7899,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: d85534360d19df84b84a270259bf27e1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _visualEffect: {fileID: 2102065721}
   _spawnRate: 250880
   _particleIntensity: 0.01
@@ -7995,8 +8055,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 0a4cf404bfe04d79bbefab18f8f1f022, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _audioSource: {fileID: 2147001003}
   _musicClip: {fileID: 8300000, guid: b3360fc40c4d15c4889a1fb9944d7257, type: 3}
   _volume: 0.35
@@ -8142,8 +8202,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: ef80ce47f3ff49858c58f4b6e5af14f9, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _config: {fileID: 11400000, guid: f9c5df944c2f4625baa764c5e63b305d, type: 2}
   _vfxController: {fileID: 0}
   _logger: {fileID: 4100000003}
@@ -8156,7 +8216,7 @@ MonoBehaviour:
   _autoCreateVideoRecorder: 1
   _videoRecorderFlushTimeoutSeconds: 5
   _overrideConfigLogRoot: 0
-  _dataRootPath: 
+  _dataRootPath:
   _autoCreateLslMarkerOutlet: 1
   _startKey: 115
   _continueKey: 32
@@ -8190,8 +8250,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: cc18f1a11f654cfaafacd66dc761ea8a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _writeExcelSeparatorDirective: 1
   _flushEveryWrite: 1
 --- !u!114 &4100000004
@@ -8204,8 +8264,8 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 02c0aff582de4460a4e5b6601edf6cff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
+  m_Name:
+  m_EditorClassIdentifier:
   _headTransform: {fileID: 0}
   _paintingCollider: {fileID: 0}
   _paintingRenderer: {fileID: 0}

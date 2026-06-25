@@ -36,6 +36,11 @@ public sealed class WaterLiliesExperimentOperatorWindow : EditorWindow
 
         EditorApplication.delayCall += () =>
         {
+            if (HasAdaptiveControlControllerInOpenScenes())
+            {
+                return;
+            }
+
             var manager = FindManagerInOpenScenes();
             if (manager != null && manager.operatorUiEnabled)
             {
@@ -253,5 +258,26 @@ public sealed class WaterLiliesExperimentOperatorWindow : EditorWindow
         }
 
         return null;
+    }
+
+    static bool HasAdaptiveControlControllerInOpenScenes()
+    {
+        var controllers = Resources.FindObjectsOfTypeAll<AdaptiveControlController>();
+        for (var i = 0; i < controllers.Length; i++)
+        {
+            var controller = controllers[i];
+            if (controller == null || EditorUtility.IsPersistent(controller))
+            {
+                continue;
+            }
+
+            var scene = controller.gameObject.scene;
+            if (scene.IsValid() && scene.isLoaded)
+            {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

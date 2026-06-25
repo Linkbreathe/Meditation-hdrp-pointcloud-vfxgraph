@@ -16,6 +16,21 @@ The manager uses `Assets/Resources/WaterLiliesExperimentConfig.asset`. When Play
 
 `2d_paintings/5_Water_Lilies` is visible in the hierarchy so researchers can position, rotate, and scale it manually. `Place Painting In Front Of Viewer` is disabled by default; enable it only for quick debugging when Play Mode should move the painting in front of `MainCamera` or `CenterEyeAnchor`.
 
+## Adaptive Control (separate from Formal/Pilot)
+
+`AdaptiveControlController`, `AdaptiveControlSensorPublisher`, and `AdaptiveControlRuntimeDashboard` provide a local-PC, explicitly non-research adaptive-control loop. In `Meditation.unity`, use `Adaptive Control > Configure` once to wire the three components to the Water Lilies painting, its VFX controller, and the existing tracking sampler. The adaptive-control controller disables `WaterLiliesExperimentManager` only after `Start Control`, so Formal/Pilot remains unchanged outside an adaptive-control session.
+
+Adaptive Control has one shared source of control values at `Assets/StreamingAssets/AdaptiveControl/adaptive-control-v1.json`. Unity verifies its SHA-256 against each Python command before applying anything. Start Python by double-clicking `launch-adaptive-control.cmd` in `real_time_inference`; the underlying command is `rtml adaptive-control`. It receives head/eye frames on UDP `5055`, reads EEG/ECG through LSL, and sends command/status messages back to Unity on UDP `5056`.
+
+- Before Start, open the control panel and click `Check Readiness`. Start remains disabled until Python/model readiness, EEG/ECG LSL samples, head tracking, and true eye tracking all pass. Head-forward gaze fallback does not count as eye tracking readiness.
+- Start enters C5 immediately, uses the first full 10 seconds for feature warm-up, then may move by one adjacent C1-C9 grid step every 10 seconds. The panel and optional HUD show the current 10-second feature-window countdown.
+- Intensity/frequency transitions take two seconds; a normal `hold` retains the current condition.
+- Open `Adaptive Control > Control Panel` for the independent desktop/editor control surface. It has Start/Stop/emergency controls, model/modality health, candidate-grid decisions, VFX values, transport state, and a diagnostic-copy button. Coverage means the valid portion of the latest complete 10-second feature window; age means raw sample freshness. The optional Game View HUD is off by default and can be toggled from the control panel.
+- `Stop Control`, `Emergency Stop`, malformed commands, a profile mismatch, or a Python command timeout smoothly return to the adaptive-control baseline `(0.01, 0)`.
+- This is an adaptive-control loop, not evidence of a participant's true relaxation state. Formal/Pilot config, logs, and condition values remain untouched.
+
+Before running, validate the selected model bundle with `rtml adaptive-model verify --bundle classical_condition_current`. New compatible model manifests can be added below `configs/adaptive_models/`; a model is selected before a session begins and is immutable for that session.
+
 ## Operator Controls
 
 - `S`: start experiment
